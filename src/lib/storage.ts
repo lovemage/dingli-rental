@@ -3,7 +3,9 @@ import { promises as fs } from 'fs';
 import sharp from 'sharp';
 import crypto from 'crypto';
 
-const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), 'public', 'uploads');
+const UPLOAD_DIR =
+  process.env.UPLOAD_DIR ||
+  path.join(/* turbopackIgnore: true */ process.cwd(), 'public', 'uploads');
 const PUBLIC_PREFIX = '/uploads';
 
 async function ensureDir(dir: string) {

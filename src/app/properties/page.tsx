@@ -55,8 +55,9 @@ async function search(params: SearchParams) {
   }
 }
 
-export default async function PropertiesPage({ searchParams }: { searchParams: SearchParams }) {
-  const { items, total, page, pageSize } = await search(searchParams);
+export default async function PropertiesPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const resolvedSearchParams = await searchParams;
+  const { items, total, page, pageSize } = await search(resolvedSearchParams);
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
@@ -75,36 +76,36 @@ export default async function PropertiesPage({ searchParams }: { searchParams: S
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 items-end">
                 <div className="col-span-2 lg:col-span-2">
                   <label className="label-base">關鍵字</label>
-                  <input name="q" defaultValue={searchParams.q || ''} placeholder="路名、社區、物件名" className="input-base" />
+                  <input name="q" defaultValue={resolvedSearchParams.q || ''} placeholder="路名、社區、物件名" className="input-base" />
                 </div>
                 <div>
                   <label className="label-base">縣市</label>
-                  <select name="region" defaultValue={searchParams.region || ''} className="input-base">
+                  <select name="region" defaultValue={resolvedSearchParams.region || ''} className="input-base">
                     <option value="">全部</option>
                     {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="label-base">類型</label>
-                  <select name="type" defaultValue={searchParams.type || ''} className="input-base">
+                  <select name="type" defaultValue={resolvedSearchParams.type || ''} className="input-base">
                     <option value="">全部</option>
                     {PROPERTY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="label-base">建物</label>
-                  <select name="building" defaultValue={searchParams.building || ''} className="input-base">
+                  <select name="building" defaultValue={resolvedSearchParams.building || ''} className="input-base">
                     <option value="">全部</option>
                     {BUILDING_TYPES.map(b => <option key={b} value={b}>{b}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="label-base">最低租金</label>
-                  <input name="minRent" type="number" min={0} defaultValue={searchParams.minRent || ''} placeholder="0" className="input-base" />
+                  <input name="minRent" type="number" min={0} defaultValue={resolvedSearchParams.minRent || ''} placeholder="0" className="input-base" />
                 </div>
                 <div>
                   <label className="label-base">最高租金</label>
-                  <input name="maxRent" type="number" min={0} defaultValue={searchParams.maxRent || ''} placeholder="不限" className="input-base" />
+                  <input name="maxRent" type="number" min={0} defaultValue={resolvedSearchParams.maxRent || ''} placeholder="不限" className="input-base" />
                 </div>
                 <button type="submit" className="btn btn-orange col-span-2 sm:col-span-1 sm:col-start-3 lg:col-auto">🔍 搜尋</button>
               </div>
@@ -156,7 +157,7 @@ export default async function PropertiesPage({ searchParams }: { searchParams: S
               <div className="flex justify-center gap-2 mt-10">
                 {Array.from({ length: totalPages }).map((_, i) => {
                   const n = i + 1;
-                  const params = new URLSearchParams(searchParams as any);
+                  const params = new URLSearchParams(resolvedSearchParams as Record<string, string>);
                   params.set('page', String(n));
                   return (
                     <Link key={n} href={`/properties?${params.toString()}`} className={`w-10 h-10 grid place-items-center rounded-full text-sm font-medium transition ${n === page ? 'bg-brand-green-700 text-white' : 'bg-white border border-line text-ink-700 hover:border-brand-green-500'}`}>

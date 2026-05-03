@@ -38,6 +38,7 @@ next-env.d.ts
 
 # Prisma
 /prisma/migrations/dev.db*
+/src/generated/
 
 # uploads (runtime, persistent in Railway volume)
 /public/uploads/*

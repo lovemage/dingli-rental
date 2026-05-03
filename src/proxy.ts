@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { readSessionToken, SESSION_COOKIE } from '@/lib/auth-edge';
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // 僅保護 /admin 路徑（排除 /admin/login）

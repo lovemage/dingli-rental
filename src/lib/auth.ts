@@ -44,7 +44,8 @@ export async function readSessionToken(token: string | undefined): Promise<Admin
 }
 
 export async function getCurrentAdmin(): Promise<AdminPayload | null> {
-  const token = cookies().get(SESSION_COOKIE)?.value;
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
   return readSessionToken(token);
 }
 

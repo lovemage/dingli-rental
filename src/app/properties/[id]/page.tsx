@@ -6,8 +6,9 @@ import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
-export default async function PropertyDetailPage({ params }: { params: { id: string } }) {
-  const id = Number(params.id);
+export default async function PropertyDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: rawId } = await params;
+  const id = Number(rawId);
   if (!id) notFound();
 
   const p = await prisma.property.findUnique({

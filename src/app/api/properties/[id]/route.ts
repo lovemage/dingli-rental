@@ -5,8 +5,9 @@ import { deleteUpload } from '@/lib/storage';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const id = Number(params.id);
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id: rawId } = await params;
+  const id = Number(rawId);
   if (!id) return NextResponse.json({ error: 'invalid id' }, { status: 400 });
   const property = await prisma.property.findUnique({
     where: { id },
@@ -16,11 +17,12 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   return NextResponse.json(property);
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const me = await getCurrentAdmin();
   if (!me) return NextResponse.json({ error: '未授權' }, { status: 401 });
 
-  const id = Number(params.id);
+  const { id: rawId } = await params;
+  const id = Number(rawId);
   if (!id) return NextResponse.json({ error: 'invalid id' }, { status: 400 });
 
   try {
@@ -66,11 +68,12 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const me = await getCurrentAdmin();
   if (!me) return NextResponse.json({ error: '未授權' }, { status: 401 });
 
-  const id = Number(params.id);
+  const { id: rawId } = await params;
+  const id = Number(rawId);
   if (!id) return NextResponse.json({ error: 'invalid id' }, { status: 400 });
 
   const property = await prisma.property.findUnique({ where: { id }, include: { images: true } });

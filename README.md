@@ -1,10 +1,10 @@
 # 鼎立租售管理 Dingli Rental Service
 
-基於 Next.js 14 (App Router) 的全棧租賃網站，包含前台展示、物件搜尋與後台管理（手機友善）。
+基於 Next.js 16 (App Router) 的全棧租賃網站，包含前台展示、物件搜尋與後台管理（手機友善）。
 
 - 網域：[dingli-rental.com](https://dingli-rental.com)
 - 服務範圍：北北基桃竹（台北市、新北市、基隆市、桃園市、新竹市/縣）
-- 技術棧：Next.js 14 / TypeScript / Tailwind CSS / PostgreSQL / Prisma / sharp（WebP 轉檔）
+- 技術棧：Next.js 16 / TypeScript / Tailwind CSS 4 / PostgreSQL / Prisma 7 / sharp（WebP 轉檔）
 
 ## 主要功能
 
