@@ -1,0 +1,11 @@
+/* 後台專用 CSS */
+.admin-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 2px 6px rgba(31, 111, 35, .06);
+}
+@media (min-width: 640px) {
+  .admin-card { padding: 24px; }
+}

@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --green-900: #1f6f23;
+  --green-700: #2e9d2f;
+  --green-500: #51b65a;
+  --green-50:  #ecf7ec;
+  --orange-700: #e08a0a;
+  --orange-500: #f39c12;
+  --orange-300: #ffc864;
+  --orange-50:  #fff4e0;
+  --ink-900: #1a2421;
+  --ink-700: #3a4541;
+  --ink-500: #6b7570;
+  --ink-300: #b9beba;
+  --paper:   #fffdf8;
+  --paper-2: #f7f3ea;
+  --line:    #e6e1d4;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: "Noto Sans TC", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--paper);
+  color: var(--ink-900);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.7;
+}
+
+a { color: inherit; }
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 font-bold text-sm transition cursor-pointer border-0;
+  }
+  .btn-primary {
+    @apply bg-brand-green-700 text-white shadow-sm;
+  }
+  .btn-primary:hover { background: var(--green-900); transform: translateY(-2px); }
+  .btn-secondary {
+    @apply bg-white text-brand-green-900 border border-brand-green-700;
+  }
+  .btn-secondary:hover { background: var(--green-50); transform: translateY(-2px); }
+  .btn-orange {
+    @apply bg-brand-orange-500 text-white shadow-sm;
+  }
+  .btn-orange:hover { background: var(--orange-700); transform: translateY(-2px); }
+
+  .container-page {
+    @apply w-full max-w-[1200px] mx-auto px-6;
+  }
+
+  .eyebrow {
+    @apply inline-flex items-center gap-2 bg-brand-green-50 text-brand-green-900 font-bold text-sm px-3.5 py-1.5 rounded-full tracking-wide;
+  }
+  .eyebrow .dot {
+    @apply w-2 h-2 bg-brand-orange-500 rounded-full;
+  }
+
+  .input-base {
+    @apply w-full px-3 py-2.5 rounded-lg border border-line text-sm bg-paper focus:outline-none focus:border-brand-green-500 focus:ring-2 focus:ring-brand-green-500/20 transition;
+  }
+
+  .label-base {
+    @apply block text-sm font-semibold text-ink-700 mb-1.5;
+  }
+
+  /* 後台手機友善 */
+  .admin-card {
+    @apply bg-white rounded-xl border border-line shadow-sm p-5 sm:p-6;
+  }
+}
+
+/* hero carousel */
+.hero-carousel {
+  position: relative;
+  aspect-ratio: 16 / 11;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 18px 50px rgba(31, 111, 35, .14);
+}
+
+.hero-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 1s ease-in-out;
+}
+.hero-slide.active { opacity: 1; }
+.hero-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.hero-dots {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 2;
+}
+.hero-dots button {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(255,255,255,0.55);
+  cursor: pointer;
+  padding: 0;
+  transition: width .3s, background .3s;
+}
+.hero-dots button.active {
+  width: 24px;
+  background: #fff;
+  border-radius: 999px;
+}

@@ -1,0 +1,154 @@
+// Prisma Schema for 鼎立租售管理 Dingli Rental
+// 修改後執行：npx prisma db push  (開發環境)
+// 或產生 migration: npx prisma migrate dev --name <name>
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 後台管理員
+model Admin {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  passwordHash String
+  displayName  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// 物件
+model Property {
+  id              Int      @id @default(autoincrement())
+
+  // 三層分類
+  region          String   // 大：台北市/新北市/基隆市/桃園市/新竹市/新竹縣
+  typeMid         String   // 中：整層住家/獨立套房/分租套房/雅房/車位/其他
+  buildingType    String?  // 小：公寓/別墅/透天厝/電梯大樓
+
+  // 廣告類型描述（如：整層住家-透天厝）
+  adType          String?
+
+  // 地址
+  city            String   // 縣市
+  district        String   // 鄉鎮市區
+  street          String?  // 街道
+  lane            String?  // 巷
+  alley           String?  // 弄
+  number          String   // 號
+  numberSub       String?  // 號之 X
+  hideAddress     Boolean  @default(false)
+
+  // 樓層
+  floorType       String   @default("出租單層") // 出租單層/全棟
+  floor           String?  // 樓
+  floorSub        String?  // 樓之 X
+  totalFloor      String?  // 總樓層
+
+  // 社區
+  community       String?
+
+  // 格局
+  rooms           Int      @default(0)
+  livingRooms     Int      @default(0)
+  bathrooms       Int      @default(0)
+  balconies       Int      @default(0)
+  openLayout      Boolean  @default(false)
+
+  // 屋齡
+  buildingAge     Int?
+  ageUnknown      Boolean  @default(false)
+
+  // 朝向
+  direction       String?
+
+  // 坪數
+  usableArea      Float
+  registeredArea  Float?
+
+  // 設備（JSON 陣列）
+  equipment       Json     @default("[]") // ["洗衣機","冰箱"...]
+  furniture       Json     @default("[]") // ["床","衣櫃"...]
+  hasElevator     Boolean  @default(false)
+
+  // 身份要求 / 規範
+  tenantTypes     Json     @default("[]") // ["學生","上班族","家庭"]
+  cookingAllowed  Boolean  @default(true)
+  petsAllowed     Boolean  @default(false)
+
+  // 價格
+  rent            Int      // 元/月
+  deposit         String   @default("面議") // 面議/一個月/兩個月/三個月
+  rentIncludes    Json     @default("[]") // ["管理費","清潔費"...]
+  managementFee   Int?
+  noManagementFee Boolean  @default(false)
+
+  // 租期
+  minLease        String   @default("一年") // 一年/半年/不限
+  moveInDate      DateTime?
+  anytimeMoveIn   Boolean  @default(false)
+
+  // 特色描述
+  title           String   // 廣告標題 6-30 字
+  featureTags     Json     @default("[]") // ["社會住宅","租金補貼"...]
+  description     String?  @db.Text
+
+  // 圖片
+  images          PropertyImage[]
+
+  // 上下架
+  status          String   @default("active") // active / inactive / pending
+  featured        Boolean  @default(false)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([region])
+  @@index([typeMid])
+  @@index([status])
+}
+
+// 物件圖片
+model PropertyImage {
+  id         Int      @id @default(autoincrement())
+  propertyId Int
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  url        String   // /uploads/xxx.webp
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([propertyId])
+}
+
+// 首頁 Hero 輪播圖（最多 3 張，由後台管理）
+model HeroSlide {
+  id         Int      @id @default(autoincrement())
+  imageUrl   String
+  title      String?
+  subtitle   String?
+  ctaText    String?
+  ctaLink    String?
+  order      Int      @default(0)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// Hero 輪播設定
+model HeroSettings {
+  id          Int      @id @default(1)
+  intervalSec Int      @default(5)
+  updatedAt   DateTime @updatedAt
+}
+
+// 站點內容（服務特色 / 人才招募 / 聯絡我們 等可編輯區塊）
+model SiteContent {
+  id        Int      @id @default(autoincrement())
+  section   String   @unique // services / careers / contact / about
+  data      Json
+  updatedAt DateTime @updatedAt
+}
