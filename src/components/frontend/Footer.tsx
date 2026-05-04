@@ -42,7 +42,10 @@ export default function Footer() {
 
         <div className="border-t border-white/10 pt-6 flex flex-wrap justify-between gap-3 text-xs text-white/50">
           <span>© 2026 鼎立房屋有限公司 Dingli Rental Service. All rights reserved. ｜ 統一編號 93790198</span>
-          <span>隱私權政策・服務條款</span>
+          <span className="flex gap-4">
+            <Link href="/privacy" className="hover:text-brand-orange-300">隱私權政策</Link>
+            <Link href="/terms" className="hover:text-brand-orange-300">服務條款</Link>
+          </span>
         </div>
       </div>
     </footer>

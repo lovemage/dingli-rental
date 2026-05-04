@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { loadAiSettings } from '@/lib/ai-extract';
 import { FLOATING_CTA_DEFAULTS, type FloatingCtaContent } from '@/data/floating-cta-defaults';
+import { LEGAL_SUMMARY_FOR_AI } from '@/data/legal-content';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -78,7 +79,12 @@ export async function POST(req: Request) {
       ? properties.map(summarizeProperty).join('\n')
       : '（目前資料庫沒有上架中的物件）';
 
+    // 把 LEGAL_SUMMARY_FOR_AI 中的 ${siteUrl} 模板替換成實際 URL
+    const legalSummary = LEGAL_SUMMARY_FOR_AI.replace(/\$\{siteUrl\}/g, siteUrl);
+
     const systemPrompt = `${settings.customerServiceSystemPrompt}
+
+${legalSummary}
 
 # 目前可租物件清單（共 ${properties.length} 筆，依精選與最新排序）
 ${propertyCatalog}
@@ -88,6 +94,8 @@ ${propertyCatalog}
 - 推薦時請註明 ID、地區、房型、租金，方便用戶辨識
 - 用戶想看完整資訊時，提供物件詳情連結：${siteUrl}/properties/<ID>
 - 用戶有預約看房 / 議價 / 詳細諮詢需求時，引導他們點擊下方「LINE 諮詢」按鈕直接聯繫業務專員（連結：${lineUrl}）
+- 用戶詢問完整服務條款內容請提供 ${siteUrl}/terms
+- 用戶詢問完整隱私權政策內容請提供 ${siteUrl}/privacy
 - 一次最多推薦 3 個物件，避免訊息過長
 - 訊息控制在 5 句話以內，需要時用條列項目
 - 用繁體中文回應

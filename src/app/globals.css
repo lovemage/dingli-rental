@@ -300,3 +300,31 @@ a { color: inherit; }
     animation: none;
   }
 }
+
+/* ===== 法律文件 (terms / privacy) 排版 ===== */
+.legal-prose h2 {
+  @apply text-xl sm:text-2xl font-extrabold text-ink-900 mt-10 mb-3 pb-2 border-b border-line;
+}
+.legal-prose h2:first-child { margin-top: 0; }
+.legal-prose p {
+  @apply text-ink-700 leading-relaxed mb-3 text-sm sm:text-base;
+}
+.legal-prose ul, .legal-prose ol {
+  @apply ml-5 mb-4 space-y-1.5;
+}
+.legal-prose ul { list-style: disc; }
+.legal-prose ol { list-style: decimal; }
+.legal-prose li {
+  @apply text-ink-700 leading-relaxed text-sm sm:text-base pl-1;
+}
+.legal-prose a {
+  @apply text-brand-green-700 underline hover:text-brand-green-900;
+}
+.legal-prose strong { @apply font-bold text-ink-900; }
+.legal-prose code {
+  @apply bg-paper-2 px-1.5 py-0.5 rounded text-xs font-mono;
+}
+.legal-prose .legal-info-card {
+  @apply bg-paper-2 rounded-xl p-5 my-4 not-prose;
+}
+.legal-prose .legal-info-card p { @apply mb-1 text-sm; }
