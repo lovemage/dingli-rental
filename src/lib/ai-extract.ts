@@ -48,6 +48,8 @@ export async function saveAiSettings(patch: Partial<AiSettings>): Promise<AiSett
     model: patch.model ?? current.model,
     systemPrompt: patch.systemPrompt ?? current.systemPrompt,
     userPromptTemplate: patch.userPromptTemplate ?? current.userPromptTemplate,
+    customerServiceModel: patch.customerServiceModel ?? current.customerServiceModel,
+    customerServiceSystemPrompt: patch.customerServiceSystemPrompt ?? current.customerServiceSystemPrompt,
     openrouterApiKey:
       patch.openrouterApiKey && patch.openrouterApiKey.trim()
         ? patch.openrouterApiKey.trim()

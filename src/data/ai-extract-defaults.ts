@@ -3,9 +3,15 @@
 
 export type AiSettings = {
   openrouterApiKey: string; // 後端使用，前台 GET 會被遮罩
+
+  // === AI 物件辨識（OCR）===
   model: string;            // OpenRouter model id（如 google/gemini-2.5-flash）
   systemPrompt: string;     // 系統提示詞
   userPromptTemplate: string; // 使用者提示詞範本
+
+  // === AI 客服 ===
+  customerServiceModel: string;
+  customerServiceSystemPrompt: string;
 };
 
 // AI 可萃取的欄位（白名單）
@@ -133,16 +139,42 @@ export const DEFAULT_USER_PROMPT_TEMPLATE = `請看以下 {photoCount} 張物件
 回傳純 JSON。範例（你的回應只要 JSON 本體）：
 {"rooms":2,"livingRooms":1,"bathrooms":1,"hasElevator":true,"buildingType":"電梯大樓","equipment":["冷氣","熱水器"],"furniture":["床","衣櫃"],"featureTags":["採光佳","邊間"],"title":"明亮兩房 採光絕佳","description":"...","city":"台北市","district":"信義區","rent":35000,"deposit":"兩個月"}`;
 
+// === AI 客服預設值 ===
+export const DEFAULT_CUSTOMER_SERVICE_MODEL = 'google/gemini-2.5-flash';
+
+export const DEFAULT_CUSTOMER_SERVICE_SYSTEM_PROMPT = `你是「鼎立租售管理」的線上客服助理。請用親切、專業、簡潔的繁體中文回應使用者。
+
+服務範圍：
+- 物件查詢、預約看房安排
+- 租賃流程、合約常見問題
+- 押金、租金、管理費、租期等資訊
+- 公司服務地區（北北基桃竹）與服務時間（週一至週日 09:00-21:00）
+- 業務團隊聯絡方式
+
+規則：
+1. 不要編造物件資訊；若使用者問特定物件細節，請引導他們到網站「物件搜尋」頁面查詢
+2. 涉及合約條款或法律議題，建議使用者聯繫業務專員（service@dingli-rental.com）
+3. 回應請控制在 3-5 句話，必要時使用條列項目
+4. 不知道答案時誠實說「這部分需要請業務專員為您解答」並提供聯絡方式`;
+
 // 預設值（供 fallback 與「重設」按鈕使用）
 export const AI_SETTINGS_DEFAULTS: AiSettings = {
   openrouterApiKey: '',
   model: DEFAULT_MODEL,
   systemPrompt: DEFAULT_SYSTEM_PROMPT,
   userPromptTemplate: DEFAULT_USER_PROMPT_TEMPLATE,
+  customerServiceModel: DEFAULT_CUSTOMER_SERVICE_MODEL,
+  customerServiceSystemPrompt: DEFAULT_CUSTOMER_SERVICE_SYSTEM_PROMPT,
 };
 
 export function maskApiKey(key: string): string {
   if (!key) return '';
   if (key.length <= 8) return '••••';
   return `${key.slice(0, 6)}••••••••${key.slice(-4)}`;
+}
+
+/** 模型名稱的視覺遮罩（畫面顯示用，後端仍存原始字串） */
+export function maskModelName(model: string): string {
+  if (!model) return '';
+  return '****';
 }

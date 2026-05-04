@@ -6,6 +6,9 @@ import {
   DEFAULT_MODEL,
   DEFAULT_SYSTEM_PROMPT,
   DEFAULT_USER_PROMPT_TEMPLATE,
+  DEFAULT_CUSTOMER_SERVICE_MODEL,
+  DEFAULT_CUSTOMER_SERVICE_SYSTEM_PROMPT,
+  maskModelName,
 } from '@/data/ai-extract-defaults';
 
 type ModelInfo = {
@@ -20,29 +23,41 @@ type ModelInfo = {
 // 切換模型需輸入此密碼，避免不慎更動造成費用異常或品質下降
 const MODEL_CHANGE_PASSWORD = '1234';
 
+type TabKey = 'ocr' | 'cs';
+
 export default function AiSettingsForm() {
-  const [model, setModel] = useState(DEFAULT_MODEL);
-  const [systemPrompt, setSystemPrompt] = useState(AI_SETTINGS_DEFAULTS.systemPrompt);
-  const [userPromptTemplate, setUserPromptTemplate] = useState(AI_SETTINGS_DEFAULTS.userPromptTemplate);
+  // === API Key (shared) ===
   const [apiKey, setApiKey] = useState('');
   const [apiKeyMasked, setApiKeyMasked] = useState('');
   const [apiKeyConfigured, setApiKeyConfigured] = useState(false);
   const [showKey, setShowKey] = useState(false);
 
+  // === OCR ===
+  const [model, setModel] = useState(DEFAULT_MODEL);
+  const [systemPrompt, setSystemPrompt] = useState(AI_SETTINGS_DEFAULTS.systemPrompt);
+  const [userPromptTemplate, setUserPromptTemplate] = useState(AI_SETTINGS_DEFAULTS.userPromptTemplate);
+  const [ocrModelOpen, setOcrModelOpen] = useState(false);
+  const [sysPromptOpen, setSysPromptOpen] = useState(false);
+  const [userPromptOpen, setUserPromptOpen] = useState(false);
+
+  // === Customer Service ===
+  const [csModel, setCsModel] = useState(DEFAULT_CUSTOMER_SERVICE_MODEL);
+  const [csSystemPrompt, setCsSystemPrompt] = useState(AI_SETTINGS_DEFAULTS.customerServiceSystemPrompt);
+  const [csModelOpen, setCsModelOpen] = useState(false);
+  const [csSysPromptOpen, setCsSysPromptOpen] = useState(false);
+
+  // === Shared model picker state ===
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [modelSearch, setModelSearch] = useState('');
   const [loadingModels, setLoadingModels] = useState(false);
   const [modelsError, setModelsError] = useState('');
   const [modelsHint, setModelsHint] = useState('');
 
+  // === Misc ===
+  const [activeTab, setActiveTab] = useState<TabKey>('ocr');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
-
-  // 收合狀態（這些區塊不常動，預設關閉以減少視覺噪音）
-  const [modelOpen, setModelOpen] = useState(false);
-  const [sysPromptOpen, setSysPromptOpen] = useState(false);
-  const [userPromptOpen, setUserPromptOpen] = useState(false);
 
   // 初次載入：拿設定 + 若已有 key 自動拉模型
   useEffect(() => {
@@ -54,10 +69,11 @@ export default function AiSettingsForm() {
           if (json.model) setModel(json.model);
           if (json.systemPrompt) setSystemPrompt(json.systemPrompt);
           if (json.userPromptTemplate) setUserPromptTemplate(json.userPromptTemplate);
+          if (json.customerServiceModel) setCsModel(json.customerServiceModel);
+          if (json.customerServiceSystemPrompt) setCsSystemPrompt(json.customerServiceSystemPrompt);
           setApiKeyMasked(json.apiKeyMasked || '');
           setApiKeyConfigured(Boolean(json.apiKeyConfigured));
           if (json.apiKeyConfigured) {
-            // 已有 key → 自動載入模型清單
             void loadModels();
           }
         }
@@ -100,11 +116,13 @@ export default function AiSettingsForm() {
           model,
           systemPrompt,
           userPromptTemplate,
+          customerServiceModel: csModel,
+          customerServiceSystemPrompt: csSystemPrompt,
         }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error || '儲存失敗');
-      setApiKey(''); // 清空輸入避免後續誤覆蓋
+      setApiKey('');
       setApiKeyMasked(json.apiKeyMasked || '');
       setApiKeyConfigured(Boolean(json.apiKeyConfigured));
       setMsg('已儲存 ✓');
@@ -116,15 +134,18 @@ export default function AiSettingsForm() {
     }
   }
 
-  function selectModel(newId: string) {
-    if (newId === model) return;
+  /** 換任一模型都要過密碼 */
+  function selectWithPassword(target: 'ocr' | 'cs', newId: string) {
+    const current = target === 'ocr' ? model : csModel;
+    if (newId === current) return;
     const pwd = window.prompt('更換 AI 模型需要密碼：');
-    if (pwd === null) return; // 取消
+    if (pwd === null) return;
     if (pwd !== MODEL_CHANGE_PASSWORD) {
       alert('密碼錯誤，模型未更換');
       return;
     }
-    setModel(newId);
+    if (target === 'ocr') setModel(newId);
+    else setCsModel(newId);
   }
 
   function resetSystemPrompt() {
@@ -132,6 +153,9 @@ export default function AiSettingsForm() {
   }
   function resetUserPrompt() {
     if (confirm('確定要將「使用者提示詞」重設為預設值？')) setUserPromptTemplate(DEFAULT_USER_PROMPT_TEMPLATE);
+  }
+  function resetCsSystemPrompt() {
+    if (confirm('確定要將「客服系統提示詞」重設為預設值？')) setCsSystemPrompt(DEFAULT_CUSTOMER_SERVICE_SYSTEM_PROMPT);
   }
 
   const filteredModels = useMemo(() => {
@@ -142,17 +166,131 @@ export default function AiSettingsForm() {
     );
   }, [models, modelSearch]);
 
+  // ===== 模型卡片渲染（兩個 tab 共用） =====
+  function renderModelPicker(opts: {
+    title: string;
+    currentModel: string;
+    target: 'ocr' | 'cs';
+    isOpen: boolean;
+    onToggle: () => void;
+  }) {
+    const { title, currentModel, target, isOpen, onToggle } = opts;
+    return (
+      <div className="admin-card">
+        <button
+          type="button"
+          onClick={onToggle}
+          className="w-full flex items-center justify-between text-left"
+          aria-expanded={isOpen}
+        >
+          <div className="min-w-0">
+            <h2 className="font-bold text-lg">{title}</h2>
+            <p className="text-xs text-ink-500 mt-0.5 truncate">
+              目前選用：<code className="bg-paper-2 px-1.5 py-0.5 rounded font-mono text-xs">{maskModelName(currentModel)}</code>
+            </p>
+          </div>
+          <span
+            className={`text-ink-500 text-base flex-shrink-0 ml-3 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+            aria-hidden
+          >
+            ▼
+          </span>
+        </button>
+
+        {isOpen && (
+          <>
+            <div className="flex justify-end mt-4 pt-4 border-t border-line mb-3">
+              <button type="button" onClick={() => loadModels(false)} disabled={loadingModels}
+                className="btn btn-secondary text-xs whitespace-nowrap disabled:opacity-50">
+                {loadingModels ? '載入中...' : '↻ 重新載入'}
+              </button>
+            </div>
+
+            <div className="relative mb-3">
+              <input
+                type="text"
+                className="input-base pl-9"
+                value={modelSearch}
+                onChange={(e) => setModelSearch(e.target.value)}
+                placeholder="搜尋模型（例：claude / gemini / gpt / vision）"
+              />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-300 text-base pointer-events-none">🔍</span>
+              {modelSearch && (
+                <button type="button" onClick={() => setModelSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-ink-500 hover:text-ink-900 px-2 py-1">✕</button>
+              )}
+            </div>
+
+            {modelsError && <p className="text-sm text-red-600 mb-2">{modelsError}</p>}
+            {modelsHint && <p className="text-xs text-ink-500 mb-2">{modelsHint}</p>}
+
+            {models.length === 0 && !loadingModels && (
+              <div className="bg-paper-2 rounded-lg p-6 text-center text-sm text-ink-500">
+                尚未載入模型清單。
+                <button type="button" onClick={() => loadModels(false)} className="text-brand-green-700 underline">點此載入</button>
+              </div>
+            )}
+
+            {models.length > 0 && (
+              <div className="border border-line rounded-lg max-h-[420px] overflow-y-auto divide-y divide-line">
+                {filteredModels.length === 0 ? (
+                  <p className="p-4 text-sm text-ink-500 text-center">沒有符合條件的模型</p>
+                ) : (
+                  filteredModels.map((m) => {
+                    const active = m.id === currentModel;
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => selectWithPassword(target, m.id)}
+                        className={`w-full text-left px-4 py-3 transition flex items-center justify-between gap-3 ${active ? 'bg-brand-green-50' : 'hover:bg-paper-2'}`}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`font-mono text-sm ${active ? 'text-brand-green-900 font-bold' : 'text-ink-900'}`}>
+                              {m.id}
+                            </span>
+                            {active && (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-brand-green-700 text-white">
+                                目前選用
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-ink-500 mt-0.5">
+                            <span>{m.name}</span>
+                            {m.contextLength > 0 && <span>· context: {(m.contextLength / 1000).toFixed(0)}K</span>}
+                            {m.pricePromptPerM > 0 && <span>· in ${m.pricePromptPerM.toFixed(2)}/M</span>}
+                            {m.priceCompletionPerM > 0 && <span>· out ${m.priceCompletionPerM.toFixed(2)}/M</span>}
+                          </div>
+                        </div>
+                        {active && <span className="text-brand-green-700 font-bold">✓</span>}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            )}
+
+            <p className="text-xs text-ink-500 mt-2">
+              僅列出支援影像輸入的模型。價格為每百萬 token 的美金費用，僅供參考。
+            </p>
+          </>
+        )}
+      </div>
+    );
+  }
+
   if (loading) return <p className="text-ink-500">載入中...</p>;
 
   return (
     <div className="space-y-5">
-      {/* === API Key === */}
+      {/* === API Key (shared) === */}
       <div className="admin-card">
         <div className="flex items-center justify-between mb-4 pb-3 border-b border-line">
           <div>
             <h2 className="font-bold text-lg">API Key</h2>
             <p className="text-xs text-ink-500 mt-0.5">
-              AI 拍照辨識使用的 API Key。儲存後僅後端讀取，不會回傳到前台。
+              「物件辨識」與「客服」共用此 Key。儲存後僅後端讀取，不會回傳到前台。
             </p>
           </div>
           <span className={`text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap ${apiKeyConfigured ? 'bg-brand-green-50 text-brand-green-700' : 'bg-red-50 text-red-700'}`}>
@@ -180,201 +318,138 @@ export default function AiSettingsForm() {
         </p>
       </div>
 
-      {/* === Model picker === */}
-      <div className="admin-card">
-        <button
-          type="button"
-          onClick={() => setModelOpen((s) => !s)}
-          className="w-full flex items-center justify-between text-left"
-          aria-expanded={modelOpen}
-        >
-          <div className="min-w-0">
-            <h2 className="font-bold text-lg">AI 模型</h2>
-            <p className="text-xs text-ink-500 mt-0.5 truncate">
-              目前選用：<code className="bg-paper-2 px-1.5 py-0.5 rounded font-mono text-xs">{model}</code>
-            </p>
-          </div>
-          <span
-            className={`text-ink-500 text-base flex-shrink-0 ml-3 transition-transform ${modelOpen ? 'rotate-180' : ''}`}
-            aria-hidden
-          >
-            ▼
-          </span>
-        </button>
+      {/* === Tabs === */}
+      <div className="bg-white border border-line rounded-xl p-1 flex gap-1">
+        <TabButton active={activeTab === 'ocr'} onClick={() => setActiveTab('ocr')}>
+          AI 物件辨識
+        </TabButton>
+        <TabButton active={activeTab === 'cs'} onClick={() => setActiveTab('cs')}>
+          AI 客服
+        </TabButton>
+      </div>
 
-        {modelOpen && (
+      {/* === Tab: OCR === */}
+      {activeTab === 'ocr' && (
         <>
-        <div className="flex justify-end mt-4 pt-4 border-t border-line mb-3">
-          <button type="button" onClick={() => loadModels(false)} disabled={loadingModels}
-            className="btn btn-secondary text-xs whitespace-nowrap disabled:opacity-50">
-            {loadingModels ? '載入中...' : '↻ 重新載入'}
-          </button>
-        </div>
+          {renderModelPicker({
+            title: 'AI 模型（物件辨識）',
+            currentModel: model,
+            target: 'ocr',
+            isOpen: ocrModelOpen,
+            onToggle: () => setOcrModelOpen((s) => !s),
+          })}
 
-        {/* 搜尋 */}
-        <div className="relative mb-3">
-          <input
-            type="text"
-            className="input-base pl-9"
-            value={modelSearch}
-            onChange={(e) => setModelSearch(e.target.value)}
-            placeholder="搜尋模型（例：claude / gemini / gpt / vision）"
-          />
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-300 text-base pointer-events-none">🔍</span>
-          {modelSearch && (
-            <button type="button" onClick={() => setModelSearch('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-ink-500 hover:text-ink-900 px-2 py-1">✕</button>
-          )}
-        </div>
-
-        {modelsError && (
-          <p className="text-sm text-red-600 mb-2">{modelsError}</p>
-        )}
-        {modelsHint && (
-          <p className="text-xs text-ink-500 mb-2">{modelsHint}</p>
-        )}
-
-        {models.length === 0 && !loadingModels && (
-          <div className="bg-paper-2 rounded-lg p-6 text-center text-sm text-ink-500">
-            尚未載入模型清單。<button type="button" onClick={() => loadModels(false)} className="text-brand-green-700 underline">點此載入</button>
-          </div>
-        )}
-
-        {models.length > 0 && (
-          <div className="border border-line rounded-lg max-h-[420px] overflow-y-auto divide-y divide-line">
-            {filteredModels.length === 0 ? (
-              <p className="p-4 text-sm text-ink-500 text-center">沒有符合條件的模型</p>
-            ) : (
-              filteredModels.map((m) => {
-                const active = m.id === model;
-                return (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => selectModel(m.id)}
-                    className={`w-full text-left px-4 py-3 transition flex items-center justify-between gap-3 ${active ? 'bg-brand-green-50' : 'hover:bg-paper-2'}`}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`font-mono text-sm ${active ? 'text-brand-green-900 font-bold' : 'text-ink-900'}`}>
-                          {m.id}
-                        </span>
-                        {active && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-brand-green-700 text-white">
-                            目前選用
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-ink-500 mt-0.5">
-                        <span>{m.name}</span>
-                        {m.contextLength > 0 && (
-                          <span>· context: {(m.contextLength / 1000).toFixed(0)}K</span>
-                        )}
-                        {m.pricePromptPerM > 0 && (
-                          <span>· in ${m.pricePromptPerM.toFixed(2)}/M</span>
-                        )}
-                        {m.priceCompletionPerM > 0 && (
-                          <span>· out ${m.priceCompletionPerM.toFixed(2)}/M</span>
-                        )}
-                      </div>
-                    </div>
-                    {active && <span className="text-brand-green-700 font-bold">✓</span>}
+          {/* System prompt */}
+          <div className="admin-card">
+            <button
+              type="button"
+              onClick={() => setSysPromptOpen((s) => !s)}
+              className="w-full flex items-center justify-between text-left"
+              aria-expanded={sysPromptOpen}
+            >
+              <div className="min-w-0">
+                <h2 className="font-bold text-lg">系統提示詞 (System Prompt)</h2>
+                <p className="text-xs text-ink-500 mt-0.5">定義 AI 的角色與輸出規則。每次辨識照片時都會帶入。</p>
+              </div>
+              <span className={`text-ink-500 text-base flex-shrink-0 ml-3 transition-transform ${sysPromptOpen ? 'rotate-180' : ''}`} aria-hidden>▼</span>
+            </button>
+            {sysPromptOpen && (
+              <div className="mt-4 pt-4 border-t border-line">
+                <div className="flex justify-end mb-2">
+                  <button type="button" onClick={resetSystemPrompt} className="text-xs text-ink-500 hover:text-brand-orange-700">
+                    重設為預設
                   </button>
-                );
-              })
+                </div>
+                <textarea
+                  className="input-base font-mono text-xs leading-relaxed min-h-[260px] resize-y"
+                  value={systemPrompt}
+                  onChange={(e) => setSystemPrompt(e.target.value)}
+                />
+              </div>
             )}
           </div>
-        )}
 
-        <p className="text-xs text-ink-500 mt-2">
-          僅列出支援影像輸入的模型。價格為每百萬 token 的美金費用，僅供參考。
-        </p>
+          {/* User prompt template */}
+          <div className="admin-card">
+            <button
+              type="button"
+              onClick={() => setUserPromptOpen((s) => !s)}
+              className="w-full flex items-center justify-between text-left"
+              aria-expanded={userPromptOpen}
+            >
+              <div className="min-w-0">
+                <h2 className="font-bold text-lg">使用者提示詞範本 (User Prompt Template)</h2>
+                <p className="text-xs text-ink-500 mt-0.5">定義每次辨識時送進 AI 的請求內容（含變數）。</p>
+              </div>
+              <span className={`text-ink-500 text-base flex-shrink-0 ml-3 transition-transform ${userPromptOpen ? 'rotate-180' : ''}`} aria-hidden>▼</span>
+            </button>
+            {userPromptOpen && (
+              <div className="mt-4 pt-4 border-t border-line">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <p className="text-xs text-ink-500">
+                    支援變數：<code className="bg-paper-2 px-1 rounded">{'{photoCount}'}</code>、
+                    <code className="bg-paper-2 px-1 rounded ml-1">{'{equipment}'}</code>、
+                    <code className="bg-paper-2 px-1 rounded ml-1">{'{furniture}'}</code>、
+                    <code className="bg-paper-2 px-1 rounded ml-1">{'{buildingTypes}'}</code>、
+                    <code className="bg-paper-2 px-1 rounded ml-1">{'{propertyTypes}'}</code>
+                  </p>
+                  <button type="button" onClick={resetUserPrompt} className="text-xs text-ink-500 hover:text-brand-orange-700 whitespace-nowrap">
+                    重設為預設
+                  </button>
+                </div>
+                <textarea
+                  className="input-base font-mono text-xs leading-relaxed min-h-[260px] resize-y"
+                  value={userPromptTemplate}
+                  onChange={(e) => setUserPromptTemplate(e.target.value)}
+                />
+              </div>
+            )}
+          </div>
         </>
-        )}
-      </div>
+      )}
 
-      {/* === System prompt === */}
-      <div className="admin-card">
-        <button
-          type="button"
-          onClick={() => setSysPromptOpen((s) => !s)}
-          className="w-full flex items-center justify-between text-left"
-          aria-expanded={sysPromptOpen}
-        >
-          <div className="min-w-0">
-            <h2 className="font-bold text-lg">系統提示詞 (System Prompt)</h2>
-            <p className="text-xs text-ink-500 mt-0.5">
-              定義 AI 的角色與輸出規則。每次辨識照片時都會帶入。
-            </p>
-          </div>
-          <span
-            className={`text-ink-500 text-base flex-shrink-0 ml-3 transition-transform ${sysPromptOpen ? 'rotate-180' : ''}`}
-            aria-hidden
-          >
-            ▼
-          </span>
-        </button>
+      {/* === Tab: Customer Service === */}
+      {activeTab === 'cs' && (
+        <>
+          {renderModelPicker({
+            title: 'AI 模型（客服）',
+            currentModel: csModel,
+            target: 'cs',
+            isOpen: csModelOpen,
+            onToggle: () => setCsModelOpen((s) => !s),
+          })}
 
-        {sysPromptOpen && (
-          <div className="mt-4 pt-4 border-t border-line">
-            <div className="flex justify-end mb-2">
-              <button type="button" onClick={resetSystemPrompt} className="text-xs text-ink-500 hover:text-brand-orange-700">
-                重設為預設
-              </button>
-            </div>
-            <textarea
-              className="input-base font-mono text-xs leading-relaxed min-h-[260px] resize-y"
-              value={systemPrompt}
-              onChange={(e) => setSystemPrompt(e.target.value)}
-            />
+          {/* CS system prompt */}
+          <div className="admin-card">
+            <button
+              type="button"
+              onClick={() => setCsSysPromptOpen((s) => !s)}
+              className="w-full flex items-center justify-between text-left"
+              aria-expanded={csSysPromptOpen}
+            >
+              <div className="min-w-0">
+                <h2 className="font-bold text-lg">客服系統提示詞 (System Prompt)</h2>
+                <p className="text-xs text-ink-500 mt-0.5">定義客服 AI 的角色、語氣與服務範圍。</p>
+              </div>
+              <span className={`text-ink-500 text-base flex-shrink-0 ml-3 transition-transform ${csSysPromptOpen ? 'rotate-180' : ''}`} aria-hidden>▼</span>
+            </button>
+            {csSysPromptOpen && (
+              <div className="mt-4 pt-4 border-t border-line">
+                <div className="flex justify-end mb-2">
+                  <button type="button" onClick={resetCsSystemPrompt} className="text-xs text-ink-500 hover:text-brand-orange-700">
+                    重設為預設
+                  </button>
+                </div>
+                <textarea
+                  className="input-base font-mono text-xs leading-relaxed min-h-[260px] resize-y"
+                  value={csSystemPrompt}
+                  onChange={(e) => setCsSystemPrompt(e.target.value)}
+                />
+              </div>
+            )}
           </div>
-        )}
-      </div>
-
-      {/* === User prompt === */}
-      <div className="admin-card">
-        <button
-          type="button"
-          onClick={() => setUserPromptOpen((s) => !s)}
-          className="w-full flex items-center justify-between text-left"
-          aria-expanded={userPromptOpen}
-        >
-          <div className="min-w-0">
-            <h2 className="font-bold text-lg">使用者提示詞範本 (User Prompt Template)</h2>
-            <p className="text-xs text-ink-500 mt-0.5">
-              定義每次辨識時送進 AI 的請求內容（含變數）。
-            </p>
-          </div>
-          <span
-            className={`text-ink-500 text-base flex-shrink-0 ml-3 transition-transform ${userPromptOpen ? 'rotate-180' : ''}`}
-            aria-hidden
-          >
-            ▼
-          </span>
-        </button>
-
-        {userPromptOpen && (
-          <div className="mt-4 pt-4 border-t border-line">
-            <div className="flex items-start justify-between gap-3 mb-2">
-              <p className="text-xs text-ink-500">
-                支援變數：<code className="bg-paper-2 px-1 rounded">{'{photoCount}'}</code>、
-                <code className="bg-paper-2 px-1 rounded ml-1">{'{equipment}'}</code>、
-                <code className="bg-paper-2 px-1 rounded ml-1">{'{furniture}'}</code>、
-                <code className="bg-paper-2 px-1 rounded ml-1">{'{buildingTypes}'}</code>、
-                <code className="bg-paper-2 px-1 rounded ml-1">{'{propertyTypes}'}</code>
-              </p>
-              <button type="button" onClick={resetUserPrompt} className="text-xs text-ink-500 hover:text-brand-orange-700 whitespace-nowrap">
-                重設為預設
-              </button>
-            </div>
-            <textarea
-              className="input-base font-mono text-xs leading-relaxed min-h-[260px] resize-y"
-              value={userPromptTemplate}
-              onChange={(e) => setUserPromptTemplate(e.target.value)}
-            />
-          </div>
-        )}
-      </div>
+        </>
+      )}
 
       {/* === 底部固定送出列 === */}
       <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-white border-t border-line px-4 py-3 z-20">
@@ -387,5 +462,29 @@ export default function AiSettingsForm() {
       </div>
       <div className="h-16" />
     </div>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-bold transition ${
+        active
+          ? 'bg-brand-green-700 text-white shadow-sm'
+          : 'text-ink-700 hover:bg-paper-2'
+      }`}
+    >
+      {children}
+    </button>
   );
 }
