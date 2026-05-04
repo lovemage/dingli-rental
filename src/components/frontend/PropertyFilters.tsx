@@ -10,7 +10,7 @@ import {
   EQUIPMENT_OPTIONS,
   FEATURE_TAGS,
 } from '@/data/taiwan-addresses';
-import type { Taxonomies } from '@/lib/taxonomies';
+import type { Taxonomies } from '@/lib/taxonomies-shared';
 
 const RENT_PRESETS: { label: string; min?: string; max?: string }[] = [
   { label: '不限' },

@@ -5,7 +5,7 @@ import crypto from 'crypto';
 
 const UPLOAD_DIR =
   process.env.UPLOAD_DIR ||
-  path.join(/* turbopackIgnore: true */ process.cwd(), 'public', 'uploads');
+  path.resolve('public', 'uploads');
 const PUBLIC_PREFIX = '/uploads';
 
 async function ensureDir(dir: string) {

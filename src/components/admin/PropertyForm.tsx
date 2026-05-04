@@ -19,7 +19,7 @@ import {
   FEATURE_TAGS,
   CUSTOM_TAG_SUGGESTIONS,
 } from '@/data/taiwan-addresses';
-import type { Taxonomies } from '@/lib/taxonomies';
+import type { Taxonomies } from '@/lib/taxonomies-shared';
 
 export type PropertyFormValue = {
   region: string;

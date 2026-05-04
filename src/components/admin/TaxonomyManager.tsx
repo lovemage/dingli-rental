@@ -6,7 +6,7 @@ import {
   TAXONOMY_LABELS,
   type TaxonomyKey,
   type Taxonomies,
-} from '@/lib/taxonomies';
+} from '@/lib/taxonomies-shared';
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
