@@ -17,7 +17,7 @@
 ### 後台 `/admin`
 - 預設帳密：`admin / dingli123`（首次登入後請至「帳號設定」修改）
 - 物件 CRUD（依參考圖片完整還原欄位：地址下拉、樓層、格局、坪數、設備、家具、租金、押金、特色標籤等）
-- 圖片上傳一律自動轉 WebP，並存入 Railway Object Storage（本機開發與部署皆同一條路徑）
+- 圖片上傳一律自動轉 WebP，並存入 Cloudinary CDN（本機開發與部署皆同一條路徑）
 - 首頁輪播圖管理（拖曳排序、調整秒數）
 - 修改密碼
 
@@ -46,23 +46,19 @@ npm run dev
 ## 部署到 Railway
 
 1. 建立 PostgreSQL 服務 → 取得 `DATABASE_URL`
-2. 建立 **Object Storage** 服務（S3-相容）→ 取得 endpoint / bucket / access key / secret
+2. 至 [cloudinary.com](https://cloudinary.com) 建立 account（免費方案 25GB 儲存 / 25GB 流量）→ Dashboard 取得 **API Environment variable**
 3. 建立 Web 服務，連接此 GitHub Repo（[github.com/lovemage/dingli-rental](https://github.com/lovemage/dingli-rental)）
 4. 環境變數設定：
    ```
    DATABASE_URL=<Railway 注入>
    JWT_SECRET=<請改為長隨機字串>
    NEXT_PUBLIC_SITE_URL=https://dingli-rental.com
-   S3_ENDPOINT=https://t3.storageapi.dev
-   S3_REGION=auto
-   S3_BUCKET_NAME=arranged-pocket-inebj1wqp
-   S3_ACCESS_KEY_ID=<Railway 提供>
-   S3_SECRET_ACCESS_KEY=<Railway 提供>
+   CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name>
+   OPENROUTER_API_KEY=<選填；後台 AI 設定可覆蓋>
    ```
-5. 確認 bucket 設為 **公開讀取**（PutObject 不再帶 ACL，公開性需在 bucket policy 設定）
-6. 自訂網域指向 `dingli-rental.com`
+5. 自訂網域指向 `dingli-rental.com`
 
-> 不再需要掛載 Volume；舊有 `UPLOAD_DIR` 環境變數已停用。
+> Cloudinary 上傳的圖片預設公開可讀，無需額外設定 bucket policy 或 ACL。
 
 部署指令會自動：`npm install` → `prisma generate` → `next build`，啟動則執行 `next start`。
 
@@ -104,7 +100,7 @@ src/
 ├── lib/
 │   ├── prisma.ts
 │   ├── auth.ts                # JWT cookie 認證
-│   └── storage.ts             # WebP 轉檔 + Railway Object Storage 上傳
+│   └── storage.ts             # WebP 轉檔 + Cloudinary 上傳
 └── data/
     └── taiwan-addresses.ts    # 北北基桃竹 縣市/鄉鎮
 ```

@@ -1,39 +1,25 @@
 import sharp from 'sharp';
 import crypto from 'crypto';
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { v2 as cloudinary, type UploadApiResponse } from 'cloudinary';
 
-const S3_ENDPOINT = (process.env.S3_ENDPOINT || '').replace(/\/+$/, '');
-const S3_REGION = process.env.S3_REGION || 'auto';
-const S3_BUCKET = process.env.S3_BUCKET_NAME || '';
-const S3_ACCESS_KEY = process.env.S3_ACCESS_KEY_ID || '';
-const S3_SECRET_KEY = process.env.S3_SECRET_ACCESS_KEY || '';
+// Cloudinary SDK 自動讀取 CLOUDINARY_URL 環境變數
+// 格式：CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name>
 
-let _client: S3Client | null = null;
-
-function requireConfig(): { client: S3Client; bucket: string; baseUrl: string } {
-  if (!S3_ENDPOINT || !S3_BUCKET || !S3_ACCESS_KEY || !S3_SECRET_KEY) {
-    const missing = [
-      !S3_ENDPOINT && 'S3_ENDPOINT',
-      !S3_BUCKET && 'S3_BUCKET_NAME',
-      !S3_ACCESS_KEY && 'S3_ACCESS_KEY_ID',
-      !S3_SECRET_KEY && 'S3_SECRET_ACCESS_KEY',
-    ].filter(Boolean).join(', ');
-    throw new Error(`S3 storage misconfigured: missing env vars (${missing})`);
+let _configured = false;
+function ensureConfigured(): void {
+  if (_configured) return;
+  if (!process.env.CLOUDINARY_URL) {
+    throw new Error('Cloudinary 未設定：缺少 CLOUDINARY_URL 環境變數');
   }
-  if (!_client) {
-    _client = new S3Client({
-      endpoint: S3_ENDPOINT,
-      region: S3_REGION,
-      forcePathStyle: true,
-      credentials: { accessKeyId: S3_ACCESS_KEY, secretAccessKey: S3_SECRET_KEY },
-    });
-  }
-  return { client: _client, bucket: S3_BUCKET, baseUrl: `${S3_ENDPOINT}/${S3_BUCKET}` };
+  // SDK 會自動從 CLOUDINARY_URL 解析；這裡顯式呼叫以強制載入並啟用 https
+  cloudinary.config({ secure: true });
+  _configured = true;
 }
 
 /**
- * 上傳並轉換為 WebP，回傳 Railway Object Storage 的公開 URL。
- * 物件 key 格式：<subdir>/<timestamp>-<rand>.webp（例如 properties/xxx.webp）
+ * 將圖片轉為 WebP 後上傳到 Cloudinary，回傳公開 URL。
+ * 物件路徑（folder/public_id）採用 <subdir>/<timestamp>-<rand>，
+ * 與舊有 S3 結構一致，方便後續分類管理。
  */
 export async function saveImageAsWebp(
   buffer: Buffer,
@@ -43,9 +29,7 @@ export async function saveImageAsWebp(
   const maxWidth = opts.maxWidth ?? 1920;
   const subdir = (opts.subdir || '').replace(/^\/+|\/+$/g, '');
 
-  const fileName = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}.webp`;
-  const key = subdir ? `${subdir}/${fileName}` : fileName;
-
+  // 先用 sharp 處理（旋轉 / 縮圖 / WebP 轉檔）— 控制品質與檔案大小
   let image = sharp(buffer, { failOn: 'none' }).rotate();
   const meta = await image.metadata();
   if (meta.width && meta.width > maxWidth) {
@@ -53,43 +37,55 @@ export async function saveImageAsWebp(
   }
   const out = await image.webp({ quality, effort: 4 }).toBuffer({ resolveWithObject: true });
 
-  const { client, bucket, baseUrl } = requireConfig();
-  await client.send(
-    new PutObjectCommand({
-      Bucket: bucket,
-      Key: key,
-      Body: out.data,
-      ContentType: 'image/webp',
-      CacheControl: 'public, max-age=31536000, immutable',
-    }),
-  );
+  ensureConfigured();
+
+  const publicId = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}`;
+
+  const result: UploadApiResponse = await new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        public_id: publicId,
+        folder: subdir || undefined,
+        resource_type: 'image',
+        format: 'webp',
+        overwrite: false,
+      },
+      (err, res) => {
+        if (err) return reject(err);
+        if (!res) return reject(new Error('Cloudinary 上傳沒有回傳結果'));
+        resolve(res);
+      },
+    );
+    stream.end(out.data);
+  });
 
   return {
-    url: `${baseUrl}/${key}`,
-    sizeBytes: out.info.size,
-    width: out.info.width,
-    height: out.info.height,
+    url: result.secure_url,
+    sizeBytes: result.bytes,
+    width: result.width,
+    height: result.height,
   };
 }
 
 /**
- * 刪除 Object Storage 上的檔案。
- * - 只處理屬於本 bucket 的 URL（避免誤刪外部資源）
- * - 舊的 /uploads/... 本機路徑會被略過，不視為錯誤
- * - 刪除失敗（含 404）一律不 throw，避免擋住關聯紀錄的刪除流程
+ * 刪除 Cloudinary 上的圖片。
+ * - 只處理 res.cloudinary.com 的 URL（避免誤刪外部 / 舊 S3 / 本機資源）
+ * - 失敗（含 not found）一律不 throw，避免擋住關聯紀錄的刪除流程
  */
 export async function deleteUpload(publicUrl: string): Promise<void> {
   if (!publicUrl) return;
-  if (!S3_ENDPOINT || !S3_BUCKET) return; // 未設定 S3 → 安靜略過
-  const baseUrl = `${S3_ENDPOINT}/${S3_BUCKET}/`;
-  if (!publicUrl.startsWith(baseUrl)) return;
-  const key = publicUrl.slice(baseUrl.length);
-  if (!key) return;
+  if (!process.env.CLOUDINARY_URL) return;
+  if (!/res\.cloudinary\.com/.test(publicUrl)) return; // 舊 S3 / 靜態資源直接略過
+
+  // URL 格式：https://res.cloudinary.com/<cloud>/image/upload/[v<num>/]<public_id>.<ext>
+  const m = publicUrl.match(/\/image\/upload\/(?:v\d+\/)?(.+?)\.[a-z0-9]+(?:\?.*)?$/i);
+  if (!m) return;
+  const publicId = m[1];
 
   try {
-    const { client, bucket } = requireConfig();
-    await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+    ensureConfigured();
+    await cloudinary.uploader.destroy(publicId, { resource_type: 'image', invalidate: true });
   } catch (e: any) {
-    console.error('[storage] delete failed', publicUrl, e?.message);
+    console.error('[storage] cloudinary destroy failed', publicUrl, e?.message);
   }
 }
