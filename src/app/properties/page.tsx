@@ -168,12 +168,26 @@ export default async function PropertiesPage({
     <>
       <Header />
       <main>
-        <section className="bg-gradient-to-b from-paper to-paper-2 pt-12 pb-6">
-          <div className="container-page">
-            <div className="text-center mb-6">
-              <span className="eyebrow"><span className="dot" />PROPERTIES</span>
-              <h1 className="text-3xl sm:text-4xl font-black mt-3 mb-1">物件搜尋</h1>
-              <p className="text-ink-500 text-sm">深耕北北基桃竹，嚴選真實在地物件</p>
+        <section className="bg-white border-b border-line">
+          <div className="container-page py-10 sm:py-14">
+            <div className="grid lg:grid-cols-[1.1fr_1.4fr] gap-8 lg:gap-14 items-center">
+              <div>
+                <span className="eyebrow"><span className="dot" />PROPERTIES</span>
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black mt-3 mb-3 leading-tight">
+                  找一個讓家人<br className="sm:hidden" />安心入住的好物件
+                </h1>
+                <p className="text-ink-700 text-base sm:text-lg leading-relaxed">
+                  深耕北北基桃竹，嚴選真實在地物件，每一筆都由業務親自確認屋況。
+                </p>
+              </div>
+              <div className="rounded-2xl overflow-hidden shadow-sm border border-line">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/images/properties-hero.webp"
+                  alt="家庭一起瀏覽物件"
+                  className="w-full h-auto object-cover aspect-[16/9]"
+                />
+              </div>
             </div>
           </div>
         </section>

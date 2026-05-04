@@ -8,15 +8,33 @@ export default function ServicesPage() {
   return (
     <>
       <Header />
-      <main className="py-16 sm:py-20">
-        <div className="container-page">
-          <div className="text-center mb-14">
-            <span className="eyebrow"><span className="dot" />OUR SERVICES</span>
-            <h1 className="text-3xl sm:text-4xl font-black mt-3 mb-3 leading-tight">不只是找房子，更是找一個家</h1>
-            <p className="text-ink-500 max-w-2xl mx-auto">
-              從第一次帶看到入住後續，鼎立業務團隊以人為本，提供每一位租客最貼心的服務。
-            </p>
+      <main>
+        {/* === Hero === */}
+        <section className="bg-white border-b border-line">
+          <div className="container-page py-12 sm:py-16">
+            <div className="grid lg:grid-cols-[1.1fr_1.4fr] gap-8 lg:gap-14 items-center">
+              <div>
+                <span className="eyebrow"><span className="dot" />OUR SERVICES</span>
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black mt-3 mb-4 leading-tight">
+                  不只是找房子，<br className="sm:hidden" />更是找一個家
+                </h1>
+                <p className="text-ink-700 text-base sm:text-lg leading-relaxed">
+                  從第一次帶看到入住後續，鼎立業務團隊以人為本，提供每一位租客最貼心的服務。
+                </p>
+              </div>
+              <div className="rounded-2xl overflow-hidden shadow-sm border border-line">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/images/services-hero.webp"
+                  alt="鼎立業務交屋給家庭"
+                  className="w-full h-auto object-cover aspect-[16/9]"
+                />
+              </div>
+            </div>
           </div>
+        </section>
+
+        <div className="container-page py-14 sm:py-20">
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
             {[
