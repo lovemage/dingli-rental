@@ -117,7 +117,7 @@ export default function FloatingCtaForm() {
             placeholder="或直接貼上圖片網址"
           />
           <p className="text-xs text-ink-500 mt-2 leading-relaxed">
-            建議 1:1 正方形人像，臉部置中略偏上。系統會自動轉為 WebP。
+            建議 1:1 正方形人像，臉部置中略偏上。
           </p>
         </div>
 

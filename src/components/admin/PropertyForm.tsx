@@ -678,7 +678,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
       </Card>
 
       {/* === 照片 === */}
-      <Card title="照片（最多 20 張，自動轉為 WebP）">
+      <Card title="照片（最多 20 張）">
         <input
           type="file"
           multiple
@@ -701,35 +701,27 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
             ))}
           </div>
         )}
-        <p className="text-xs text-ink-500 mt-2">第一張會作為列表的封面圖。所有檔案會自動轉換為 WebP 並儲存到 Railway 持久化儲存區。</p>
+        <p className="text-xs text-ink-500 mt-2">第一張會作為列表的封面圖。</p>
       </Card>
 
       {/* === 上下架 === */}
       <Card title="上下架設定">
-        <div className="grid sm:grid-cols-3 gap-4">
-          <Field label="上架狀態">
-            <select className="input-base" value={v.status} onChange={(e) => update('status', e.target.value)}>
-              <option value="active">上架中</option>
-              <option value="inactive">下架</option>
-              <option value="pending">審核中</option>
-            </select>
-            <p className="text-xs text-ink-500 mt-1">控制是否公開於前台</p>
-          </Field>
-          <Field label="刊登狀態">
-            <select className="input-base" value={v.listingStatus} onChange={(e) => update('listingStatus', e.target.value)}>
-              {LISTING_STATUS_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-            <p className="text-xs text-ink-500 mt-1">前台卡片左上角 badge 顯示</p>
-          </Field>
-          <Field label="精選">
-            <label className="inline-flex items-center gap-2 text-sm h-[42px]">
-              <input type="checkbox" checked={v.featured} onChange={(e) => update('featured', e.target.checked)} />
-              設為精選物件（在首頁與列表優先顯示）
-            </label>
-          </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <select className="input-base" value={v.status} onChange={(e) => update('status', e.target.value)}>
+            <option value="active">上架中</option>
+            <option value="inactive">下架</option>
+            <option value="pending">審核中</option>
+          </select>
+          <select className="input-base" value={v.listingStatus} onChange={(e) => update('listingStatus', e.target.value)}>
+            {LISTING_STATUS_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
         </div>
+        <label className="inline-flex items-center gap-2 text-sm mt-3">
+          <input type="checkbox" checked={v.featured} onChange={(e) => update('featured', e.target.checked)} />
+          設為精選物件（在首頁與列表優先顯示）
+        </label>
       </Card>
 
       {/* 底部固定送出列 */}

@@ -17,6 +17,9 @@ type ModelInfo = {
   supportsVision: boolean;
 };
 
+// 切換模型需輸入此密碼，避免不慎更動造成費用異常或品質下降
+const MODEL_CHANGE_PASSWORD = '1234';
+
 export default function AiSettingsForm() {
   const [model, setModel] = useState(DEFAULT_MODEL);
   const [systemPrompt, setSystemPrompt] = useState(AI_SETTINGS_DEFAULTS.systemPrompt);
@@ -106,6 +109,17 @@ export default function AiSettingsForm() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function selectModel(newId: string) {
+    if (newId === model) return;
+    const pwd = window.prompt('更換 AI 模型需要密碼：');
+    if (pwd === null) return; // 取消
+    if (pwd !== MODEL_CHANGE_PASSWORD) {
+      alert('密碼錯誤，模型未更換');
+      return;
+    }
+    setModel(newId);
   }
 
   function resetSystemPrompt() {
@@ -216,7 +230,7 @@ export default function AiSettingsForm() {
                   <button
                     key={m.id}
                     type="button"
-                    onClick={() => setModel(m.id)}
+                    onClick={() => selectModel(m.id)}
                     className={`w-full text-left px-4 py-3 transition flex items-center justify-between gap-3 ${active ? 'bg-brand-green-50' : 'hover:bg-paper-2'}`}
                   >
                     <div className="min-w-0 flex-1">

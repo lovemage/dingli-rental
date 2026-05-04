@@ -78,10 +78,6 @@ function LoginInner() {
         <button type="submit" disabled={loading} className="btn btn-primary w-full mt-5">
           {loading ? '登入中...' : '登入'}
         </button>
-
-        <p className="mt-4 text-xs text-ink-500 text-center">
-          首次登入帳密：<code className="bg-paper-2 px-1.5 py-0.5 rounded">admin / dingli123</code>
-        </p>
       </form>
     </main>
   );

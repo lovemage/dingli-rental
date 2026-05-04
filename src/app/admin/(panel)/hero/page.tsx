@@ -9,7 +9,7 @@ export default function HomepageAdminPage() {
       <div>
         <h1 className="text-2xl sm:text-3xl font-black mb-1">首頁管理</h1>
         <p className="text-ink-500 text-sm">
-          管理首頁主視覺、輪播圖、三大入口分類與服務特色。圖片自動轉為 WebP 並儲存。
+          管理首頁主視覺、輪播圖、三大入口分類與服務特色。
         </p>
       </div>
 
