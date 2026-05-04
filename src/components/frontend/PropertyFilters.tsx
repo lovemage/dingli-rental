@@ -264,7 +264,7 @@ export default function PropertyFilters({ total, taxonomies }: FiltersProps) {
 
         <div className="ml-auto">
           <AiChatWidget
-            triggerLabel="鼎力 AI"
+            triggerLabel="鼎立 AI"
             triggerClassName="ai-glow-btn text-sm font-extrabold px-3.5 py-1.5 rounded-full bg-brand-green-700 text-white hover:bg-brand-green-900 transition shadow-sm whitespace-nowrap"
           />
         </div>

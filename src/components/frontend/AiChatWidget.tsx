@@ -14,10 +14,10 @@ type Props = {
 
 const GREETING: Message = {
   role: 'assistant',
-  content: '您好，我是鼎力 AI，協助您找到最適合的物件。\n\n請告訴我您的需求，例如：\n• 想找哪個地區？（台北市、新北市…）\n• 預算範圍？\n• 房型偏好？（套房／兩房／整層住家…）\n• 有特別需求嗎？（寵物、電梯、近捷運…）',
+  content: '您好，我是鼎立 AI，協助您找到最適合的物件。\n\n請告訴我您的需求，例如：\n• 想找哪個地區？（台北市、新北市…）\n• 預算範圍？\n• 房型偏好？（套房／兩房／整層住家…）\n• 有特別需求嗎？（寵物、電梯、近捷運…）',
 };
 
-export default function AiChatWidget({ triggerClassName, triggerLabel = '鼎力 AI' }: Props) {
+export default function AiChatWidget({ triggerClassName, triggerLabel = '鼎立 AI' }: Props) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [messages, setMessages] = useState<Message[]>([GREETING]);
@@ -101,7 +101,7 @@ export default function AiChatWidget({ triggerClassName, triggerLabel = '鼎力 
             <div className="bg-gradient-to-r from-brand-green-700 to-brand-green-900 text-white px-5 py-3.5 flex items-center justify-between flex-shrink-0">
               <div>
                 <p className="text-[11px] opacity-80 tracking-wider">DINGLI · AI ASSISTANT</p>
-                <h3 className="font-extrabold">鼎力 AI</h3>
+                <h3 className="font-extrabold">鼎立 AI</h3>
               </div>
               <button
                 type="button"
@@ -124,7 +124,7 @@ export default function AiChatWidget({ triggerClassName, triggerLabel = '鼎力 
                         : 'bg-white border border-line text-ink-900 rounded-bl-sm shadow-sm'
                     }`}
                   >
-                    {m.content}
+                    {m.role === 'assistant' ? renderRichText(m.content) : m.content}
                   </div>
                 </div>
               ))}
@@ -202,4 +202,92 @@ export default function AiChatWidget({ triggerClassName, triggerLabel = '鼎力 
       {mounted && modal && createPortal(modal, document.body)}
     </>
   );
+}
+
+// ===== AI 訊息富文字渲染：把 URL 與 [text](url) 轉成可點按鈕 =====
+type Token =
+  | { type: 'text'; content: string }
+  | { type: 'link'; text: string; url: string };
+
+function tokenize(text: string): Token[] {
+  const tokens: Token[] = [];
+  // 同時匹配 markdown link [text](url) 與裸 URL
+  const re = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<>"')]+)/g;
+  // 尾隨標點（中英）— 不應算進 URL，要還回 text
+  const trailingPunct = /[.,;:!?。，、；：！？「」)\]]+$/;
+  let lastIdx = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > lastIdx) tokens.push({ type: 'text', content: text.slice(lastIdx, m.index) });
+    if (m[1] && m[2]) {
+      tokens.push({ type: 'link', text: m[1], url: m[2] });
+    } else if (m[3]) {
+      let url = m[3];
+      const tp = url.match(trailingPunct);
+      if (tp) {
+        url = url.slice(0, -tp[0].length);
+        re.lastIndex -= tp[0].length; // 讓尾隨標點回到 text 流
+      }
+      tokens.push({ type: 'link', text: url, url });
+    }
+    lastIdx = re.lastIndex;
+  }
+  if (lastIdx < text.length) tokens.push({ type: 'text', content: text.slice(lastIdx) });
+  return tokens;
+}
+
+function classifyLink(url: string): { kind: 'line' | 'property' | 'other'; label: string } {
+  if (/lin\.ee|line\.me/i.test(url)) return { kind: 'line', label: 'LINE 諮詢' };
+  const propMatch = url.match(/\/properties\/(\d+)/);
+  if (propMatch) return { kind: 'property', label: `查看物件 #${propMatch[1]}` };
+  return { kind: 'other', label: url.replace(/^https?:\/\//, '').replace(/\/$/, '') };
+}
+
+function renderRichText(content: string): React.ReactNode {
+  const tokens = tokenize(content);
+  return tokens.map((t, i) => {
+    if (t.type === 'text') return <span key={i}>{t.content}</span>;
+    const { kind, label } = classifyLink(t.url);
+    const display = t.text === t.url ? label : t.text;
+    if (kind === 'line') {
+      return (
+        <a
+          key={i}
+          href={t.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 mx-0.5 my-1 px-3 py-1.5 rounded-full bg-[#06C755] hover:bg-[#05b34c] text-white text-xs font-bold transition no-underline"
+        >
+          <span className="inline-grid place-items-center w-4 h-4 rounded bg-white text-[#06C755] text-[9px] font-black leading-none">L</span>
+          {display}
+        </a>
+      );
+    }
+    if (kind === 'property') {
+      return (
+        <a
+          key={i}
+          href={t.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 mx-0.5 my-1 px-3 py-1.5 rounded-full bg-brand-orange-50 hover:bg-brand-orange-100 text-brand-orange-700 border border-brand-orange-300 text-xs font-bold transition no-underline"
+        >
+          {display}
+          <span aria-hidden>→</span>
+        </a>
+      );
+    }
+    return (
+      <a
+        key={i}
+        href={t.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1 mx-0.5 my-1 px-2.5 py-1 rounded-full bg-paper-2 hover:bg-brand-green-50 text-brand-green-700 border border-line text-xs font-bold transition no-underline"
+      >
+        {display}
+        <span aria-hidden>↗</span>
+      </a>
+    );
+  });
 }

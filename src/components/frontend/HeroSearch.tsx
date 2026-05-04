@@ -98,7 +98,7 @@ export default function HeroSearch({ propertyTypes }: Props = {}) {
             <MaterialIcon name="search" className="!text-xl" />
           </button>
           <AiChatWidget
-            triggerLabel="鼎力 AI"
+            triggerLabel="鼎立 AI"
             triggerClassName="ai-glow-btn bg-brand-green-700 hover:bg-brand-green-900 text-white rounded-lg h-[42px] px-4 flex-1 inline-flex items-center justify-center font-extrabold text-sm whitespace-nowrap transition shadow-sm"
           />
         </div>
