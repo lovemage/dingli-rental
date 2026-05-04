@@ -11,6 +11,7 @@ import {
   FEATURE_TAGS,
 } from '@/data/taiwan-addresses';
 import type { Taxonomies } from '@/lib/taxonomies-shared';
+import AiChatWidget from '@/components/frontend/AiChatWidget';
 
 const RENT_PRESETS: { label: string; min?: string; max?: string }[] = [
   { label: '不限' },
@@ -260,6 +261,13 @@ export default function PropertyFilters({ total, taxonomies }: FiltersProps) {
             清除（{activeCount}）
           </button>
         )}
+
+        <div className="ml-auto">
+          <AiChatWidget
+            triggerLabel="🤖 AI 客服"
+            triggerClassName="text-sm font-bold px-3.5 py-1.5 rounded-full bg-brand-green-700 text-white hover:bg-brand-green-900 transition shadow-sm whitespace-nowrap"
+          />
+        </div>
       </div>
 
       {/* 第二列：結果數 + 排序 */}

@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import AiChatWidget from '@/components/frontend/AiChatWidget';
 
 const REGION_OPTIONS = ['台北市', '新北市', '基隆市', '桃園市', '新竹市', '新竹縣'];
 const DEFAULT_TYPE_OPTIONS = ['整層住家', '獨立套房', '分租套房', '雅房', '其他'];
@@ -87,9 +88,15 @@ export default function HeroSearch({ propertyTypes }: Props = {}) {
             ))}
           </select>
         </div>
-        <button type="submit" className="btn btn-orange w-full sm:w-auto justify-self-stretch">
-          🔍 搜尋物件
-        </button>
+        <div className="flex gap-2">
+          <button type="submit" className="btn btn-orange flex-1">
+            🔍 搜尋物件
+          </button>
+          <AiChatWidget
+            triggerLabel="🤖 AI 客服"
+            triggerClassName="btn bg-brand-green-700 hover:bg-brand-green-900 text-white whitespace-nowrap"
+          />
+        </div>
       </div>
     </form>
   );
