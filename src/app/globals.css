@@ -325,6 +325,6 @@ a { color: inherit; }
   @apply bg-paper-2 px-1.5 py-0.5 rounded text-xs font-mono;
 }
 .legal-prose .legal-info-card {
-  @apply bg-paper-2 rounded-xl p-5 my-4 not-prose;
+  @apply bg-paper-2 rounded-xl p-5 my-4;
 }
 .legal-prose .legal-info-card p { @apply mb-1 text-sm; }

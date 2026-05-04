@@ -242,6 +242,13 @@ export default function AiSettingsForm() {
 
             {modelsError && <p className="text-sm text-red-600 mb-2">{modelsError}</p>}
             {modelsHint && <p className="text-xs text-ink-500 mb-2">{modelsHint}</p>}
+            {models.length > 0 && (
+              <p className="text-xs font-bold text-brand-green-700 mb-2">
+                {requireVision
+                  ? `本區塊已過濾為 vision 模型：顯示 ${filteredModels.length} 個（共 ${models.length} 個可用）`
+                  : `本區塊不過濾：顯示 ${filteredModels.length} 個 / 全部 ${models.length} 個（含純文字 / vision 模型）`}
+              </p>
+            )}
 
             {models.length === 0 && !loadingModels && (
               <div className="bg-paper-2 rounded-lg p-6 text-center text-sm text-ink-500">

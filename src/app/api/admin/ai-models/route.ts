@@ -45,7 +45,10 @@ function normalize(m: RawModel): ModelInfo | null {
 
 /**
  * POST { apiKey?: string }
- * 用提供的 key（若空則用 DB 已存的）查詢可用模型。回傳只篩選 vision 支援的模型。
+ * 用提供的 key（若空則用 DB 已存的）查詢可用模型。
+ * 回傳完整模型清單 + supportsVision 旗標；不在 server 端過濾，由前端依用途決定要不要濾。
+ * - OCR 物件辨識：前端再 filter 出 supportsVision=true
+ * - AI 客服：前端不過濾，展示所有可用模型（含純文字模型如 DeepSeek、Mistral 等）
  */
 export async function POST(req: Request) {
   const me = await getCurrentAdmin();
