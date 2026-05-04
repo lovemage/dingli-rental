@@ -2,12 +2,24 @@
 
 import { useState } from 'react';
 
-export default function ContactForm() {
+type Props = {
+  title?: string;
+  submitText?: string;
+  note?: string;
+  successMessage?: string;
+};
+
+export default function ContactForm({
+  title = '填寫需求表',
+  submitText = '送出需求 →',
+  note = '送出後我們將於 24 小時內聯繫，感謝您！',
+  successMessage = '已收到您的訊息，業務專員將於當日內聯繫您。',
+}: Props) {
   const [submitted, setSubmitted] = useState(false);
 
   return (
     <form className="bg-white rounded-xl border border-line p-6 sm:p-8 shadow-sm" onSubmit={(e) => { e.preventDefault(); setSubmitted(true); }}>
-      <h2 className="text-xl font-black mb-5">填寫需求表</h2>
+      <h2 className="text-xl font-black mb-5">{title}</h2>
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
           <label className="label-base">姓名 *</label>
@@ -52,9 +64,9 @@ export default function ContactForm() {
           <textarea rows={4} className="input-base resize-none" placeholder="請告訴我們您的居住人數、通勤地點、生活習慣等..." />
         </div>
       </div>
-      <button type="submit" className="btn btn-primary w-full mt-6">送出需求 →</button>
-      <p className="text-xs text-ink-500 mt-3 text-center">送出後我們將於 24 小時內聯繫，感謝您！</p>
-      {submitted && <p className="mt-3 text-center text-brand-green-700 font-bold">已收到您的訊息，業務專員將於當日內聯繫您。</p>}
+      <button type="submit" className="btn btn-primary w-full mt-6">{submitText}</button>
+      <p className="text-xs text-ink-500 mt-3 text-center">{note}</p>
+      {submitted && <p className="mt-3 text-center text-brand-green-700 font-bold">{successMessage}</p>}
     </form>
   );
 }

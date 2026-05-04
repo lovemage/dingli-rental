@@ -14,6 +14,7 @@ const NAV = [
   { href: '/admin/taxonomy', label: '標籤與分類', icon: 'sell' },
   { href: '/admin/testimonials', label: '評論管理', icon: 'rate_review' },
   { href: '/admin/careers', label: '人才招募', icon: 'work' },
+  { href: '/admin/contact', label: '聯絡頁面', icon: 'contact_mail' },
   { href: '/admin/floating-cta', label: '浮動按鈕', icon: 'support_agent' },
   { href: '/admin/ai-settings', label: 'AI 設定', icon: 'auto_awesome' },
   { href: '/admin/settings', label: '帳號設定', icon: 'settings' },
