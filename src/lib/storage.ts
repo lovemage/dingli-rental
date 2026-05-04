@@ -1,20 +1,39 @@
-import path from 'path';
-import { promises as fs } from 'fs';
 import sharp from 'sharp';
 import crypto from 'crypto';
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 
-const UPLOAD_DIR =
-  process.env.UPLOAD_DIR ||
-  path.resolve('public', 'uploads');
-const PUBLIC_PREFIX = '/uploads';
+const S3_ENDPOINT = (process.env.S3_ENDPOINT || '').replace(/\/+$/, '');
+const S3_REGION = process.env.S3_REGION || 'auto';
+const S3_BUCKET = process.env.S3_BUCKET_NAME || '';
+const S3_ACCESS_KEY = process.env.S3_ACCESS_KEY_ID || '';
+const S3_SECRET_KEY = process.env.S3_SECRET_ACCESS_KEY || '';
 
-async function ensureDir(dir: string) {
-  await fs.mkdir(dir, { recursive: true });
+let _client: S3Client | null = null;
+
+function requireConfig(): { client: S3Client; bucket: string; baseUrl: string } {
+  if (!S3_ENDPOINT || !S3_BUCKET || !S3_ACCESS_KEY || !S3_SECRET_KEY) {
+    const missing = [
+      !S3_ENDPOINT && 'S3_ENDPOINT',
+      !S3_BUCKET && 'S3_BUCKET_NAME',
+      !S3_ACCESS_KEY && 'S3_ACCESS_KEY_ID',
+      !S3_SECRET_KEY && 'S3_SECRET_ACCESS_KEY',
+    ].filter(Boolean).join(', ');
+    throw new Error(`S3 storage misconfigured: missing env vars (${missing})`);
+  }
+  if (!_client) {
+    _client = new S3Client({
+      endpoint: S3_ENDPOINT,
+      region: S3_REGION,
+      forcePathStyle: true,
+      credentials: { accessKeyId: S3_ACCESS_KEY, secretAccessKey: S3_SECRET_KEY },
+    });
+  }
+  return { client: _client, bucket: S3_BUCKET, baseUrl: `${S3_ENDPOINT}/${S3_BUCKET}` };
 }
 
 /**
- * 上傳並轉換為 WebP，回傳公開 URL（如 /uploads/xxx.webp）
- * 在 Railway 部署時，UPLOAD_DIR 會掛載到 Volume 路徑。
+ * 上傳並轉換為 WebP，回傳 Railway Object Storage 的公開 URL。
+ * 物件 key 格式：<subdir>/<timestamp>-<rand>.webp（例如 properties/xxx.webp）
  */
 export async function saveImageAsWebp(
   buffer: Buffer,
@@ -22,40 +41,55 @@ export async function saveImageAsWebp(
 ): Promise<{ url: string; sizeBytes: number; width: number; height: number }> {
   const quality = opts.quality ?? 82;
   const maxWidth = opts.maxWidth ?? 1920;
-  const subdir = opts.subdir ?? '';
+  const subdir = (opts.subdir || '').replace(/^\/+|\/+$/g, '');
 
   const fileName = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}.webp`;
-  const targetDir = path.join(UPLOAD_DIR, subdir);
-  await ensureDir(targetDir);
-  const targetPath = path.join(targetDir, fileName);
+  const key = subdir ? `${subdir}/${fileName}` : fileName;
 
   let image = sharp(buffer, { failOn: 'none' }).rotate();
   const meta = await image.metadata();
   if (meta.width && meta.width > maxWidth) {
     image = image.resize({ width: maxWidth, withoutEnlargement: true });
   }
-  const outBuf = await image.webp({ quality, effort: 4 }).toBuffer({ resolveWithObject: true });
-  await fs.writeFile(targetPath, outBuf.data);
+  const out = await image.webp({ quality, effort: 4 }).toBuffer({ resolveWithObject: true });
 
-  const publicUrl = subdir
-    ? `${PUBLIC_PREFIX}/${subdir}/${fileName}`
-    : `${PUBLIC_PREFIX}/${fileName}`;
+  const { client, bucket, baseUrl } = requireConfig();
+  await client.send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: out.data,
+      ContentType: 'image/webp',
+      CacheControl: 'public, max-age=31536000, immutable',
+    }),
+  );
 
   return {
-    url: publicUrl,
-    sizeBytes: outBuf.info.size,
-    width: outBuf.info.width,
-    height: outBuf.info.height,
+    url: `${baseUrl}/${key}`,
+    sizeBytes: out.info.size,
+    width: out.info.width,
+    height: out.info.height,
   };
 }
 
+/**
+ * 刪除 Object Storage 上的檔案。
+ * - 只處理屬於本 bucket 的 URL（避免誤刪外部資源）
+ * - 舊的 /uploads/... 本機路徑會被略過，不視為錯誤
+ * - 刪除失敗（含 404）一律不 throw，避免擋住關聯紀錄的刪除流程
+ */
 export async function deleteUpload(publicUrl: string): Promise<void> {
-  if (!publicUrl.startsWith(PUBLIC_PREFIX)) return;
-  const relative = publicUrl.slice(PUBLIC_PREFIX.length).replace(/^\/+/, '');
-  const target = path.join(UPLOAD_DIR, relative);
+  if (!publicUrl) return;
+  if (!S3_ENDPOINT || !S3_BUCKET) return; // 未設定 S3 → 安靜略過
+  const baseUrl = `${S3_ENDPOINT}/${S3_BUCKET}/`;
+  if (!publicUrl.startsWith(baseUrl)) return;
+  const key = publicUrl.slice(baseUrl.length);
+  if (!key) return;
+
   try {
-    await fs.unlink(target);
-  } catch {
-    // ignore missing
+    const { client, bucket } = requireConfig();
+    await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+  } catch (e: any) {
+    console.error('[storage] delete failed', publicUrl, e?.message);
   }
 }
