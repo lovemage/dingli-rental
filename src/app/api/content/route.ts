@@ -4,8 +4,8 @@ import { getCurrentAdmin } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-// 含敏感資訊的 section（如 API key），禁止透過此 public 端點存取
-const PROTECTED_SECTIONS = new Set(['ai_settings']);
+// 含敏感資訊的 section（如 API key / token），禁止透過此 public 端點存取
+const PROTECTED_SECTIONS = new Set(['ai_settings', 'notification_settings']);
 
 // GET ?section=services|careers|contact|about
 export async function GET(req: Request) {

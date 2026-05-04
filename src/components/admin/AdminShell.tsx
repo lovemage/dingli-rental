@@ -18,6 +18,7 @@ const NAV = [
   { href: '/admin/contact', label: '聯絡頁面', icon: 'contact_mail' },
   { href: '/admin/floating-cta', label: '浮動按鈕', icon: 'support_agent' },
   { href: '/admin/ai-settings', label: 'AI 設定', icon: 'auto_awesome' },
+  { href: '/admin/notifications', label: '通知設定', icon: 'notifications' },
   { href: '/admin/settings', label: '帳號設定', icon: 'settings' },
 ];
 

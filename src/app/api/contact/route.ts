@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { notifyNewInquiry } from '@/lib/notifications';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -40,7 +41,7 @@ export async function POST(req: Request) {
 
     const budgetNum = budgetStr ? Math.max(0, Math.round(Number(budgetStr))) : null;
 
-    await prisma.contactInquiry.create({
+    const inquiry = await prisma.contactInquiry.create({
       data: {
         name,
         phone,
@@ -51,6 +52,9 @@ export async function POST(req: Request) {
         message: message || null,
       },
     });
+
+    // 背景觸發 Telegram 通知（失敗不影響使用者體驗）
+    void notifyNewInquiry(inquiry);
 
     return NextResponse.json({ ok: true });
   } catch (e: any) {
