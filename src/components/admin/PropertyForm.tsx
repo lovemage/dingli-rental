@@ -113,6 +113,11 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
+  const [aiUploading, setAiUploading] = useState(false);
+  const [aiRunning, setAiRunning] = useState(false);
+  const [aiPhotos, setAiPhotos] = useState<string[]>([]);
+  const [aiMsg, setAiMsg] = useState('');
+  const [aiAppliedKeys, setAiAppliedKeys] = useState<string[]>([]);
 
   const districts = CITY_DISTRICTS[v.city] || [];
 
@@ -149,6 +154,68 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
 
   function removeImage(url: string) {
     update('images', v.images.filter((u) => u !== url));
+  }
+
+  // ===== AI 辨識 =====
+  async function aiUpload(files: FileList | null) {
+    if (!files?.length) return;
+    setAiUploading(true); setAiMsg('');
+    try {
+      const fd = new FormData();
+      for (const f of Array.from(files)) fd.append('files', f);
+      const res = await fetch('/api/upload?subdir=properties', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || '上傳失敗');
+      const newUrls = (data.files as any[]).map((f) => f.url);
+      const merged = [...aiPhotos, ...newUrls].slice(0, 10);
+      setAiPhotos(merged);
+      // 同時加進物件圖庫（避免重複）
+      const dedup = Array.from(new Set([...v.images, ...newUrls])).slice(0, 20);
+      update('images', dedup);
+    } catch (e: any) {
+      setAiMsg(e?.message || '上傳失敗');
+    } finally {
+      setAiUploading(false);
+    }
+  }
+
+  function aiRemovePhoto(url: string) {
+    setAiPhotos((arr) => arr.filter((u) => u !== url));
+  }
+
+  async function aiExtract() {
+    if (!aiPhotos.length) { setAiMsg('請先上傳至少一張照片'); return; }
+    setAiRunning(true); setAiMsg(''); setAiAppliedKeys([]);
+    try {
+      const res = await fetch('/api/properties/ai-extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrls: aiPhotos }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'AI 辨識失敗');
+      const fields = (data?.fields || {}) as Record<string, any>;
+      const appliedKeys: string[] = [];
+
+      setV((s) => {
+        const next = { ...s };
+        for (const [k, val] of Object.entries(fields)) {
+          if (val === undefined || val === null) continue;
+          if (Array.isArray(val) && val.length === 0) continue;
+          // 字串型且當前已有非預設值 → 保留使用者輸入（避免覆蓋）
+          // 簡單策略：所有 AI 欄位都覆寫，由使用者再修改
+          (next as any)[k] = val;
+          appliedKeys.push(k);
+        }
+        return next;
+      });
+      setAiAppliedKeys(appliedKeys);
+      setAiMsg(`✓ 已套用 ${appliedKeys.length} 個欄位 — 請檢查並補上 AI 看不出的欄位（地址、價格、坪數、樓層、屋齡…）`);
+    } catch (e: any) {
+      setAiMsg(e?.message || 'AI 辨識失敗');
+    } finally {
+      setAiRunning(false);
+    }
   }
 
   async function submit(e: React.FormEvent) {
@@ -207,6 +274,67 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
   return (
     <form onSubmit={submit} className="space-y-5 pb-24">
       {err && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{err}</div>}
+
+      {/* === AI 拍照辨識 === */}
+      <div className="admin-card border-2 border-dashed border-brand-orange-300 bg-brand-orange-50/40">
+        <div className="flex items-start justify-between gap-4 mb-3">
+          <div>
+            <h2 className="font-extrabold text-lg flex items-center gap-2">
+              <MaterialIcon name="photo_camera" className="!text-2xl text-brand-orange-700" />
+              拍照辨識預填
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-brand-orange-100 text-brand-orange-700">BETA</span>
+            </h2>
+            <p className="text-xs text-ink-500 mt-1">
+              上傳 1-10 張物件照片，AI 自動填入「格局 / 設備 / 家具 / 特色標籤 / 標題 / 描述 / 建物類型」。
+              地址、價格、坪數、樓層、屋齡等欄位請人工填寫。
+            </p>
+          </div>
+        </div>
+
+        <div className="grid sm:grid-cols-[1fr_auto] gap-3 items-start">
+          <label className={`btn btn-secondary text-sm cursor-pointer ${aiUploading ? 'opacity-60 pointer-events-none' : ''}`}>
+            <MaterialIcon name="add_photo_alternate" className="!text-base mr-1" />
+            {aiUploading ? '上傳中...' : '選擇照片'}
+            <input type="file" multiple accept="image/*" hidden
+              onChange={(e) => { aiUpload(e.target.files); e.target.value = ''; }} />
+          </label>
+          <button
+            type="button"
+            disabled={aiRunning || aiPhotos.length === 0}
+            onClick={aiExtract}
+            className="btn btn-primary text-sm disabled:opacity-40"
+          >
+            <MaterialIcon name="auto_awesome" className="!text-base mr-1" />
+            {aiRunning ? `AI 辨識中（${aiPhotos.length} 張照片）...` : `AI 辨識並填入（${aiPhotos.length} 張）`}
+          </button>
+        </div>
+
+        {aiPhotos.length > 0 && (
+          <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-10 gap-2 mt-3">
+            {aiPhotos.map((url) => (
+              <div key={url} className="relative group">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url} alt="" className="w-full aspect-square object-cover rounded-md border border-line" />
+                <button type="button" onClick={() => aiRemovePhoto(url)}
+                  className="absolute top-0.5 right-0.5 bg-white/95 rounded-full w-5 h-5 grid place-items-center text-xs border border-line opacity-0 group-hover:opacity-100 transition">
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {aiMsg && (
+          <p className={`text-sm mt-3 ${aiMsg.startsWith('✓') ? 'text-brand-green-700' : 'text-red-600'}`}>
+            {aiMsg}
+          </p>
+        )}
+        {aiAppliedKeys.length > 0 && (
+          <p className="text-xs text-ink-500 mt-1">
+            已套用：{aiAppliedKeys.join('・')}
+          </p>
+        )}
+      </div>
 
       {/* === 物件分類（大/中/小） === */}
       <Card title="物件分類">
