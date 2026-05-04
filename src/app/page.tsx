@@ -93,6 +93,7 @@ async function getFeaturedProperties(): Promise<PropertyCardData[]> {
       description: p.description,
       hideAddress: p.hideAddress,
       featured: p.featured,
+      listingStatus: p.listingStatus,
     }));
   } catch {
     return [];

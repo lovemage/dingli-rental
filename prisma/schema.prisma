@@ -104,12 +104,17 @@ model Property {
   status          String   @default("active") // active / inactive / pending
   featured        Boolean  @default(false)
 
+  // 物件刊登狀態（顯示在卡片左上角的 badge）
+  // active=出租中 / rented=已出租 / sold=售出 / closed=結束
+  listingStatus   String   @default("active")
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   @@index([region])
   @@index([typeMid])
   @@index([status])
+  @@index([listingStatus])
 }
 
 // 物件圖片
@@ -117,7 +122,7 @@ model PropertyImage {
   id         Int      @id @default(autoincrement())
   propertyId Int
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  url        String   // /uploads/xxx.webp
+  url        String   // 例：https://t3.storageapi.dev/<bucket>/properties/xxx.webp
   order      Int      @default(0)
   createdAt  DateTime @default(now())
 

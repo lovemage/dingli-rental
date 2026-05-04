@@ -20,6 +20,7 @@ import {
   CUSTOM_TAG_SUGGESTIONS,
 } from '@/data/taiwan-addresses';
 import type { Taxonomies } from '@/lib/taxonomies-shared';
+import { LISTING_STATUS_OPTIONS } from '@/components/frontend/PropertyCard';
 
 export type PropertyFormValue = {
   region: string;
@@ -67,6 +68,7 @@ export type PropertyFormValue = {
   featureTags: string[];
   description: string;
   status: string;
+  listingStatus: string;
   featured: boolean;
   images: string[];
 };
@@ -85,7 +87,7 @@ const DEFAULTS: PropertyFormValue = {
   rent: '', deposit: '面議', rentIncludes: [], managementFee: '', noManagementFee: false,
   minLease: '一年', moveInDate: '', anytimeMoveIn: false,
   title: '', featureTags: [], description: '',
-  status: 'active', featured: false,
+  status: 'active', listingStatus: 'active', featured: false,
   images: [],
 };
 
@@ -556,13 +558,22 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
 
       {/* === 上下架 === */}
       <Card title="上下架設定">
-        <div className="grid sm:grid-cols-2 gap-4">
-          <Field label="狀態">
+        <div className="grid sm:grid-cols-3 gap-4">
+          <Field label="上架狀態">
             <select className="input-base" value={v.status} onChange={(e) => update('status', e.target.value)}>
               <option value="active">上架中</option>
               <option value="inactive">下架</option>
               <option value="pending">審核中</option>
             </select>
+            <p className="text-xs text-ink-500 mt-1">控制是否公開於前台</p>
+          </Field>
+          <Field label="刊登狀態">
+            <select className="input-base" value={v.listingStatus} onChange={(e) => update('listingStatus', e.target.value)}>
+              {LISTING_STATUS_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            <p className="text-xs text-ink-500 mt-1">前台卡片左上角 badge 顯示</p>
           </Field>
           <Field label="精選">
             <label className="inline-flex items-center gap-2 text-sm h-[42px]">

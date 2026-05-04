@@ -161,6 +161,7 @@ export default async function PropertiesPage({
     description: p.description,
     hideAddress: p.hideAddress,
     featured: p.featured,
+    listingStatus: p.listingStatus,
   }));
 
   return (

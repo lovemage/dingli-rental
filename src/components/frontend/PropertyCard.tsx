@@ -7,6 +7,22 @@ import {
   type Tag,
 } from '@/lib/property-tags';
 
+export type ListingStatus = 'active' | 'rented' | 'sold' | 'closed';
+
+export const LISTING_STATUS_OPTIONS: { value: ListingStatus; label: string }[] = [
+  { value: 'active', label: '出租中' },
+  { value: 'rented', label: '已出租' },
+  { value: 'sold',   label: '售出' },
+  { value: 'closed', label: '結束' },
+];
+
+export const LISTING_STATUS_BADGE: Record<ListingStatus, { label: string; className: string }> = {
+  active: { label: '出租中', className: 'bg-brand-green-700 text-white' },
+  rented: { label: '已出租', className: 'bg-ink-700 text-white' },
+  sold:   { label: '售出',   className: 'bg-brand-orange-600 text-white' },
+  closed: { label: '結束',   className: 'bg-ink-300 text-ink-700' },
+};
+
 export type PropertyCardData = {
   id: number;
   title: string;
@@ -29,6 +45,7 @@ export type PropertyCardData = {
   description?: string | null;
   hideAddress?: boolean | null;
   featured?: boolean | null;
+  listingStatus?: ListingStatus | string | null;
 };
 
 type Props = {
@@ -71,14 +88,20 @@ export default function PropertyCard({ property: p, maxTags = 3 }: Props) {
           <div className="w-full h-full grid place-items-center text-ink-300 text-sm">暫無圖片</div>
         )}
 
-        {/* 左上：出租 badge */}
-        <span className="absolute top-3 left-3 bg-brand-green-700 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">
-          出租
-        </span>
+        {/* 左上：刊登狀態 badge */}
+        {(() => {
+          const key = (p.listingStatus ?? 'active') as ListingStatus;
+          const meta = LISTING_STATUS_BADGE[key] ?? LISTING_STATUS_BADGE.active;
+          return (
+            <span className={`absolute top-3 left-3 ${meta.className} text-xs font-bold px-3 py-1 rounded-full shadow-sm`}>
+              {meta.label}
+            </span>
+          );
+        })()}
 
-        {/* 精選標記（疊在出租右側） */}
+        {/* 精選標記（疊在狀態 badge 右側） */}
         {p.featured && (
-          <span className="absolute top-3 left-[72px] bg-brand-orange-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
+          <span className="absolute top-3 left-[84px] bg-brand-orange-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
             ★ 精選
           </span>
         )}
