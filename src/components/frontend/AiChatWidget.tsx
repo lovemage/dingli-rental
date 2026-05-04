@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 type Message = { role: 'user' | 'assistant'; content: string };
 
@@ -18,12 +19,16 @@ const GREETING: Message = {
 
 export default function AiChatWidget({ triggerClassName, triggerLabel = '鼎力 AI' }: Props) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [messages, setMessages] = useState<Message[]>([GREETING]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [lineUrl, setLineUrl] = useState('https://lin.ee/z9d5558');
   const [error, setError] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // 確保 portal 只在 client hydrate 後才渲染（SSR safe）
+  useEffect(() => { setMounted(true); }, []);
 
   // 訊息更新時自動捲到底
   useEffect(() => {
@@ -81,17 +86,7 @@ export default function AiChatWidget({ triggerClassName, triggerLabel = '鼎力 
     }
   }
 
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className={triggerClassName || 'btn btn-secondary'}
-      >
-        {triggerLabel}
-      </button>
-
-      {open && (
+  const modal = open && (
         <div
           className="fixed inset-0 z-[55] bg-ink-900/60 backdrop-blur-sm sm:grid sm:place-items-end sm:justify-end sm:p-6"
           onClick={() => setOpen(false)}
@@ -192,7 +187,19 @@ export default function AiChatWidget({ triggerClassName, triggerLabel = '鼎力 
             </div>
           </div>
         </div>
-      )}
+  );
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={triggerClassName || 'btn btn-secondary'}
+      >
+        {triggerLabel}
+      </button>
+      {/* Portal 到 body 跳出任何 backdrop-filter / transform 造成的 containing block */}
+      {mounted && modal && createPortal(modal, document.body)}
     </>
   );
 }
