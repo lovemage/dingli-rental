@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import MaterialIcon from '@/components/admin/MaterialIcon';
 import {
@@ -157,6 +157,17 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
   }
 
   // ===== AI 辨識 =====
+  // OCR 進行中：提示瀏覽器在使用者試圖關閉/重新整理時警告
+  useEffect(() => {
+    if (!aiRunning) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [aiRunning]);
+
   async function aiUpload(files: FileList | null) {
     if (!files?.length) return;
     setAiUploading(true); setAiMsg('');
@@ -728,6 +739,44 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
           <button type="submit" disabled={saving} className="btn btn-primary">{saving ? '儲存中...' : (propertyId ? '儲存修改' : '建立物件')}</button>
         </div>
       </div>
+
+      {/* === OCR 進行中遮罩 === */}
+      {aiRunning && (
+        <div
+          className="fixed inset-0 z-[60] bg-ink-900/60 backdrop-blur-sm grid place-items-center px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="ocr-progress-title"
+        >
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center">
+            {/* Spinner */}
+            <div className="w-16 h-16 mx-auto mb-5 relative">
+              <div className="absolute inset-0 rounded-full border-4 border-brand-orange-100" />
+              <div className="absolute inset-0 rounded-full border-4 border-brand-orange-600 border-t-transparent animate-spin" />
+              <div className="absolute inset-0 grid place-items-center">
+                <MaterialIcon name="document_scanner" className="!text-2xl text-brand-orange-700" />
+              </div>
+            </div>
+
+            <h3 id="ocr-progress-title" className="font-extrabold text-xl mb-2">
+              OCR 辨識中
+            </h3>
+            <p className="text-sm text-ink-700 mb-1">
+              正在分析 <span className="font-bold text-ink-900">{aiPhotos.length}</span> 張照片
+            </p>
+            <p className="text-xs text-ink-500 mb-5">
+              通常需要 5-30 秒，請耐心等待
+            </p>
+
+            <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 flex items-start gap-2 text-left">
+              <MaterialIcon name="warning" className="!text-base text-red-600 mt-0.5 flex-shrink-0" />
+              <p className="text-sm font-bold text-red-700">
+                請勿關閉或重新整理視窗，否則辨識結果會遺失
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }
