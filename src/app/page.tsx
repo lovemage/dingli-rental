@@ -228,7 +228,7 @@ export default async function HomePage() {
                 title="本週嚴選好物件"
                 sub="系統依您所在地區與預算自動推薦關聯物件，省下大量搜尋時間。"
               />
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-7">
+              <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:gap-7">
                 {featured.map((p) => (
                   <PropertyCard key={p.id} property={p} />
                 ))}
