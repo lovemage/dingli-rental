@@ -77,16 +77,17 @@ export async function POST(req: Request) {
     }
     const json = await res.json();
     const all: RawModel[] = Array.isArray(json?.data) ? json.data : [];
-    const visionModels = all
+    // 不在 server 端先濾，回傳完整清單 + supportsVision 旗標；frontend 依用途自行 filter
+    const allModels = all
       .map(normalize)
-      .filter((m): m is ModelInfo => m !== null && m.supportsVision)
+      .filter((m): m is ModelInfo => m !== null)
       .sort((a, b) => a.id.localeCompare(b.id));
 
     return NextResponse.json({
       ok: true,
       total: all.length,
-      visionCount: visionModels.length,
-      models: visionModels,
+      visionCount: allModels.filter((m) => m.supportsVision).length,
+      models: allModels,
       authenticated: Boolean(apiKey),
     });
   } catch (e: any) {

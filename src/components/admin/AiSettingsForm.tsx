@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   AI_SETTINGS_DEFAULTS,
   DEFAULT_MODEL,
@@ -20,8 +20,8 @@ type ModelInfo = {
   supportsVision: boolean;
 };
 
-// 切換模型需輸入此密碼，避免不慎更動造成費用異常或品質下降
-const MODEL_CHANGE_PASSWORD = '1234';
+// 展開「AI 模型」設定區塊需輸入此密碼，避免他人不慎瀏覽或更動模型
+const MODEL_UNLOCK_PASSWORD = '1234';
 
 type TabKey = 'ocr' | 'cs';
 
@@ -37,6 +37,7 @@ export default function AiSettingsForm() {
   const [systemPrompt, setSystemPrompt] = useState(AI_SETTINGS_DEFAULTS.systemPrompt);
   const [userPromptTemplate, setUserPromptTemplate] = useState(AI_SETTINGS_DEFAULTS.userPromptTemplate);
   const [ocrModelOpen, setOcrModelOpen] = useState(false);
+  const [ocrModelUnlocked, setOcrModelUnlocked] = useState(false);
   const [sysPromptOpen, setSysPromptOpen] = useState(false);
   const [userPromptOpen, setUserPromptOpen] = useState(false);
 
@@ -44,6 +45,7 @@ export default function AiSettingsForm() {
   const [csModel, setCsModel] = useState(DEFAULT_CUSTOMER_SERVICE_MODEL);
   const [csSystemPrompt, setCsSystemPrompt] = useState(AI_SETTINGS_DEFAULTS.customerServiceSystemPrompt);
   const [csModelOpen, setCsModelOpen] = useState(false);
+  const [csModelUnlocked, setCsModelUnlocked] = useState(false);
   const [csSysPromptOpen, setCsSysPromptOpen] = useState(false);
 
   // === Shared model picker state ===
@@ -96,7 +98,7 @@ export default function AiSettingsForm() {
       if (!res.ok) throw new Error(json?.error || '載入模型失敗');
       setModels(json.models || []);
       setModelsHint(
-        `已載入 ${json.visionCount} 個支援影像的模型${json.authenticated ? '（已驗證 API Key ✓）' : ''}`,
+        `已載入 ${json.total} 個模型（其中 ${json.visionCount} 個支援影像）${json.authenticated ? ' · 已驗證 API Key ✓' : ''}`,
       );
     } catch (e: any) {
       setModelsError(e?.message || '載入模型失敗');
@@ -134,16 +136,27 @@ export default function AiSettingsForm() {
     }
   }
 
-  /** 換任一模型都要過密碼 */
-  function selectWithPassword(target: 'ocr' | 'cs', newId: string) {
-    const current = target === 'ocr' ? model : csModel;
-    if (newId === current) return;
-    const pwd = window.prompt('更換 AI 模型需要密碼：');
-    if (pwd === null) return;
-    if (pwd !== MODEL_CHANGE_PASSWORD) {
-      alert('密碼錯誤，模型未更換');
+  /** 展開 AI 模型區塊：第一次需密碼，解鎖後本次 session 內可自由開合 */
+  function tryToggleModelPicker(target: 'ocr' | 'cs') {
+    const unlocked = target === 'ocr' ? ocrModelUnlocked : csModelUnlocked;
+    const setOpen = target === 'ocr' ? setOcrModelOpen : setCsModelOpen;
+    const setUnlocked = target === 'ocr' ? setOcrModelUnlocked : setCsModelUnlocked;
+
+    if (unlocked) {
+      setOpen((s) => !s);
       return;
     }
+    const pwd = window.prompt('展開 AI 模型設定需要密碼：');
+    if (pwd === null) return;
+    if (pwd !== MODEL_UNLOCK_PASSWORD) {
+      alert('密碼錯誤');
+      return;
+    }
+    setUnlocked(true);
+    setOpen(true);
+  }
+
+  function selectModel(target: 'ocr' | 'cs', newId: string) {
     if (target === 'ocr') setModel(newId);
     else setCsModel(newId);
   }
@@ -158,33 +171,39 @@ export default function AiSettingsForm() {
     if (confirm('確定要將「客服系統提示詞」重設為預設值？')) setCsSystemPrompt(DEFAULT_CUSTOMER_SERVICE_SYSTEM_PROMPT);
   }
 
-  const filteredModels = useMemo(() => {
-    if (!modelSearch.trim()) return models;
+  function filterModelsForPicker(requireVision: boolean): ModelInfo[] {
+    let out = requireVision ? models.filter((m) => m.supportsVision) : models;
     const q = modelSearch.trim().toLowerCase();
-    return models.filter(
-      (m) => m.id.toLowerCase().includes(q) || m.name.toLowerCase().includes(q),
-    );
-  }, [models, modelSearch]);
+    if (q) {
+      out = out.filter((m) => m.id.toLowerCase().includes(q) || m.name.toLowerCase().includes(q));
+    }
+    return out;
+  }
 
   // ===== 模型卡片渲染（兩個 tab 共用） =====
   function renderModelPicker(opts: {
     title: string;
     currentModel: string;
     target: 'ocr' | 'cs';
-    isOpen: boolean;
-    onToggle: () => void;
+    requireVision: boolean;
   }) {
-    const { title, currentModel, target, isOpen, onToggle } = opts;
+    const { title, currentModel, target, requireVision } = opts;
+    const isOpen = target === 'ocr' ? ocrModelOpen : csModelOpen;
+    const unlocked = target === 'ocr' ? ocrModelUnlocked : csModelUnlocked;
+    const filteredModels = filterModelsForPicker(requireVision);
     return (
       <div className="admin-card">
         <button
           type="button"
-          onClick={onToggle}
+          onClick={() => tryToggleModelPicker(target)}
           className="w-full flex items-center justify-between text-left"
           aria-expanded={isOpen}
         >
           <div className="min-w-0">
-            <h2 className="font-bold text-lg">{title}</h2>
+            <h2 className="font-bold text-lg flex items-center gap-2">
+              {title}
+              {!unlocked && <span className="text-xs font-medium text-ink-500">🔒 需密碼</span>}
+            </h2>
             <p className="text-xs text-ink-500 mt-0.5 truncate">
               目前選用：<code className="bg-paper-2 px-1.5 py-0.5 rounded font-mono text-xs">{maskModelName(currentModel)}</code>
             </p>
@@ -242,7 +261,7 @@ export default function AiSettingsForm() {
                       <button
                         key={m.id}
                         type="button"
-                        onClick={() => selectWithPassword(target, m.id)}
+                        onClick={() => selectModel(target, m.id)}
                         className={`w-full text-left px-4 py-3 transition flex items-center justify-between gap-3 ${active ? 'bg-brand-green-50' : 'hover:bg-paper-2'}`}
                       >
                         <div className="min-w-0 flex-1">
@@ -272,7 +291,10 @@ export default function AiSettingsForm() {
             )}
 
             <p className="text-xs text-ink-500 mt-2">
-              僅列出支援影像輸入的模型。價格為每百萬 token 的美金費用，僅供參考。
+              {requireVision
+                ? '此區塊僅顯示支援影像輸入的模型（OCR 物件辨識需要）。'
+                : '此區塊顯示所有模型（不限影像支援）。'}
+              價格為每百萬 token 的美金費用，僅供參考。
             </p>
           </>
         )}
@@ -335,8 +357,7 @@ export default function AiSettingsForm() {
             title: 'AI 模型（物件辨識）',
             currentModel: model,
             target: 'ocr',
-            isOpen: ocrModelOpen,
-            onToggle: () => setOcrModelOpen((s) => !s),
+            requireVision: true,
           })}
 
           {/* System prompt */}
@@ -415,8 +436,7 @@ export default function AiSettingsForm() {
             title: 'AI 模型（客服）',
             currentModel: csModel,
             target: 'cs',
-            isOpen: csModelOpen,
-            onToggle: () => setCsModelOpen((s) => !s),
+            requireVision: false,
           })}
 
           {/* CS system prompt */}
