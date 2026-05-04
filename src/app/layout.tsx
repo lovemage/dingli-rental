@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import FloatingCta from '@/components/frontend/FloatingCta';
+import AnnouncementBar from '@/components/frontend/AnnouncementBar';
 import { prisma } from '@/lib/prisma';
 import { FLOATING_CTA_DEFAULTS, type FloatingCtaContent } from '@/data/floating-cta-defaults';
+import { ANNOUNCEMENT_DEFAULTS, type AnnouncementSettings } from '@/data/announcement-defaults';
 
 async function getFloatingCta(): Promise<FloatingCtaContent> {
   try {
@@ -10,6 +12,15 @@ async function getFloatingCta(): Promise<FloatingCtaContent> {
     return { ...FLOATING_CTA_DEFAULTS, ...((row?.data as Partial<FloatingCtaContent>) || {}) };
   } catch {
     return FLOATING_CTA_DEFAULTS;
+  }
+}
+
+async function getAnnouncement(): Promise<AnnouncementSettings> {
+  try {
+    const row = await prisma.siteContent.findUnique({ where: { section: 'announcement' } });
+    return { ...ANNOUNCEMENT_DEFAULTS, ...((row?.data as Partial<AnnouncementSettings>) || {}) };
+  } catch {
+    return ANNOUNCEMENT_DEFAULTS;
   }
 }
 
@@ -30,7 +41,7 @@ export const metadata: Metadata = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const floatingCta = await getFloatingCta();
+  const [floatingCta, announcement] = await Promise.all([getFloatingCta(), getAnnouncement()]);
   return (
     <html lang="zh-TW">
       <head>
@@ -43,6 +54,7 @@ export default async function RootLayout({
         />
       </head>
       <body>
+        <AnnouncementBar settings={announcement} />
         {children}
         <FloatingCta config={floatingCta} />
       </body>

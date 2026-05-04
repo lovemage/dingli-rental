@@ -11,6 +11,7 @@ const NAV = [
   { href: '/admin/properties/new', label: '新增物件', icon: 'add_circle' },
   { href: '/admin/properties', label: '物件管理', icon: 'home_work' },
   { href: '/admin/inquiries', label: '客戶詢問', icon: 'mark_email_unread' },
+  { href: '/admin/announcements', label: '公告管理', icon: 'campaign' },
   { href: '/admin/hero', label: '首頁管理', icon: 'imagesmode' },
   { href: '/admin/taxonomy', label: '標籤與分類', icon: 'sell' },
   { href: '/admin/testimonials', label: '評論管理', icon: 'rate_review' },

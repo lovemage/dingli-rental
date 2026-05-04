@@ -227,3 +227,76 @@ a { color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   .ai-glow-btn::before { animation: none; }
 }
+
+/* ===== 公告列動畫 ===== */
+/* 跑馬燈：track 內含 2 份相同文字，靠 translateX(-50%) 達成無縫循環 */
+@keyframes ann-marquee-ltr {
+  from { transform: translate3d(-50%, 0, 0); }
+  to   { transform: translate3d(0, 0, 0); }
+}
+@keyframes ann-marquee-rtl {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
+}
+.ann-track {
+  display: inline-flex;
+  white-space: nowrap;
+  will-change: transform;
+}
+.ann-marquee .ann-track  { animation: ann-marquee-ltr 22s linear infinite; }
+.ann-marquee-reverse .ann-track { animation: ann-marquee-rtl 22s linear infinite; }
+
+/* 打字機：max-width 從 0 → 100% → 收回 0；游標方塊閃爍 */
+@keyframes ann-typewriter {
+  0%   { max-width: 0; }
+  45%  { max-width: 100%; }
+  90%  { max-width: 100%; }
+  100% { max-width: 0; }
+}
+@keyframes ann-typewriter-caret {
+  50% { border-color: transparent; }
+}
+.ann-typewriter .ann-text {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: 2px solid currentColor;
+  animation: ann-typewriter 14s steps(60, end) infinite,
+             ann-typewriter-caret 0.7s step-end infinite;
+  vertical-align: bottom;
+}
+
+/* 閃爍：明顯的提醒效果 */
+@keyframes ann-blink {
+  0%, 50%, 100% { opacity: 1; }
+  25%, 75%      { opacity: 0; }
+}
+.ann-blink .ann-text { animation: ann-blink 1.6s ease-in-out infinite; }
+
+/* 淡入淡出：柔和呼吸 */
+@keyframes ann-fade {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+.ann-fade .ann-text { animation: ann-fade 3.2s ease-in-out infinite; }
+
+/* 脈動放大 */
+@keyframes ann-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.05); }
+}
+.ann-pulse .ann-text {
+  display: inline-block;
+  animation: ann-pulse 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ann-marquee .ann-track,
+  .ann-marquee-reverse .ann-track,
+  .ann-typewriter .ann-text,
+  .ann-blink .ann-text,
+  .ann-fade .ann-text,
+  .ann-pulse .ann-text {
+    animation: none;
+  }
+}
