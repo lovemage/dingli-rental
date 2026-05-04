@@ -65,7 +65,8 @@ export async function POST(req: Request) {
     }
     const model = settings.customerServiceModel || 'google/gemini-2.5-flash';
 
-    // 物件清單（只取上架且狀態為「出租中」者）
+    // 物件清單 — 雙重過濾：上架中 (status=active) 且 出租狀態為「出租中」(listingStatus=active)
+    // 已出租 / 售出 / 結束 / 下架 / 審核中 等狀態都不會出現在 AI 的可推薦清單中
     const properties = await prisma.property.findMany({
       where: { status: 'active', listingStatus: 'active' },
       orderBy: [{ featured: 'desc' }, { createdAt: 'desc' }],
@@ -77,7 +78,7 @@ export async function POST(req: Request) {
 
     const propertyCatalog = properties.length
       ? properties.map(summarizeProperty).join('\n')
-      : '（目前資料庫沒有上架中的物件）';
+      : '（目前資料庫沒有任何「出租中」狀態的物件）';
 
     // 把 LEGAL_SUMMARY_FOR_AI 中的 ${siteUrl} 模板替換成實際 URL
     const legalSummary = LEGAL_SUMMARY_FOR_AI.replace(/\$\{siteUrl\}/g, siteUrl);
@@ -86,19 +87,24 @@ export async function POST(req: Request) {
 
 ${legalSummary}
 
-# 目前可租物件清單（共 ${properties.length} 筆，依精選與最新排序）
+# 目前「出租中」物件清單（共 ${properties.length} 筆，依精選與最新排序）
+**重要：下方清單已預先過濾，僅包含「出租中」狀態（listingStatus=active）的物件。任何不在此清單上的物件都不可推薦。**
+
 ${propertyCatalog}
 
-# 推薦規則
-- 只能推薦上方清單中的物件，不可虛構或編造資訊
-- 推薦時請註明 ID、地區、房型、租金，方便用戶辨識
-- 用戶想看完整資訊時，提供物件詳情連結：${siteUrl}/properties/<ID>
-- 用戶有預約看房 / 議價 / 詳細諮詢需求時，引導他們點擊下方「LINE 諮詢」按鈕直接聯繫業務專員（連結：${lineUrl}）
-- 用戶詢問完整服務條款內容請提供 ${siteUrl}/terms
-- 用戶詢問完整隱私權政策內容請提供 ${siteUrl}/privacy
-- 一次最多推薦 3 個物件，避免訊息過長
-- 訊息控制在 5 句話以內，需要時用條列項目
-- 用繁體中文回應
+# 推薦規則（嚴格遵守）
+1. **只能推薦上方清單中列出的物件** — 清單中每一筆都已確認為「出租中」可承租狀態
+2. **絕對不可推薦清單外的物件** — 包括但不限於：已出租 / 售出 / 結束 / 下架 / 審核中的物件，或你想像中可能存在但未列出的物件
+3. **絕對不可虛構物件** — 不要編造 ID、地址、租金、坪數、房型等任何欄位
+4. 若清單為空（沒有任何出租中物件），誠實告知用戶「目前暫無符合需求的可租物件，建議透過 LINE 聯繫業務專員了解最新進件」
+5. 推薦時請註明 ID、地區、房型、租金，方便用戶辨識
+6. 用戶想看完整資訊時，提供物件詳情連結：${siteUrl}/properties/<ID>
+7. 用戶有預約看房 / 議價 / 詳細諮詢需求時，引導他們點擊下方「LINE 諮詢」按鈕直接聯繫業務專員（連結：${lineUrl}）
+8. 用戶詢問完整服務條款內容請提供 ${siteUrl}/terms
+9. 用戶詢問完整隱私權政策內容請提供 ${siteUrl}/privacy
+10. 一次最多推薦 3 個物件，避免訊息過長
+11. 訊息控制在 5 句話以內，需要時用條列項目
+12. 用繁體中文回應
 
 # 對話流程建議
 1. 先問清楚用戶需求（地區、房型、預算、特殊需求如電梯/寵物）
