@@ -150,6 +150,25 @@ model HeroSettings {
   updatedAt   DateTime @updatedAt
 }
 
+// 聯絡表單詢問紀錄（前台 /contact 送出後存入此表，後台 /admin/inquiries 處理）
+model ContactInquiry {
+  id           Int      @id @default(autoincrement())
+  name         String
+  phone        String
+  email        String?
+  region       String?
+  propertyType String?
+  budget       Int?
+  message      String?  @db.Text
+  status       String   @default("new") // new / contacted / closed
+  notes        String?  @db.Text        // 業務內部備註
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
 // 站點內容（服務特色 / 人才招募 / 聯絡我們 等可編輯區塊）
 model SiteContent {
   id        Int      @id @default(autoincrement())

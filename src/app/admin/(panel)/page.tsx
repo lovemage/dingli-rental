@@ -3,15 +3,15 @@ import { prisma } from '@/lib/prisma';
 import MaterialIcon from '@/components/admin/MaterialIcon';
 
 export default async function AdminDashboard() {
-  let stats = { total: 0, active: 0, inactive: 0, slides: 0 };
+  let stats = { total: 0, active: 0, newInquiries: 0, slides: 0 };
   try {
-    const [total, active, inactive, slides] = await Promise.all([
+    const [total, active, newInquiries, slides] = await Promise.all([
       prisma.property.count(),
       prisma.property.count({ where: { status: 'active' } }),
-      prisma.property.count({ where: { status: 'inactive' } }),
+      prisma.contactInquiry.count({ where: { status: 'new' } }),
       prisma.heroSlide.count(),
     ]);
-    stats = { total, active, inactive, slides };
+    stats = { total, active, newInquiries, slides };
   } catch {
     // DB 尚未連線時的預設值
   }
@@ -26,7 +26,14 @@ export default async function AdminDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="物件總數" num={stats.total} icon="home_work" />
         <StatCard title="已上架" num={stats.active} icon="check_circle" color="text-brand-green-700" />
-        <StatCard title="已下架" num={stats.inactive} icon="pause_circle" color="text-ink-500" />
+        <Link href="/admin/inquiries" className="block">
+          <StatCard
+            title="新進詢問"
+            num={stats.newInquiries}
+            icon="mark_email_unread"
+            color={stats.newInquiries > 0 ? 'text-red-600' : 'text-ink-500'}
+          />
+        </Link>
         <StatCard title="輪播圖" num={stats.slides} icon="imagesmode" color="text-brand-orange-700" />
       </div>
 
