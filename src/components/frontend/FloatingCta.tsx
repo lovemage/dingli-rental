@@ -32,15 +32,15 @@ export default function FloatingCta({ config }: { config: FloatingCtaContent }) 
         target="_blank"
         rel="noopener noreferrer"
         aria-label={config.label}
-        className="flex items-center gap-3 bg-white border border-line shadow-lg hover:shadow-xl rounded-full pr-5 pl-1.5 py-1.5 transition-all hover:-translate-y-0.5 active:translate-y-0"
+        className="flex items-center bg-white border border-line shadow-lg hover:shadow-xl rounded-full p-0.5 sm:gap-3 sm:pr-5 sm:pl-1.5 sm:py-1.5 transition-all hover:-translate-y-0.5 active:translate-y-0"
       >
         {/* 頭像 */}
-        <span className="relative flex-shrink-0">
+        <span className="relative flex-shrink-0 block">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={config.avatarUrl}
             alt=""
-            className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover border-2 border-white"
+            className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover border-2 border-white block"
             style={{ objectPosition: 'center 20%' }}
           />
           {/* 線上小綠點 */}

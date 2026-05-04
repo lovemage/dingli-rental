@@ -28,6 +28,13 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
     ? `${p.region}・${p.district}${p.street ? `・${p.street}` : ''}`
     : `${p.region}・${p.district}${p.street ? `・${p.street}` : ''}${p.lane ? `${p.lane}巷` : ''}${p.alley ? `${p.alley}弄` : ''}${p.number ? `${p.number}號` : ''}${p.numberSub ? `之${p.numberSub}` : ''}`;
 
+  // 地圖只用「大略地址」(縣市 + 區 + 街道)，刻意不帶巷弄號，避免同行精準盜開發
+  const mapQueryParts = [p.region, p.district];
+  if (!p.hideAddress && p.street) mapQueryParts.push(p.street);
+  const mapQuery = mapQueryParts.join(' ');
+  // 經典 Google Maps embed (不需 API key)；z=16 約 500m 半徑
+  const mapSrc = `https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&z=16&output=embed`;
+
   return (
     <>
       <Header />
@@ -92,6 +99,22 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
                   <Info label="可遷入" value={p.anytimeMoveIn ? '隨時可入住' : (p.moveInDate ? new Date(p.moveInDate).toLocaleDateString('zh-TW') : '-')} />
                 </div>
                 {tenantTypes.length > 0 && <Tags label="身份要求" items={tenantTypes} />}
+
+                <h2 className="font-bold text-lg mb-3 mt-6">大略位置</h2>
+                <div className="rounded-xl overflow-hidden border border-line bg-paper-2">
+                  <iframe
+                    title={`${p.title} 大略位置`}
+                    src={mapSrc}
+                    width="100%"
+                    height="320"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    style={{ border: 0, display: 'block' }}
+                  />
+                </div>
+                <p className="text-xs text-ink-500 mt-2">
+                  ⓘ 為保護物件隱私，地圖僅顯示街區範圍。詳細地址請洽業務專員。
+                </p>
 
                 {p.description && (
                   <>
