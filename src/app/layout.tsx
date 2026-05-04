@@ -1,5 +1,17 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import FloatingCta from '@/components/frontend/FloatingCta';
+import { prisma } from '@/lib/prisma';
+import { FLOATING_CTA_DEFAULTS, type FloatingCtaContent } from '@/data/floating-cta-defaults';
+
+async function getFloatingCta(): Promise<FloatingCtaContent> {
+  try {
+    const row = await prisma.siteContent.findUnique({ where: { section: 'floating_cta' } });
+    return { ...FLOATING_CTA_DEFAULTS, ...((row?.data as Partial<FloatingCtaContent>) || {}) };
+  } catch {
+    return FLOATING_CTA_DEFAULTS;
+  }
+}
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://dingli-rental.com'),
@@ -15,9 +27,10 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const floatingCta = await getFloatingCta();
   return (
     <html lang="zh-TW">
       <head>
@@ -29,7 +42,10 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <FloatingCta config={floatingCta} />
+      </body>
     </html>
   );
 }
