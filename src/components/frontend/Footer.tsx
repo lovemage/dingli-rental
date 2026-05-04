@@ -7,7 +7,7 @@ export default function Footer() {
       <div className="container-page">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10 mb-12">
           <div>
-            <Image src="/LOGO_0.png" alt="鼎立租售管理" width={200} height={40} className="h-12 w-auto mb-4 brightness-0 invert" />
+            <Image src="/LOGO_0.png" alt="鼎立租售管理" width={200} height={40} className="h-12 w-auto mb-4" style={{ width: 'auto' }} />
             <p className="text-sm text-white/60 max-w-xs leading-relaxed">
               鼎立租售管理 Dingli Rental Service — 深耕北北基桃竹的專業租賃品牌，以誠信、透明、貼心為核心，陪您找到真正想回去的家。
             </p>

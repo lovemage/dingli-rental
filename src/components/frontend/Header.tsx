@@ -12,7 +12,7 @@ export default function Header() {
       <div className="container-page">
         <nav className="flex items-center justify-between h-[76px]">
           <Link href="/" className="flex items-center gap-3" onClick={() => setOpen(false)}>
-            <Image src="/LOGO_0.png" alt="鼎立租售管理 Dingli Rental Service" width={220} height={44} priority className="h-11 w-auto" />
+            <Image src="/LOGO_0.png" alt="鼎立租售管理 Dingli Rental Service" width={220} height={44} priority className="h-11 w-auto" style={{ width: 'auto' }} />
           </Link>
 
           {/* desktop nav */}

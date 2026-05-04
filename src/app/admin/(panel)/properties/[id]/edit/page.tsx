@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import PropertyForm from '@/components/admin/PropertyForm';
+import { getTaxonomies } from '@/lib/taxonomies';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,10 +10,13 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
   const id = Number(rawId);
   if (!id) notFound();
 
-  const property = await prisma.property.findUnique({
-    where: { id },
-    include: { images: { orderBy: { order: 'asc' } } },
-  }).catch(() => null);
+  const [property, taxonomies] = await Promise.all([
+    prisma.property.findUnique({
+      where: { id },
+      include: { images: { orderBy: { order: 'asc' } } },
+    }).catch(() => null),
+    getTaxonomies(),
+  ]);
 
   if (!property) notFound();
 
@@ -33,7 +37,7 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
         <h1 className="text-2xl sm:text-3xl font-black mb-1">編輯物件</h1>
         <p className="text-ink-500 text-sm">物件 ID: {id}</p>
       </div>
-      <PropertyForm initial={initial} propertyId={id} />
+      <PropertyForm initial={initial} propertyId={id} taxonomies={taxonomies} />
     </div>
   );
 }

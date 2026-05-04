@@ -75,7 +75,14 @@ export const DIRECTION_OPTIONS = [
 // 樓層類型
 export const FLOOR_TYPE_OPTIONS = ['出租單層', '全棟出租'] as const;
 
-// 特色標籤
+// 制度型特色標籤（固定，前台用綠色 badge 強化公信力）
 export const FEATURE_TAGS = [
   '社會住宅', '租金補貼', '高齡友善', '可報稅', '可入籍',
+] as const;
+
+// 常用自由特色標籤建議（後台 chip input 快速加入用，前台用橘色 badge）
+export const CUSTOM_TAG_SUGGESTIONS = [
+  '近捷運', '近車站', '採光佳', '挑高夾層', '邊間', '頂樓加蓋',
+  '景觀戶', '電梯', '寵物友善', '可開伙', '附車位', '雙衛浴',
+  '優質學區', '商圈核心', '安靜巷弄', '新成屋',
 ] as const;

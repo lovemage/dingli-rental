@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import MaterialIcon from '@/components/admin/MaterialIcon';
 import {
   CITY_DISTRICTS,
   REGIONS,
@@ -16,7 +17,9 @@ import {
   DIRECTION_OPTIONS,
   FLOOR_TYPE_OPTIONS,
   FEATURE_TAGS,
+  CUSTOM_TAG_SUGGESTIONS,
 } from '@/data/taiwan-addresses';
+import type { Taxonomies } from '@/lib/taxonomies';
 
 export type PropertyFormValue = {
   region: string;
@@ -89,11 +92,22 @@ const DEFAULTS: PropertyFormValue = {
 type Props = {
   initial?: Partial<PropertyFormValue>;
   propertyId?: number;
+  taxonomies?: Taxonomies;
 };
 
-export default function PropertyForm({ initial, propertyId }: Props) {
+export default function PropertyForm({ initial, propertyId, taxonomies }: Props) {
   const router = useRouter();
   const [v, setV] = useState<PropertyFormValue>({ ...DEFAULTS, ...(initial as any) });
+
+  // 動態分類選項（後台「標籤與分類」可編輯，未登入或讀取失敗時 fallback 至 data 預設值）
+  const PROP_TYPES   = taxonomies?.propertyTypes        || (PROPERTY_TYPES as readonly string[]);
+  const BLD_TYPES    = taxonomies?.buildingTypes        || (BUILDING_TYPES as readonly string[]);
+  const EQUIP_OPTS   = taxonomies?.equipment            || (EQUIPMENT_OPTIONS as readonly string[]);
+  const FURN_OPTS    = taxonomies?.furniture            || (FURNITURE_OPTIONS as readonly string[]);
+  const TENANT_OPTS  = taxonomies?.tenantTypes          || (TENANT_TYPES as readonly string[]);
+  const RENT_INC     = taxonomies?.rentIncludes         || (RENT_INCLUDES_OPTIONS as readonly string[]);
+  const POLICY_TAGS  = taxonomies?.policyTags           || (FEATURE_TAGS as readonly string[]);
+  const CUSTOM_SUGS  = taxonomies?.customTagSuggestions || (CUSTOM_TAG_SUGGESTIONS as readonly string[]);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
@@ -202,12 +216,12 @@ export default function PropertyForm({ initial, propertyId }: Props) {
           </Field>
           <Field label="中分類（類型）">
             <select className="input-base" value={v.typeMid} onChange={(e) => update('typeMid', e.target.value)}>
-              {PROPERTY_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+              {PROP_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
           </Field>
           <Field label="小分類（建物）">
             <select className="input-base" value={v.buildingType} onChange={(e) => update('buildingType', e.target.value)}>
-              {BUILDING_TYPES.map((b) => <option key={b} value={b}>{b}</option>)}
+              {BLD_TYPES.map((b) => <option key={b} value={b}>{b}</option>)}
             </select>
           </Field>
         </div>
@@ -347,7 +361,7 @@ export default function PropertyForm({ initial, propertyId }: Props) {
         {/* 設備家具 */}
         <Field label="提供設備">
           <div className="flex flex-wrap gap-3">
-            {EQUIPMENT_OPTIONS.map((e) => (
+            {EQUIP_OPTS.map((e) => (
               <label key={e} className="inline-flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={v.equipment.includes(e)} onChange={() => toggleArray('equipment', e)} />
                 {e}
@@ -358,7 +372,7 @@ export default function PropertyForm({ initial, propertyId }: Props) {
 
         <Field label="提供家具">
           <div className="flex flex-wrap gap-3">
-            {FURNITURE_OPTIONS.map((f) => (
+            {FURN_OPTS.map((f) => (
               <label key={f} className="inline-flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={v.furniture.includes(f)} onChange={() => toggleArray('furniture', f)} />
                 {f}
@@ -377,7 +391,7 @@ export default function PropertyForm({ initial, propertyId }: Props) {
         {/* 身份 / 規範 */}
         <Field label="身份要求">
           <div className="flex flex-wrap gap-3">
-            {TENANT_TYPES.map((t) => (
+            {TENANT_OPTS.map((t) => (
               <label key={t} className="inline-flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={v.tenantTypes.includes(t)} onChange={() => toggleArray('tenantTypes', t)} />
                 {t}
@@ -421,7 +435,7 @@ export default function PropertyForm({ initial, propertyId }: Props) {
 
         <Field label="租金包含">
           <div className="flex flex-wrap gap-3">
-            {RENT_INCLUDES_OPTIONS.map((r) => (
+            {RENT_INC.map((r) => (
               <label key={r} className="inline-flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={v.rentIncludes.includes(r)} onChange={() => toggleArray('rentIncludes', r)} />
                 {r}
@@ -467,15 +481,38 @@ export default function PropertyForm({ initial, propertyId }: Props) {
           <p className="text-xs text-ink-500 mt-1">已輸入 {v.title.length} 字，限 6 ~ 30 字</p>
         </Field>
 
-        <Field label="特色標籤">
+        <Field label="制度型標籤">
           <div className="flex flex-wrap gap-3">
-            {FEATURE_TAGS.map((t) => (
-              <label key={t} className="inline-flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={v.featureTags.includes(t)} onChange={() => toggleArray('featureTags', t)} />
-                {t}
+            {POLICY_TAGS.map((t) => (
+              <label
+                key={t}
+                className={`inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-full border cursor-pointer transition ${v.featureTags.includes(t) ? 'bg-brand-green-50 border-brand-green-500 text-brand-green-900' : 'bg-white border-line text-ink-700 hover:border-brand-green-500'}`}
+              >
+                <input
+                  type="checkbox"
+                  className="hidden"
+                  checked={v.featureTags.includes(t)}
+                  onChange={() => toggleArray('featureTags', t)}
+                />
+                {v.featureTags.includes(t) ? '✓ ' : ''}{t}
               </label>
             ))}
           </div>
+          <p className="text-xs text-ink-500 mt-2">屬於政府或公信力認證的標籤，前台會以綠色顯示。</p>
+        </Field>
+
+        <Field label="自由特色標籤">
+          <CustomTagsInput
+            value={v.featureTags.filter((t) => !POLICY_TAGS.includes(t))}
+            onChange={(customs) => {
+              const policy = v.featureTags.filter((t) => POLICY_TAGS.includes(t));
+              update('featureTags', [...policy, ...customs]);
+            }}
+            suggestions={CUSTOM_SUGS}
+          />
+          <p className="text-xs text-ink-500 mt-2">
+            描述物件的賣點（採光、近捷運、邊間…），前台會以橘色顯示。可從建議點選或自由輸入。
+          </p>
         </Field>
 
         <Field label="現況特色描述">
@@ -506,7 +543,9 @@ export default function PropertyForm({ initial, propertyId }: Props) {
               <div key={url} className="relative group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={url} alt="" className="w-full aspect-square object-cover rounded-lg border border-line" />
-                <button type="button" onClick={() => removeImage(url)} className="absolute top-1 right-1 bg-white/95 rounded-full w-7 h-7 grid place-items-center text-sm border border-line shadow-sm opacity-0 group-hover:opacity-100 transition">✕</button>
+                <button type="button" onClick={() => removeImage(url)} className="absolute top-1 right-1 bg-white/95 rounded-full w-7 h-7 grid place-items-center text-sm border border-line shadow-sm opacity-0 group-hover:opacity-100 transition">
+                  <MaterialIcon name="close" className="text-base" />
+                </button>
                 {i === 0 && <span className="absolute bottom-1 left-1 bg-brand-green-700 text-white text-xs px-2 py-0.5 rounded-full font-bold">封面</span>}
               </div>
             ))}
@@ -562,6 +601,100 @@ function Field({ label, required, children }: { label: string; required?: boolea
         {label}
       </label>
       {children}
+    </div>
+  );
+}
+
+function CustomTagsInput({
+  value,
+  onChange,
+  suggestions,
+}: {
+  value: string[];
+  onChange: (next: string[]) => void;
+  suggestions: readonly string[];
+}) {
+  const [input, setInput] = useState('');
+
+  function addTag(raw: string) {
+    const t = raw.trim();
+    if (!t) return;
+    if (value.includes(t)) return;
+    onChange([...value, t]);
+    setInput('');
+  }
+
+  function removeTag(t: string) {
+    onChange(value.filter((x) => x !== t));
+  }
+
+  const unused = suggestions.filter((s) => !value.includes(s));
+
+  return (
+    <div>
+      <div className="flex flex-wrap gap-1.5 mb-2 min-h-[36px] px-2 py-2 rounded-lg border border-line bg-paper">
+        {value.length === 0 && (
+          <span className="text-xs text-ink-300 px-1">尚未加入特色標籤</span>
+        )}
+        {value.map((t) => (
+          <span
+            key={t}
+            className="inline-flex items-center gap-1 bg-brand-orange-50 text-brand-orange-700 text-xs px-2.5 py-1 rounded-full border border-brand-orange-300/40"
+          >
+            {t}
+            <button
+              type="button"
+              onClick={() => removeTag(t)}
+              className="hover:text-brand-orange-900"
+              aria-label={`移除 ${t}`}
+            >
+              ×
+            </button>
+          </span>
+        ))}
+      </div>
+
+      <div className="flex gap-2">
+        <input
+          type="text"
+          className="input-base flex-1"
+          placeholder="輸入後按 Enter 加入新標籤"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ',') {
+              e.preventDefault();
+              addTag(input);
+            }
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => addTag(input)}
+          disabled={!input.trim()}
+          className="btn btn-secondary text-sm whitespace-nowrap disabled:opacity-50"
+        >
+          加入
+        </button>
+      </div>
+
+      {unused.length > 0 && (
+        <div className="mt-2.5">
+          <p className="text-xs text-ink-500 mb-1">建議標籤：</p>
+          <div className="flex flex-wrap gap-1.5">
+            {unused.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => addTag(s)}
+                className="text-xs text-ink-700 px-2.5 py-1 rounded-full bg-paper-2 border border-line hover:bg-brand-orange-50 hover:border-brand-orange-300 hover:text-brand-orange-700 transition"
+              >
+                + {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

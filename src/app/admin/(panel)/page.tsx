@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
+import MaterialIcon from '@/components/admin/MaterialIcon';
 
 export default async function AdminDashboard() {
   let stats = { total: 0, active: 0, inactive: 0, slides: 0 };
@@ -23,19 +24,19 @@ export default async function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="物件總數" num={stats.total} icon="🏠" />
-        <StatCard title="已上架" num={stats.active} icon="✅" color="text-brand-green-700" />
-        <StatCard title="已下架" num={stats.inactive} icon="⏸️" color="text-ink-500" />
-        <StatCard title="輪播圖" num={stats.slides} icon="🖼️" color="text-brand-orange-700" />
+        <StatCard title="物件總數" num={stats.total} icon="home_work" />
+        <StatCard title="已上架" num={stats.active} icon="check_circle" color="text-brand-green-700" />
+        <StatCard title="已下架" num={stats.inactive} icon="pause_circle" color="text-ink-500" />
+        <StatCard title="輪播圖" num={stats.slides} icon="imagesmode" color="text-brand-orange-700" />
       </div>
 
       <div className="admin-card">
         <h2 className="font-bold text-lg mb-4">快速操作</h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <QuickAction href="/admin/properties/new" icon="➕" label="新增物件" />
-          <QuickAction href="/admin/properties" icon="📋" label="物件列表" />
-          <QuickAction href="/admin/hero" icon="🖼️" label="輪播管理" />
-          <QuickAction href="/admin/settings" icon="🔐" label="修改密碼" />
+          <QuickAction href="/admin/properties/new" icon="add_circle" label="新增物件" />
+          <QuickAction href="/admin/properties" icon="list_alt" label="物件列表" />
+          <QuickAction href="/admin/hero" icon="imagesmode" label="輪播管理" />
+          <QuickAction href="/admin/settings" icon="lock" label="修改密碼" />
         </div>
       </div>
 
@@ -61,7 +62,7 @@ function StatCard({ title, num, icon, color = 'text-ink-900' }: { title: string;
           <p className="text-xs text-ink-500 mb-1">{title}</p>
           <p className={`text-3xl font-black ${color}`}>{num}</p>
         </div>
-        <div className="text-3xl">{icon}</div>
+        <MaterialIcon name={icon} className="text-4xl text-ink-500" />
       </div>
     </div>
   );
@@ -70,7 +71,7 @@ function StatCard({ title, num, icon, color = 'text-ink-900' }: { title: string;
 function QuickAction({ href, icon, label }: { href: string; icon: string; label: string }) {
   return (
     <Link href={href} className="border border-line rounded-lg p-4 hover:border-brand-green-500 hover:bg-brand-green-50/50 transition flex items-center gap-3">
-      <span className="text-2xl">{icon}</span>
+      <MaterialIcon name={icon} className="text-3xl text-ink-700" />
       <span className="font-medium text-ink-900">{label}</span>
     </Link>
   );

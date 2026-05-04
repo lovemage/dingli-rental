@@ -49,7 +49,7 @@ function LoginInner() {
     <main className="min-h-screen grid place-items-center bg-paper-2 p-4">
       <form onSubmit={submit} className="w-full max-w-sm bg-white rounded-xl shadow-md border border-line p-7">
         <div className="text-center mb-6">
-          <Image src="/LOGO_0.png" alt="鼎立租售管理" width={220} height={44} className="h-12 w-auto mx-auto mb-3" />
+          <Image src="/LOGO_0.png" alt="鼎立租售管理" width={220} height={44} priority className="h-12 w-auto mx-auto mb-3" style={{ width: 'auto' }} />
           <p className="text-sm text-ink-500">後台管理系統</p>
         </div>
 

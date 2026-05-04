@@ -5,10 +5,17 @@ import { deleteUpload } from '@/lib/storage';
 
 export const dynamic = 'force-dynamic';
 
-// GET — 公開讀取
-export async function GET() {
+// GET — 公開讀取（admin 用 ?all=1 取得全部含未啟用的圖）
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const all = url.searchParams.get('all') === '1';
+  let me = null;
+  if (all) {
+    me = await getCurrentAdmin();
+  }
+  const where = all && me ? {} : { active: true };
   const [slides, settings] = await Promise.all([
-    prisma.heroSlide.findMany({ where: { active: true }, orderBy: { order: 'asc' }, take: 3 }),
+    prisma.heroSlide.findMany({ where, orderBy: { order: 'asc' }, take: 3 }),
     prisma.heroSettings.findUnique({ where: { id: 1 } }),
   ]);
   return NextResponse.json({

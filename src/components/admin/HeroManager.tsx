@@ -15,7 +15,7 @@ export default function HeroManager() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/api/hero');
+        const res = await fetch('/api/hero?all=1', { cache: 'no-store' });
         const data = await res.json();
         setSlides(data.slides || []);
         setIntervalSec(data.intervalSec || 5);

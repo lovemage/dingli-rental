@@ -31,6 +31,23 @@ body {
 
 a { color: inherit; }
 
+.material-symbols-rounded {
+  font-family: "Material Symbols Rounded";
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: "liga";
+  font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+}
+
 @layer components {
   .btn {
     @apply inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 font-bold text-sm transition cursor-pointer border-0;
@@ -118,4 +135,57 @@ a { color: inherit; }
   width: 24px;
   background: #fff;
   border-radius: 999px;
+}
+
+/* testimonials marquee */
+.testimonial-marquee {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+
+.testimonial-track {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 24px;
+  padding: 12px 4px;
+  width: max-content;
+  will-change: transform;
+  animation-name: testimonial-scroll;
+  animation-duration: 44s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.testimonial-marquee:hover .testimonial-track {
+  animation-play-state: paused;
+}
+
+.testimonial-card {
+  width: min(86vw, 360px);
+  min-height: 260px;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.testimonial-card .line-clamp-5 {
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@keyframes testimonial-scroll {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .testimonial-track {
+    animation: none;
+  }
 }

@@ -1,39 +1,114 @@
 import Link from 'next/link';
 import Header from '@/components/frontend/Header';
 import Footer from '@/components/frontend/Footer';
+import PropertyCard, { type PropertyCardData } from '@/components/frontend/PropertyCard';
+import PropertyFilters from '@/components/frontend/PropertyFilters';
 import { prisma } from '@/lib/prisma';
-import { REGIONS, PROPERTY_TYPES, BUILDING_TYPES } from '@/data/taiwan-addresses';
+import type { Prisma } from '@/generated/prisma/client';
 
 export const dynamic = 'force-dynamic';
 
 type SearchParams = {
   q?: string;
   region?: string;
+  district?: string;
   type?: string;
   building?: string;
   minRent?: string;
   maxRent?: string;
+  minArea?: string;
+  maxArea?: string;
+  rooms?: string;
+  ageMax?: string;
+  elevator?: string;
+  pets?: string;
+  cooking?: string;
+  tags?: string;
+  equipment?: string;
+  sort?: string;
   page?: string;
 };
 
+function parseSort(sort?: string): Prisma.PropertyOrderByWithRelationInput[] {
+  switch (sort) {
+    case 'newest': return [{ createdAt: 'desc' }];
+    case 'rent_asc': return [{ rent: 'asc' }];
+    case 'rent_desc': return [{ rent: 'desc' }];
+    case 'area_desc': return [{ usableArea: 'desc' }];
+    case 'age_asc':
+      // null 屋齡放最後
+      return [{ buildingAge: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }];
+    default:
+      return [{ featured: 'desc' }, { createdAt: 'desc' }];
+  }
+}
+
 async function search(params: SearchParams) {
-  const where: any = { status: 'active' };
+  const where: Prisma.PropertyWhereInput = { status: 'active' };
+
   if (params.region) where.region = params.region;
+  if (params.district) where.district = params.district;
   if (params.type) where.typeMid = params.type;
   if (params.building) where.buildingType = params.building;
-  if (params.minRent || params.maxRent) {
-    where.rent = {};
-    if (params.minRent) where.rent.gte = Number(params.minRent);
-    if (params.maxRent) where.rent.lte = Number(params.maxRent);
+
+  // 租金 / 坪數區間
+  const rentRange: Prisma.IntFilter = {};
+  if (params.minRent) rentRange.gte = Number(params.minRent);
+  if (params.maxRent) rentRange.lte = Number(params.maxRent);
+  if (Object.keys(rentRange).length) where.rent = rentRange;
+
+  const areaRange: Prisma.FloatFilter = {};
+  if (params.minArea) areaRange.gte = Number(params.minArea);
+  if (params.maxArea) areaRange.lte = Number(params.maxArea);
+  if (Object.keys(areaRange).length) where.usableArea = areaRange;
+
+  // 房型最少
+  if (params.rooms) where.rooms = { gte: Number(params.rooms) };
+
+  // 屋齡上限
+  if (params.ageMax) where.buildingAge = { lte: Number(params.ageMax) };
+
+  // 必備條件
+  if (params.elevator === '1') where.hasElevator = true;
+  if (params.pets === '1') where.petsAllowed = true;
+  if (params.cooking === '1') where.cookingAllowed = true;
+
+  const andClauses: Prisma.PropertyWhereInput[] = [];
+
+  // 多選 tags（任一即可）
+  if (params.tags) {
+    const tagsList = params.tags.split(',').map((t) => t.trim()).filter(Boolean);
+    if (tagsList.length) {
+      andClauses.push({
+        OR: tagsList.map((t) => ({ featureTags: { array_contains: t } as any })),
+      });
+    }
   }
+
+  // 多選 equipment（任一）
+  if (params.equipment) {
+    const eqList = params.equipment.split(',').map((t) => t.trim()).filter(Boolean);
+    if (eqList.length) {
+      andClauses.push({
+        OR: eqList.map((eq) => ({ equipment: { array_contains: eq } as any })),
+      });
+    }
+  }
+
+  // 關鍵字
   if (params.q) {
-    where.OR = [
-      { title: { contains: params.q, mode: 'insensitive' } },
-      { description: { contains: params.q, mode: 'insensitive' } },
-      { community: { contains: params.q, mode: 'insensitive' } },
-      { district: { contains: params.q, mode: 'insensitive' } },
-    ];
+    andClauses.push({
+      OR: [
+        { title: { contains: params.q, mode: 'insensitive' } },
+        { description: { contains: params.q, mode: 'insensitive' } },
+        { community: { contains: params.q, mode: 'insensitive' } },
+        { district: { contains: params.q, mode: 'insensitive' } },
+        { street: { contains: params.q, mode: 'insensitive' } },
+      ],
+    });
   }
+
+  if (andClauses.length) where.AND = andClauses;
 
   const page = Math.max(1, Number(params.page || 1));
   const pageSize = 12;
@@ -43,7 +118,7 @@ async function search(params: SearchParams) {
       prisma.property.findMany({
         where,
         include: { images: { orderBy: { order: 'asc' }, take: 1 } },
-        orderBy: [{ featured: 'desc' }, { createdAt: 'desc' }],
+        orderBy: parseSort(params.sort),
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
@@ -55,122 +130,114 @@ async function search(params: SearchParams) {
   }
 }
 
-export default async function PropertiesPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
-  const resolvedSearchParams = await searchParams;
-  const { items, total, page, pageSize } = await search(resolvedSearchParams);
+export default async function PropertiesPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const sp = await searchParams;
+  const { items, total, page, pageSize } = await search(sp);
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  const cards: PropertyCardData[] = items.map((p: any) => ({
+    id: p.id,
+    title: p.title,
+    region: p.region,
+    district: p.district,
+    street: p.street,
+    community: p.community,
+    typeMid: p.typeMid,
+    rooms: p.rooms,
+    bathrooms: p.bathrooms,
+    livingRooms: p.livingRooms,
+    usableArea: p.usableArea,
+    rent: p.rent,
+    imageUrl: p.images[0]?.url ?? null,
+    featureTags: Array.isArray(p.featureTags) ? p.featureTags : [],
+    buildingAge: p.buildingAge,
+    hasElevator: p.hasElevator,
+    petsAllowed: p.petsAllowed,
+    cookingAllowed: p.cookingAllowed,
+    description: p.description,
+    hideAddress: p.hideAddress,
+    featured: p.featured,
+  }));
 
   return (
     <>
       <Header />
       <main>
-        <section className="bg-gradient-to-b from-paper to-paper-2 py-12 sm:py-16">
+        <section className="bg-gradient-to-b from-paper to-paper-2 pt-12 pb-6">
           <div className="container-page">
-            <div className="text-center mb-10">
+            <div className="text-center mb-6">
               <span className="eyebrow"><span className="dot" />PROPERTIES</span>
-              <h1 className="text-3xl sm:text-4xl font-black mt-3 mb-2">物件搜尋</h1>
-              <p className="text-ink-500">深耕北北基桃竹，嚴選真實在地物件</p>
+              <h1 className="text-3xl sm:text-4xl font-black mt-3 mb-1">物件搜尋</h1>
+              <p className="text-ink-500 text-sm">深耕北北基桃竹，嚴選真實在地物件</p>
             </div>
-
-            <form action="/properties" method="get" className="bg-white rounded-xl shadow-md border border-line p-4 sm:p-5 max-w-5xl mx-auto">
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 items-end">
-                <div className="col-span-2 lg:col-span-2">
-                  <label className="label-base">關鍵字</label>
-                  <input name="q" defaultValue={resolvedSearchParams.q || ''} placeholder="路名、社區、物件名" className="input-base" />
-                </div>
-                <div>
-                  <label className="label-base">縣市</label>
-                  <select name="region" defaultValue={resolvedSearchParams.region || ''} className="input-base">
-                    <option value="">全部</option>
-                    {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="label-base">類型</label>
-                  <select name="type" defaultValue={resolvedSearchParams.type || ''} className="input-base">
-                    <option value="">全部</option>
-                    {PROPERTY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="label-base">建物</label>
-                  <select name="building" defaultValue={resolvedSearchParams.building || ''} className="input-base">
-                    <option value="">全部</option>
-                    {BUILDING_TYPES.map(b => <option key={b} value={b}>{b}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="label-base">最低租金</label>
-                  <input name="minRent" type="number" min={0} defaultValue={resolvedSearchParams.minRent || ''} placeholder="0" className="input-base" />
-                </div>
-                <div>
-                  <label className="label-base">最高租金</label>
-                  <input name="maxRent" type="number" min={0} defaultValue={resolvedSearchParams.maxRent || ''} placeholder="不限" className="input-base" />
-                </div>
-                <button type="submit" className="btn btn-orange col-span-2 sm:col-span-1 sm:col-start-3 lg:col-auto">🔍 搜尋</button>
-              </div>
-            </form>
           </div>
         </section>
 
-        <section className="py-14">
+        <section className="pb-16">
           <div className="container-page">
-            <div className="flex items-center justify-between mb-6">
-              <p className="text-ink-500">共 <span className="font-bold text-ink-900">{total}</span> 筆物件</p>
-            </div>
+            <PropertyFilters total={total} />
 
-            {items.length === 0 ? (
-              <div className="bg-paper-2 rounded-xl border border-line p-12 text-center text-ink-500">
+            {cards.length === 0 ? (
+              <div className="bg-paper-2 rounded-xl border border-line p-12 text-center text-ink-500 mt-8">
                 <p className="text-lg mb-2">目前沒有符合條件的物件</p>
-                <p className="text-sm">請調整搜尋條件或聯繫業務專員：<Link href="/contact" className="text-brand-green-700 underline">聯絡我們</Link></p>
+                <p className="text-sm">
+                  請調整搜尋條件，或聯繫業務專員：
+                  <Link href="/contact" className="text-brand-green-700 underline">
+                    聯絡我們
+                  </Link>
+                </p>
               </div>
             ) : (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-7">
-                {items.map((p: any) => (
-                  <Link key={p.id} href={`/properties/${p.id}`} className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 transition flex flex-col border border-line">
-                    <div className="relative aspect-[4/3] overflow-hidden bg-paper-2">
-                      {p.images[0] ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={p.images[0].url} alt={p.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full grid place-items-center text-ink-300">暫無圖片</div>
-                      )}
-                      <span className="absolute top-3 left-3 bg-brand-green-700 text-white text-xs font-bold px-3 py-1 rounded-full">出租</span>
-                      <span className="absolute top-3 right-3 bg-white/90 text-ink-700 text-xs font-medium px-2.5 py-1 rounded-full">{p.typeMid}</span>
-                    </div>
-                    <div className="p-5 flex flex-col flex-1">
-                      <h3 className="text-2xl font-black text-brand-green-900 mb-1">NT$ {p.rent.toLocaleString()} <span className="text-sm text-ink-500 font-medium">/ 月</span></h3>
-                      <h4 className="text-base font-bold mb-1.5 line-clamp-1">{p.title}</h4>
-                      <p className="text-sm text-ink-500 mb-4 flex items-center gap-1">📍 {p.region}・{p.district}{p.hideAddress ? '' : (p.street ? `・${p.street}` : '')}</p>
-                      <div className="flex gap-4 pt-4 border-t border-line text-xs text-ink-700 mt-auto">
-                        <span>🛏 {p.rooms} 房</span>
-                        <span>🚿 {p.bathrooms} 衛</span>
-                        <span>📐 {p.usableArea} 坪</span>
-                      </div>
-                    </div>
-                  </Link>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-7 mt-8">
+                {cards.map((p) => (
+                  <PropertyCard key={p.id} property={p} />
                 ))}
               </div>
             )}
 
             {totalPages > 1 && (
-              <div className="flex justify-center gap-2 mt-10">
-                {Array.from({ length: totalPages }).map((_, i) => {
-                  const n = i + 1;
-                  const params = new URLSearchParams(resolvedSearchParams as Record<string, string>);
-                  params.set('page', String(n));
-                  return (
-                    <Link key={n} href={`/properties?${params.toString()}`} className={`w-10 h-10 grid place-items-center rounded-full text-sm font-medium transition ${n === page ? 'bg-brand-green-700 text-white' : 'bg-white border border-line text-ink-700 hover:border-brand-green-500'}`}>
-                      {n}
-                    </Link>
-                  );
-                })}
-              </div>
+              <Pagination total={totalPages} current={page} sp={sp} />
             )}
           </div>
         </section>
       </main>
       <Footer />
     </>
+  );
+}
+
+function Pagination({
+  total,
+  current,
+  sp,
+}: {
+  total: number;
+  current: number;
+  sp: SearchParams;
+}) {
+  return (
+    <div className="flex justify-center gap-2 mt-12">
+      {Array.from({ length: total }).map((_, i) => {
+        const n = i + 1;
+        const params = new URLSearchParams();
+        Object.entries(sp).forEach(([k, val]) => {
+          if (val) params.set(k, String(val));
+        });
+        params.set('page', String(n));
+        return (
+          <Link
+            key={n}
+            href={`/properties?${params.toString()}`}
+            className={`w-10 h-10 grid place-items-center rounded-full text-sm font-medium transition ${n === current ? 'bg-brand-green-700 text-white' : 'bg-white border border-line text-ink-700 hover:border-brand-green-500'}`}
+          >
+            {n}
+          </Link>
+        );
+      })}
+    </div>
   );
 }
