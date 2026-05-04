@@ -61,10 +61,12 @@ export default function ContactPage() {
                 </div>
               </div>
 
-              <div className="bg-paper-2 rounded-xl p-5 text-sm text-ink-700">
+              <div className="bg-paper-2 rounded-xl p-5 text-sm text-ink-700 space-y-1">
                 <h4 className="font-bold mb-2">公司資訊</h4>
-                <p>客服信箱：service@dingli-rental.com</p>
-                <p>客服專線：0800-000-000</p>
+                <p>公司名稱：鼎立房屋有限公司</p>
+                <p>統一編號：93790198</p>
+                <p>公司地址：新北市新莊區西盛街199號2樓</p>
+                <p>客服信箱：<a href="mailto:service@dingli-rental.com" className="text-brand-green-700 hover:underline">service@dingli-rental.com</a></p>
                 <p>服務時間：週一至週日 09:00 - 21:00</p>
                 <p>服務範圍：北北基桃竹</p>
               </div>

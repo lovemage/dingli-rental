@@ -31,14 +31,17 @@ export default function Footer() {
           </div>
           <div>
             <h5 className="text-white font-bold text-base mb-4">聯絡資訊</h5>
-            <p className="text-sm text-white/65 mb-2">客服信箱<br />service@dingli-rental.com</p>
-            <p className="text-sm text-white/65 mb-2">客服專線<br />0800-000-000</p>
+            <p className="text-sm text-white/65 mb-2">公司地址<br />新北市新莊區西盛街199號2樓</p>
+            <p className="text-sm text-white/65 mb-2">
+              客服信箱<br />
+              <a href="mailto:service@dingli-rental.com" className="hover:text-brand-orange-300">service@dingli-rental.com</a>
+            </p>
             <p className="text-sm text-white/65">服務時間<br />週一至週日 09:00 - 21:00</p>
           </div>
         </div>
 
         <div className="border-t border-white/10 pt-6 flex flex-wrap justify-between gap-3 text-xs text-white/50">
-          <span>© 2026 鼎立租售管理 Dingli Rental Service. All rights reserved.</span>
+          <span>© 2026 鼎立房屋有限公司 Dingli Rental Service. All rights reserved. ｜ 統一編號 93790198</span>
           <span>隱私權政策・服務條款</span>
         </div>
       </div>
