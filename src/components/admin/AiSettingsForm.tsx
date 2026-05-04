@@ -39,6 +39,11 @@ export default function AiSettingsForm() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
 
+  // 收合狀態（這些區塊不常動，預設關閉以減少視覺噪音）
+  const [modelOpen, setModelOpen] = useState(false);
+  const [sysPromptOpen, setSysPromptOpen] = useState(false);
+  const [userPromptOpen, setUserPromptOpen] = useState(false);
+
   // 初次載入：拿設定 + 若已有 key 自動拉模型
   useEffect(() => {
     (async () => {
@@ -177,13 +182,29 @@ export default function AiSettingsForm() {
 
       {/* === Model picker === */}
       <div className="admin-card">
-        <div className="flex items-center justify-between mb-4 pb-3 border-b border-line">
-          <div>
+        <button
+          type="button"
+          onClick={() => setModelOpen((s) => !s)}
+          className="w-full flex items-center justify-between text-left"
+          aria-expanded={modelOpen}
+        >
+          <div className="min-w-0">
             <h2 className="font-bold text-lg">AI 模型</h2>
-            <p className="text-xs text-ink-500 mt-0.5">
+            <p className="text-xs text-ink-500 mt-0.5 truncate">
               目前選用：<code className="bg-paper-2 px-1.5 py-0.5 rounded font-mono text-xs">{model}</code>
             </p>
           </div>
+          <span
+            className={`text-ink-500 text-base flex-shrink-0 ml-3 transition-transform ${modelOpen ? 'rotate-180' : ''}`}
+            aria-hidden
+          >
+            ▼
+          </span>
+        </button>
+
+        {modelOpen && (
+        <>
+        <div className="flex justify-end mt-4 pt-4 border-t border-line mb-3">
           <button type="button" onClick={() => loadModels(false)} disabled={loadingModels}
             className="btn btn-secondary text-xs whitespace-nowrap disabled:opacity-50">
             {loadingModels ? '載入中...' : '↻ 重新載入'}
@@ -268,50 +289,91 @@ export default function AiSettingsForm() {
         <p className="text-xs text-ink-500 mt-2">
           僅列出支援影像輸入的模型。價格為每百萬 token 的美金費用，僅供參考。
         </p>
+        </>
+        )}
       </div>
 
       {/* === System prompt === */}
       <div className="admin-card">
-        <div className="flex items-center justify-between mb-4 pb-3 border-b border-line">
-          <div>
+        <button
+          type="button"
+          onClick={() => setSysPromptOpen((s) => !s)}
+          className="w-full flex items-center justify-between text-left"
+          aria-expanded={sysPromptOpen}
+        >
+          <div className="min-w-0">
             <h2 className="font-bold text-lg">系統提示詞 (System Prompt)</h2>
             <p className="text-xs text-ink-500 mt-0.5">
               定義 AI 的角色與輸出規則。每次辨識照片時都會帶入。
             </p>
           </div>
-          <button type="button" onClick={resetSystemPrompt} className="text-xs text-ink-500 hover:text-brand-orange-700">
-            重設為預設
-          </button>
-        </div>
-        <textarea
-          className="input-base font-mono text-xs leading-relaxed min-h-[260px] resize-y"
-          value={systemPrompt}
-          onChange={(e) => setSystemPrompt(e.target.value)}
-        />
+          <span
+            className={`text-ink-500 text-base flex-shrink-0 ml-3 transition-transform ${sysPromptOpen ? 'rotate-180' : ''}`}
+            aria-hidden
+          >
+            ▼
+          </span>
+        </button>
+
+        {sysPromptOpen && (
+          <div className="mt-4 pt-4 border-t border-line">
+            <div className="flex justify-end mb-2">
+              <button type="button" onClick={resetSystemPrompt} className="text-xs text-ink-500 hover:text-brand-orange-700">
+                重設為預設
+              </button>
+            </div>
+            <textarea
+              className="input-base font-mono text-xs leading-relaxed min-h-[260px] resize-y"
+              value={systemPrompt}
+              onChange={(e) => setSystemPrompt(e.target.value)}
+            />
+          </div>
+        )}
       </div>
 
       {/* === User prompt === */}
       <div className="admin-card">
-        <div className="flex items-center justify-between mb-4 pb-3 border-b border-line">
-          <div>
+        <button
+          type="button"
+          onClick={() => setUserPromptOpen((s) => !s)}
+          className="w-full flex items-center justify-between text-left"
+          aria-expanded={userPromptOpen}
+        >
+          <div className="min-w-0">
             <h2 className="font-bold text-lg">使用者提示詞範本 (User Prompt Template)</h2>
             <p className="text-xs text-ink-500 mt-0.5">
-              支援變數：<code className="bg-paper-2 px-1 rounded">{'{photoCount}'}</code>、
-              <code className="bg-paper-2 px-1 rounded ml-1">{'{equipment}'}</code>、
-              <code className="bg-paper-2 px-1 rounded ml-1">{'{furniture}'}</code>、
-              <code className="bg-paper-2 px-1 rounded ml-1">{'{buildingTypes}'}</code>、
-              <code className="bg-paper-2 px-1 rounded ml-1">{'{propertyTypes}'}</code>
+              定義每次辨識時送進 AI 的請求內容（含變數）。
             </p>
           </div>
-          <button type="button" onClick={resetUserPrompt} className="text-xs text-ink-500 hover:text-brand-orange-700">
-            重設為預設
-          </button>
-        </div>
-        <textarea
-          className="input-base font-mono text-xs leading-relaxed min-h-[260px] resize-y"
-          value={userPromptTemplate}
-          onChange={(e) => setUserPromptTemplate(e.target.value)}
-        />
+          <span
+            className={`text-ink-500 text-base flex-shrink-0 ml-3 transition-transform ${userPromptOpen ? 'rotate-180' : ''}`}
+            aria-hidden
+          >
+            ▼
+          </span>
+        </button>
+
+        {userPromptOpen && (
+          <div className="mt-4 pt-4 border-t border-line">
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <p className="text-xs text-ink-500">
+                支援變數：<code className="bg-paper-2 px-1 rounded">{'{photoCount}'}</code>、
+                <code className="bg-paper-2 px-1 rounded ml-1">{'{equipment}'}</code>、
+                <code className="bg-paper-2 px-1 rounded ml-1">{'{furniture}'}</code>、
+                <code className="bg-paper-2 px-1 rounded ml-1">{'{buildingTypes}'}</code>、
+                <code className="bg-paper-2 px-1 rounded ml-1">{'{propertyTypes}'}</code>
+              </p>
+              <button type="button" onClick={resetUserPrompt} className="text-xs text-ink-500 hover:text-brand-orange-700 whitespace-nowrap">
+                重設為預設
+              </button>
+            </div>
+            <textarea
+              className="input-base font-mono text-xs leading-relaxed min-h-[260px] resize-y"
+              value={userPromptTemplate}
+              onChange={(e) => setUserPromptTemplate(e.target.value)}
+            />
+          </div>
+        )}
       </div>
 
       {/* === 底部固定送出列 === */}
