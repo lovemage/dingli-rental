@@ -10,6 +10,12 @@ import {
   BUILDING_TYPES,
   PROPERTY_TYPES,
   DIRECTION_OPTIONS,
+  CITIES,
+  CITY_DISTRICTS,
+  DEPOSIT_OPTIONS,
+  RENT_INCLUDES_OPTIONS,
+  MIN_LEASE_OPTIONS,
+  TENANT_TYPES,
 } from '@/data/taiwan-addresses';
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
@@ -85,8 +91,11 @@ function parseJsonResponse(text: string): Record<string, unknown> {
 function sanitize(raw: Record<string, unknown>): AiExtractedFields {
   const out: AiExtractedFields = {};
   const intField = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.round(v)) : undefined);
+  const floatField = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : undefined);
   const boolField = (v: unknown) => (typeof v === 'boolean' ? v : undefined);
   const strField = (v: unknown, max = 500) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : undefined);
+  const dateField = (v: unknown) =>
+    typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v.trim()) ? v.trim() : undefined;
   const enumField = <T extends readonly string[]>(v: unknown, options: T) =>
     typeof v === 'string' && (options as readonly string[]).includes(v) ? (v as T[number]) : undefined;
   const arrField = <T extends readonly string[]>(v: unknown, options: T) =>
@@ -100,7 +109,7 @@ function sanitize(raw: Record<string, unknown>): AiExtractedFields {
 
   const r = (k: keyof AiExtractedFields, v: unknown) => { if (v !== undefined) (out as any)[k] = v; };
 
-  // ALLOWED
+  // === A. PHOTO-VISIBLE ===
   r('rooms',           intField(raw.rooms));
   r('livingRooms',     intField(raw.livingRooms));
   r('bathrooms',       intField(raw.bathrooms));
@@ -114,10 +123,43 @@ function sanitize(raw: Record<string, unknown>): AiExtractedFields {
   r('featureTags',     tagArr(raw.featureTags));
   r('title',           strField(raw.title, 30));
   r('description',     strField(raw.description, 2500));
-  // SUGGESTABLE
   r('direction',       enumField(raw.direction, DIRECTION_OPTIONS));
   r('cookingAllowed',  boolField(raw.cookingAllowed));
   r('noManagementFee', boolField(raw.noManagementFee));
+
+  // === B. TEXT-IN-PHOTO（OCR 才填）===
+  // 地址
+  const city = enumField(raw.city, CITIES as readonly string[]);
+  r('city', city);
+  // district 必須屬於該 city 的清單，否則丟棄
+  if (city && typeof raw.district === 'string') {
+    const allowedDistricts = CITY_DISTRICTS[city] || [];
+    if (allowedDistricts.includes(raw.district)) r('district', raw.district);
+  }
+  r('street',          strField(raw.street, 60));
+  r('lane',            strField(raw.lane, 20));
+  r('alley',           strField(raw.alley, 20));
+  r('number',          strField(raw.number, 20));
+  r('numberSub',       strField(raw.numberSub, 20));
+  r('community',       strField(raw.community, 60));
+  // 樓層
+  r('floor',           strField(raw.floor, 10));
+  r('floorSub',        strField(raw.floorSub, 10));
+  r('totalFloor',      strField(raw.totalFloor, 10));
+  // 屋齡 / 坪數
+  r('buildingAge',     intField(raw.buildingAge));
+  r('usableArea',      floatField(raw.usableArea));
+  r('registeredArea',  floatField(raw.registeredArea));
+  // 價格
+  r('rent',            intField(raw.rent));
+  r('deposit',         enumField(raw.deposit, DEPOSIT_OPTIONS));
+  r('managementFee',   intField(raw.managementFee));
+  r('rentIncludes',    arrField(raw.rentIncludes, RENT_INCLUDES_OPTIONS));
+  // 租期 / 對象
+  r('minLease',        enumField(raw.minLease, MIN_LEASE_OPTIONS));
+  r('moveInDate',      dateField(raw.moveInDate));
+  r('tenantTypes',     arrField(raw.tenantTypes, TENANT_TYPES));
+  r('petsAllowed',     boolField(raw.petsAllowed));
 
   return out;
 }
