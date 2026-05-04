@@ -197,7 +197,8 @@ export async function extractFromPhotos(imageUrls: string[]): Promise<AiExtracte
       'Authorization': `Bearer ${settings.openrouterApiKey}`,
       'Content-Type': 'application/json',
       'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'https://dingli-rental.com',
-      'X-Title': '鼎立租售管理 - AI 物件辨識',
+      // OpenRouter X-Title 必須是 ASCII（HTTP header 規範），用英文 app 名
+      'X-Title': 'Dingli Rental - Property OCR',
     },
     body: JSON.stringify({
       model: settings.model,
