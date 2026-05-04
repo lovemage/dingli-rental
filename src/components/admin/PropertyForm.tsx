@@ -210,7 +210,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
         return next;
       });
       setAiAppliedKeys(appliedKeys);
-      setAiMsg(`✓ 已套用 ${appliedKeys.length} 個欄位 — 請檢查並補上 AI 看不出的欄位（地址、價格、坪數、樓層、屋齡…）`);
+      setAiMsg(`已套用 ${appliedKeys.length} 個欄位 — 請檢查並補上 OCR 未辨識到的欄位`);
     } catch (e: any) {
       setAiMsg(e?.message || 'AI 辨識失敗');
     } finally {
@@ -275,18 +275,21 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
     <form onSubmit={submit} className="space-y-5 pb-24">
       {err && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{err}</div>}
 
-      {/* === AI 拍照辨識 === */}
+      {/* === OCR 上架系統 === */}
       <div className="admin-card border-2 border-dashed border-brand-orange-300 bg-brand-orange-50/40">
         <div className="flex items-start justify-between gap-4 mb-3">
           <div>
             <h2 className="font-extrabold text-lg flex items-center gap-2">
               <MaterialIcon name="photo_camera" className="!text-2xl text-brand-orange-700" />
-              拍照辨識預填
+              OCR 上架系統
               <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-brand-orange-100 text-brand-orange-700">BETA</span>
             </h2>
-            <p className="text-xs text-ink-500 mt-1">
-              上傳 1-10 張物件照片，AI 自動填入「格局 / 設備 / 家具 / 特色標籤 / 標題 / 描述 / 建物類型」。
-              地址、價格、坪數、樓層、屋齡等欄位請人工填寫。
+            <p className="text-xs text-ink-500 mt-1 leading-relaxed">
+              上傳 1-10 張物件照片，自動辨識並填入欄位：
+              <span className="font-bold">A 類（看得到就填）</span>
+              格局／設備／家具／建物類型／特色／標題／描述；
+              <span className="font-bold">B 類（OCR 文字才填）</span>
+              照片中若有廣告單／看板／門牌／物件介紹紙本，會 OCR 出地址、樓層、坪數、屋齡、租金、押金、租期等資訊。
             </p>
           </div>
         </div>
@@ -304,8 +307,8 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
             onClick={aiExtract}
             className="btn btn-primary text-sm disabled:opacity-40"
           >
-            <MaterialIcon name="auto_awesome" className="!text-base mr-1" />
-            {aiRunning ? `AI 辨識中（${aiPhotos.length} 張照片）...` : `AI 辨識並填入（${aiPhotos.length} 張）`}
+            <MaterialIcon name="document_scanner" className="!text-base mr-1" />
+            {aiRunning ? `OCR 辨識中（${aiPhotos.length} 張照片）...` : `開始 OCR 辨識（${aiPhotos.length} 張）`}
           </button>
         </div>
 
@@ -316,8 +319,10 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={url} alt="" className="w-full aspect-square object-cover rounded-md border border-line" />
                 <button type="button" onClick={() => aiRemovePhoto(url)}
-                  className="absolute top-0.5 right-0.5 bg-white/95 rounded-full w-5 h-5 grid place-items-center text-xs border border-line opacity-0 group-hover:opacity-100 transition">
-                  ✕
+                  className="absolute top-0.5 right-0.5 bg-white/95 rounded-full w-5 h-5 grid place-items-center border border-line opacity-0 group-hover:opacity-100 transition"
+                  aria-label="移除照片"
+                >
+                  <MaterialIcon name="close" className="!text-xs text-ink-700" />
                 </button>
               </div>
             ))}
@@ -325,8 +330,12 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
         )}
 
         {aiMsg && (
-          <p className={`text-sm mt-3 ${aiMsg.startsWith('✓') ? 'text-brand-green-700' : 'text-red-600'}`}>
-            {aiMsg}
+          <p className={`text-sm mt-3 flex items-start gap-1.5 ${aiAppliedKeys.length > 0 ? 'text-brand-green-700' : 'text-red-600'}`}>
+            <MaterialIcon
+              name={aiAppliedKeys.length > 0 ? 'check_circle' : 'error'}
+              className="!text-base mt-0.5 flex-shrink-0"
+            />
+            <span>{aiMsg}</span>
           </p>
         )}
         {aiAppliedKeys.length > 0 && (
