@@ -14,6 +14,15 @@ const MAX_USER_MESSAGES = 20;
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
+const SUPPORTED_LANGUAGES: Record<string, string> = {
+  zh: '繁體中文 (Traditional Chinese, zh-TW)',
+  en: 'English',
+  ja: '日本語 (Japanese)',
+  vi: 'Tiếng Việt (Vietnamese)',
+  th: 'ภาษาไทย (Thai)',
+  id: 'Bahasa Indonesia',
+};
+
 async function loadLineUrl(): Promise<string> {
   try {
     const row = await prisma.siteContent.findUnique({ where: { section: 'floating_cta' } });
@@ -48,6 +57,9 @@ export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({} as any));
     const incoming: ChatMessage[] = Array.isArray(body?.messages) ? body.messages : [];
+    const languageCode: string =
+      typeof body?.language === 'string' && SUPPORTED_LANGUAGES[body.language] ? body.language : 'zh';
+    const languageName = SUPPORTED_LANGUAGES[languageCode];
 
     // 過濾與限長
     const cleanedMessages = incoming
@@ -104,7 +116,12 @@ ${propertyCatalog}
 9. 用戶詢問完整隱私權政策內容請提供 ${siteUrl}/privacy
 10. 一次最多推薦 3 個物件，避免訊息過長
 11. 訊息控制在 5 句話以內，需要時用條列項目
-12. 用繁體中文回應
+
+# 語言要求（最高優先）
+請使用 **${languageName}** 回應使用者。
+- 物件 ID、地址、社區名等專有名詞可保留繁體中文原文
+- 其他說明文字、推薦理由、引導語句等一律用 ${languageName}
+- 若使用者切換語言（用其他語言提問），跟隨使用者最新訊息的語言回應
 
 # 對話流程建議
 1. 先問清楚用戶需求（地區、房型、預算、特殊需求如電梯/寵物）
