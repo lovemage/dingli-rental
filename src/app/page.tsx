@@ -202,10 +202,9 @@ export default async function HomePage() {
         </section>
 
         {/* 物件分類 */}
-        <section className="py-24" id="categories">
+        <section className="py-16 sm:py-24" id="categories">
           <div className="container-page">
-            <SectionHead eyebrow="三大分類" title="找到最適合您的空間" sub="從溫暖小窩、辦公基地到實體店面，依您的生活與事業階段挑選。" />
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 md:gap-6">
               {categories.items.map((cat, i) => (
                 <CatCard
                   key={`${cat.tag}-${i}`}
@@ -344,15 +343,15 @@ function SectionHead({ eyebrow, title, sub }: { eyebrow: string; title: string; 
 
 function CatCard({ href, img, tag, title, desc }: { href: string; img: string; tag: string; title: string; desc: string }) {
   return (
-    <Link href={href} className="relative block rounded-xl overflow-hidden aspect-[4/5] shadow-sm hover:shadow-lg hover:-translate-y-1.5 transition group">
+    <Link href={href} className="relative block rounded-xl overflow-hidden aspect-square shadow-sm hover:shadow-lg hover:-translate-y-1.5 transition group">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={img} alt={title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-ink-900/85" />
-      <div className="absolute left-6 right-6 bottom-6 text-white">
-        <span className="inline-block bg-brand-orange-500 text-xs font-bold px-2.5 py-1 rounded-full mb-2 tracking-wide">{tag}</span>
-        <h3 className="text-2xl font-extrabold mb-1.5">{title}</h3>
-        <p className="text-sm opacity-90">{desc}</p>
-        <span className="inline-flex items-center gap-1 mt-3 font-bold text-sm text-brand-orange-300">查看物件 →</span>
+      <div className="absolute left-3 right-3 bottom-3 sm:left-6 sm:right-6 sm:bottom-6 text-white">
+        <span className="hidden sm:inline-block bg-brand-orange-500 text-xs font-bold px-2.5 py-1 rounded-full mb-2 tracking-wide">{tag}</span>
+        <h3 className="text-base sm:text-2xl font-extrabold sm:mb-1.5 leading-tight">{title}</h3>
+        <p className="hidden sm:block text-sm opacity-90">{desc}</p>
+        <span className="hidden sm:inline-flex items-center gap-1 mt-3 font-bold text-sm text-brand-orange-300">查看物件 →</span>
       </div>
     </Link>
   );
