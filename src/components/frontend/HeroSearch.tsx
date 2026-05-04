@@ -92,14 +92,14 @@ export default function HeroSearch({ propertyTypes }: Props = {}) {
         <div className="flex gap-2">
           <button
             type="submit"
-            className="btn btn-orange w-12 flex-shrink-0 grid place-items-center"
+            className="bg-brand-orange-500 hover:bg-brand-orange-700 text-white rounded-lg w-11 h-[42px] flex-shrink-0 grid place-items-center transition shadow-sm"
             aria-label="搜尋物件"
           >
             <MaterialIcon name="search" className="!text-xl" />
           </button>
           <AiChatWidget
             triggerLabel="鼎力 AI"
-            triggerClassName="ai-glow-btn btn bg-brand-green-700 hover:bg-brand-green-900 text-white whitespace-nowrap font-extrabold flex-1"
+            triggerClassName="ai-glow-btn bg-brand-green-700 hover:bg-brand-green-900 text-white rounded-lg h-[42px] px-4 flex-1 inline-flex items-center justify-center font-extrabold text-sm whitespace-nowrap transition shadow-sm"
           />
         </div>
       </div>
