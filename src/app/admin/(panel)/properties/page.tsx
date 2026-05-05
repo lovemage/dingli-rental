@@ -108,8 +108,8 @@ export default async function AdminPropertiesList() {
 
                   {/* 翻譯狀態徽章 */}
                   <div className="flex gap-1.5 mb-3 text-[11px] font-bold">
-                    <TransBadge label="EN" status={st.en} />
-                    <TransBadge label="JA" status={st.ja} />
+                    <TransBadge label="EN" status={st.en} href={`/en/properties/${p.id}`} />
+                    <TransBadge label="JA" status={st.ja} href={`/ja/properties/${p.id}`} />
                   </div>
 
                   <div className="flex gap-2">
@@ -140,9 +140,11 @@ export default async function AdminPropertiesList() {
 function TransBadge({
   label,
   status,
+  href,
 }: {
   label: string;
   status: 'fresh' | 'stale' | 'missing';
+  href: string;
 }) {
   const className =
     status === 'fresh'
@@ -153,9 +155,5 @@ function TransBadge({
   const icon = status === 'fresh' ? '✓' : status === 'stale' ? '↻' : '○';
   const title =
     status === 'fresh' ? '已翻譯，最新' : status === 'stale' ? '已翻譯，但內容已變更需重譯' : '尚未翻譯';
-  return (
-    <span className={`px-1.5 py-0.5 rounded ${className}`} title={title}>
-      {icon} {label}
-    </span>
-  );
+  return <Link href={href} target="_blank" className={`px-1.5 py-0.5 rounded hover:opacity-80 ${className}`} title={title}>{icon} {label}</Link>;
 }

@@ -42,11 +42,32 @@ export default function TranslatePendingButton() {
         type="button"
         onClick={run}
         disabled={running}
-        className="btn btn-secondary text-sm py-2 px-4 disabled:opacity-60"
-        title="檢查所有物件，對缺少英文 / 日文翻譯（或內容已變更）的物件執行翻譯"
+        className="btn btn-secondary disabled:opacity-60"
+        title="檢查所有物件，僅對缺少英文 / 日文翻譯的物件執行翻譯"
       >
         {running ? '翻譯中...' : '🌐 批次翻譯（缺 EN / JA）'}
       </button>
+
+      {running && (
+        <div
+          className="fixed inset-0 z-[70] bg-ink-900/60 backdrop-blur-sm grid place-items-center px-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white rounded-2xl shadow-2xl p-7 max-w-sm w-full text-center">
+            <div className="w-14 h-14 mx-auto mb-4 relative">
+              <div className="absolute inset-0 rounded-full border-4 border-brand-green-100" />
+              <div className="absolute inset-0 rounded-full border-4 border-brand-green-700 border-t-transparent animate-spin" />
+            </div>
+            <h3 className="font-extrabold text-lg mb-2">批次翻譯中</h3>
+            <p className="text-sm text-red-600 font-bold mb-3">請勿關閉視窗</p>
+            <div className="text-sm text-ink-700 space-y-1">
+              <p>語言轉換中...</p>
+              <p>資料庫導入中...</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="mt-2 text-sm text-red-600">⚠ {error}</div>
@@ -56,7 +77,7 @@ export default function TranslatePendingButton() {
           <p>
             {result.pending === 0 ? (
               <span className="text-brand-green-700 font-medium">
-                ✓ 所有 {result.total} 筆物件均已翻譯且最新
+                ✓ 所有 {result.total} 筆物件均已具備 EN / JA 翻譯
               </span>
             ) : (
               <span>
