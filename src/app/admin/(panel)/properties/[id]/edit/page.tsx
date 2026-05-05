@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import PropertyForm from '@/components/admin/PropertyForm';
@@ -33,9 +34,27 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-black mb-1">編輯物件</h1>
-        <p className="text-ink-500 text-sm">物件 ID: {id}</p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black mb-1">編輯物件</h1>
+          <p className="text-ink-500 text-sm">物件 ID: {id}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/en/properties/${id}`}
+            target="_blank"
+            className="btn btn-secondary text-sm"
+          >
+            EN
+          </Link>
+          <Link
+            href={`/ja/properties/${id}`}
+            target="_blank"
+            className="btn btn-secondary text-sm"
+          >
+            JA
+          </Link>
+        </div>
       </div>
       <PropertyForm initial={initial} propertyId={id} taxonomies={taxonomies} />
     </div>
