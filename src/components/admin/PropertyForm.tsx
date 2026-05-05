@@ -98,6 +98,18 @@ type Props = {
 };
 
 export default function PropertyForm({ initial, propertyId, taxonomies }: Props) {
+  const SAVE_PROGRESS_MESSAGES = [
+    '逐字稿生成中',
+    '物件翻譯中',
+    '專業用語導入中',
+    '資料庫導入中',
+    '儲存中',
+    '欄位校對中',
+    '多語內容同步中',
+    '格式整理中',
+    '索引更新中',
+    '最終確認中',
+  ];
   const router = useRouter();
   const [v, setV] = useState<PropertyFormValue>({ ...DEFAULTS, ...(initial as any) });
 
@@ -115,6 +127,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
   const [savePromptOpen, setSavePromptOpen] = useState(false);
   const [pendingPayload, setPendingPayload] = useState<any | null>(null);
   const [saveStage, setSaveStage] = useState<'saving' | 'translating' | ''>('');
+  const [saveMsgIdx, setSaveMsgIdx] = useState(0);
   const [err, setErr] = useState('');
   const [aiUploading, setAiUploading] = useState(false);
   const [aiRunning, setAiRunning] = useState(false);
@@ -185,6 +198,15 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
   }, [aiRunning]);
+
+  // 儲存流程中的系統提示：每 5 秒輪播一則
+  useEffect(() => {
+    if (!saving) return;
+    const timer = setInterval(() => {
+      setSaveMsgIdx((i) => (i + 1) % SAVE_PROGRESS_MESSAGES.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [saving, SAVE_PROGRESS_MESSAGES.length]);
 
   async function aiUpload(files: FileList | null) {
     if (!files?.length) return;
@@ -268,6 +290,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
     if (!pendingPayload) return;
     setErr('');
     setSaving(true);
+    setSaveMsgIdx(0);
     setSavePromptOpen(false);
     setSaveStage('saving');
     try {
@@ -298,6 +321,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
     } finally {
       setSaveStage('');
       setSaving(false);
+      setSaveMsgIdx(0);
       setPendingPayload(null);
     }
   }
@@ -854,6 +878,25 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
                 Yes
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* === 儲存/翻譯進度彈窗 === */}
+      {saving && (
+        <div
+          className="fixed inset-0 z-[66] bg-ink-900/55 backdrop-blur-sm grid place-items-center px-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-7 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 relative">
+              <div className="absolute inset-0 rounded-full border-4 border-brand-green-100" />
+              <div className="absolute inset-0 rounded-full border-4 border-brand-green-700 border-t-transparent animate-spin" />
+            </div>
+            <h3 className="text-lg font-extrabold mb-1">系統處理中</h3>
+            <p className="text-sm text-red-600 font-bold mb-4">請勿關閉視窗</p>
+            <p className="text-base text-ink-800 font-bold">{SAVE_PROGRESS_MESSAGES[saveMsgIdx]}</p>
           </div>
         </div>
       )}

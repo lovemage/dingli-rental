@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
-import TranslatePendingButton from '@/components/admin/TranslatePendingButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,7 +56,6 @@ export default async function AdminPropertiesList() {
           {loadError && <p className="text-red-600 text-xs mt-1">{loadError}</p>}
         </div>
         <div className="flex items-start gap-3 flex-wrap">
-          <TranslatePendingButton />
           <Link href="/admin/properties/new" className="btn btn-primary">+ 新增物件</Link>
         </div>
       </div>
