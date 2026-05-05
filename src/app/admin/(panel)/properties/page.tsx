@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import TranslatePendingButton from '@/components/admin/TranslatePendingButton';
-import { computePropertySourceHash } from '@/lib/property-translate';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,14 +35,15 @@ export default async function AdminPropertiesList() {
     // ignore
   }
 
-  // 統計：每筆物件 EN / JA 翻譯是否最新
-  function translationStatus(p: any): { en: 'fresh' | 'stale' | 'missing'; ja: 'fresh' | 'stale' | 'missing' } {
-    const hash = computePropertySourceHash(p);
+  // 統計：每筆物件 EN / JA 翻譯是否存在（ja 相容舊資料代碼 jp）
+  function translationStatus(p: any): { en: 'fresh' | 'missing'; ja: 'fresh' | 'missing' } {
     const trs = translationsByProperty.get(p.id) || [];
-    const detect = (loc: string) => {
-      const tr = trs.find((t: any) => t.locale === loc);
+    const detect = (loc: 'en' | 'ja') => {
+      const tr = trs.find((t: any) =>
+        loc === 'ja' ? (t.locale === 'ja' || t.locale === 'jp') : t.locale === 'en'
+      );
       if (!tr) return 'missing' as const;
-      return tr.sourceHash === hash ? ('fresh' as const) : ('stale' as const);
+      return 'fresh' as const;
     };
     return { en: detect('en'), ja: detect('ja') };
   }
@@ -143,17 +143,14 @@ function TransBadge({
   href,
 }: {
   label: string;
-  status: 'fresh' | 'stale' | 'missing';
+  status: 'fresh' | 'missing';
   href: string;
 }) {
   const className =
     status === 'fresh'
       ? 'bg-brand-green-50 text-brand-green-700 border border-brand-green-500/40'
-      : status === 'stale'
-        ? 'bg-brand-orange-50 text-brand-orange-700 border border-brand-orange-300'
-        : 'bg-paper-2 text-ink-500 border border-line';
-  const icon = status === 'fresh' ? '✓' : status === 'stale' ? '↻' : '○';
-  const title =
-    status === 'fresh' ? '已翻譯，最新' : status === 'stale' ? '已翻譯，但內容已變更需重譯' : '尚未翻譯';
+      : 'bg-paper-2 text-ink-500 border border-line';
+  const icon = status === 'fresh' ? '✓' : '○';
+  const title = status === 'fresh' ? '已翻譯完成' : '尚未翻譯';
   return <Link href={href} target="_blank" className={`px-1.5 py-0.5 rounded hover:opacity-80 ${className}`} title={title}>{icon} {label}</Link>;
 }
