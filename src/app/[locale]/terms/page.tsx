@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import LegalDocument from '@/components/frontend/LegalDocument';
 import { LEGAL_LAST_UPDATED } from '@/data/legal-content';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
@@ -20,6 +21,7 @@ export default async function TermsPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('termsPage');
+  const lp = (p: string) => (locale === 'zh' ? p : `/${locale}${p}`);
 
   return (
     <LegalDocument title={t('title')} lastUpdated={LEGAL_LAST_UPDATED}>
@@ -102,7 +104,7 @@ export default async function TermsPage({
       <p>
         各第三方服務之內容與政策由其自行負責，本公司對其合適性、即時性、正確性不擔保。
         詳細個資處理方式請參閱本網站
-        <a href="/privacy">隱私權政策</a>。
+        <Link href={lp('/privacy')}>隱私權政策</Link>。
       </p>
 
       <h2>8. 服務變更、暫停與中斷</h2>
@@ -121,7 +123,7 @@ export default async function TermsPage({
       <h2>10. 個人資料保護</h2>
       <p>
         您透過聯絡表單、AI 客服等管道提供之個人資料，本公司依「個人資料保護法」
-        及本網站<a href="/privacy">隱私權政策</a>處理。
+        及本網站<Link href={lp('/privacy')}>隱私權政策</Link>處理。
         您同意本公司於提供服務之必要範圍內蒐集、處理及利用您的個人資料。
       </p>
 

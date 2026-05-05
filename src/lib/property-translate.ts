@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { prisma } from '@/lib/prisma';
 import { translateJsonObject } from '@/lib/openrouter-translate';
 import type { PropertyCardData } from '@/components/frontend/PropertyCard';
+import type { Prisma } from '@/generated/prisma/client';
 
 const TRANSLATION_LOCALES = ['en', 'ja'] as const;
 export type TranslationLocale = (typeof TRANSLATION_LOCALES)[number];
@@ -24,6 +25,25 @@ type PropertySourceFields = {
   minLease: string;
   direction: string | null;
 };
+
+export const PROPERTY_SOURCE_SELECT = {
+  title: true,
+  description: true,
+  featureTags: true,
+  equipment: true,
+  furniture: true,
+  rentIncludes: true,
+  tenantTypes: true,
+  region: true,
+  district: true,
+  street: true,
+  community: true,
+  typeMid: true,
+  buildingType: true,
+  deposit: true,
+  minLease: true,
+  direction: true,
+} satisfies Prisma.PropertySelect;
 
 function arr(v: unknown): string[] {
   return Array.isArray(v) ? (v as unknown[]).filter((x): x is string => typeof x === 'string') : [];

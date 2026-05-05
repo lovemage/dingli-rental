@@ -51,8 +51,8 @@ export default function InquiriesManager() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [savingId, setSavingId] = useState<number | null>(null);
 
-  async function refresh(currentTab = tab) {
-    setLoading(true);
+  async function refresh(currentTab = tab, opts: { showLoading?: boolean } = {}) {
+    if (opts.showLoading) setLoading(true);
     try {
       const url = currentTab === 'all'
         ? '/api/admin/inquiries'
@@ -68,7 +68,28 @@ export default function InquiriesManager() {
     }
   }
 
-  useEffect(() => { void refresh(tab); /* eslint-disable-line react-hooks/exhaustive-deps */ }, [tab]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const url = tab === 'all'
+          ? '/api/admin/inquiries'
+          : `/api/admin/inquiries?status=${tab}`;
+        const res = await fetch(url, { cache: 'no-store' });
+        const json = await res.json();
+        if (cancelled) return;
+        if (res.ok) {
+          setItems(json.items || []);
+          setCounts(json.counts || { all: 0, new: 0, contacted: 0, closed: 0 });
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [tab]);
 
   async function updateInquiry(id: number, patch: { status?: string; notes?: string }) {
     setSavingId(id);
@@ -118,7 +139,10 @@ export default function InquiriesManager() {
             <button
               key={t.key}
               type="button"
-              onClick={() => setTab(t.key)}
+              onClick={() => {
+                setLoading(true);
+                setTab(t.key);
+              }}
               className={`flex-1 min-w-fit px-4 py-2.5 rounded-lg text-sm font-bold transition flex items-center justify-center gap-1.5 ${active ? 'bg-brand-green-700 text-white shadow-sm' : 'text-ink-700 hover:bg-paper-2'}`}
             >
               {t.label}

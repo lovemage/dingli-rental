@@ -200,7 +200,7 @@ export default function NotificationsForm() {
             <li>點進 bot 對話框，按「開始」或傳送任何文字（例：<em>hi</em>）</li>
             <li>瀏覽器打開：<br />
               <code className="bg-white px-1.5 py-0.5 rounded font-mono text-xs break-all">https://api.telegram.org/bot&lt;你的TOKEN&gt;/getUpdates</code></li>
-            <li>找回應裡 <code className="bg-white px-1 rounded font-mono">"chat":{'{'}"id":<b>123456789</b>{'}'}</code> 的數字，貼到上面「Chat ID」</li>
+            <li>找回應裡 <code className="bg-white px-1 rounded font-mono">&quot;chat&quot;:&#123;&quot;id&quot;:<b>123456789</b>&#125;</code> 的數字，貼到上面「Chat ID」</li>
             <li className="text-ink-500">
               懶人版：直接搜尋 <code className="bg-white px-1 rounded">@userinfobot</code>，按開始就會回傳你的 chat ID。
             </li>

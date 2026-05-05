@@ -21,6 +21,23 @@ import { getLocalizedPropertyCards } from '@/lib/property-translate';
 
 export const dynamic = 'force-dynamic';
 
+function localizeHref(href: string, locale: string): string {
+  if (!href) return href;
+  if (
+    href.startsWith('#') ||
+    href.startsWith('mailto:') ||
+    href.startsWith('tel:') ||
+    /^https?:\/\//i.test(href)
+  ) {
+    return href;
+  }
+  if (!href.startsWith('/')) return href;
+
+  const stripped = href.replace(/^\/(?:zh|en|ja)(?=\/|$)/, '') || '/';
+  if (locale === 'zh') return stripped;
+  return `/${locale}${stripped === '/' ? '' : stripped}`;
+}
+
 const FALLBACK_SLIDES: HeroSlideType[] = [
   { id: 1, imageUrl: '/images/hero.webp', title: '溫馨明亮的家', subtitle: '精選北北基桃竹優質物件' },
   { id: 2, imageUrl: '/images/residential.webp', title: '日系臥室套房', subtitle: '通勤便利・採光絕佳' },
@@ -197,8 +214,8 @@ export default async function HomePage({
                   {hero.description}
                 </p>
                 <div className="flex flex-wrap gap-3 mb-10">
-                  <Link href={hero.primaryCtaLink} className="btn btn-primary">{hero.primaryCtaText}</Link>
-                  <Link href={hero.secondaryCtaLink} className="btn btn-secondary">{hero.secondaryCtaText}</Link>
+                  <Link href={localizeHref(hero.primaryCtaLink, currentLocale)} className="btn btn-primary">{hero.primaryCtaText}</Link>
+                  <Link href={localizeHref(hero.secondaryCtaLink, currentLocale)} className="btn btn-secondary">{hero.secondaryCtaText}</Link>
                 </div>
               </div>
 
@@ -218,7 +235,7 @@ export default async function HomePage({
               {categories.items.map((cat, i) => (
                 <CatCard
                   key={`${cat.tag}-${i}`}
-                  href={cat.href}
+                  href={localizeHref(cat.href, currentLocale)}
                   img={cat.imageUrl}
                   tag={cat.tag}
                   title={cat.title}
@@ -264,7 +281,7 @@ export default async function HomePage({
             </div>
             {services.ctaText && services.ctaLink && (
               <div className="text-center mt-10">
-                <Link href={services.ctaLink} className="btn btn-primary">{services.ctaText}</Link>
+                <Link href={localizeHref(services.ctaLink, currentLocale)} className="btn btn-primary">{services.ctaText}</Link>
               </div>
             )}
           </div>

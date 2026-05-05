@@ -23,22 +23,7 @@ export async function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const response = intlMiddleware(req);
-
-  // 修正反向代理環境下 next-intl 可能產生的絕對 redirect Location（含 :8080）
-  if (response) {
-    const location = response.headers.get('location');
-    if (location && /^https?:\/\//i.test(location)) {
-      try {
-        const u = new URL(location);
-        response.headers.set('location', `${u.pathname}${u.search}${u.hash}`);
-      } catch {
-        // 解析失敗就保持原樣
-      }
-    }
-  }
-
-  return response;
+  return intlMiddleware(req);
 }
 
 export const config = {

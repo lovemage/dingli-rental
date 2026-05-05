@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentAdmin } from '@/lib/auth';
-import { translateProperty, computePropertySourceHash } from '@/lib/property-translate';
+import {
+  translateProperty,
+  computePropertySourceHash,
+  PROPERTY_SOURCE_SELECT,
+} from '@/lib/property-translate';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -16,17 +20,13 @@ export async function POST() {
   const me = await getCurrentAdmin();
   if (!me) return NextResponse.json({ error: '未授權' }, { status: 401 });
 
+  const BATCH_SIZE = 20;
+
   const properties = await prisma.property.findMany({
     where: { status: 'active' },
     select: {
       id: true,
-      title: true,
-      description: true,
-      featureTags: true,
-      region: true,
-      district: true,
-      street: true,
-      community: true,
+      ...PROPERTY_SOURCE_SELECT,
       translations: {
         select: { locale: true, sourceHash: true },
       },
@@ -53,11 +53,13 @@ export async function POST() {
     });
   }
 
+  const jobs = pending.slice(0, BATCH_SIZE);
+
   let translated = 0;
   let failed = 0;
   const results: Array<{ id: number; ok: boolean; error?: string }> = [];
 
-  for (const p of pending) {
+  for (const p of jobs) {
     const r = await translateProperty(p.id, { skipUpToDate: true });
     if (r.translated.length > 0) translated++;
     if (Object.keys(r.errors).length > 0) {
@@ -72,6 +74,8 @@ export async function POST() {
     ok: failed === 0,
     total: properties.length,
     pending: pending.length,
+    processed: jobs.length,
+    remaining: Math.max(0, pending.length - jobs.length),
     translated,
     failed,
     results,

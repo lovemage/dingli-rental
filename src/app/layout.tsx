@@ -1,4 +1,7 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
+import { hasLocale } from 'next-intl';
+import { routing } from '@/i18n/routing';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -18,11 +21,17 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const h = await headers();
+  const rawLocale = h.get('x-next-intl-locale');
+  const locale = hasLocale(routing.locales, rawLocale) ? rawLocale : 'zh';
+  const htmlLang =
+    locale === 'en' ? 'en' : locale === 'ja' ? 'ja' : 'zh-TW';
+
   return (
-    <html lang="zh-TW">
+    <html lang={htmlLang}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

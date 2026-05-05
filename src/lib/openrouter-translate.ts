@@ -88,6 +88,7 @@ Return ONLY the translated JSON, no markdown fences, no commentary.`;
 
   const res = await fetch(OPENROUTER_URL, {
     method: 'POST',
+    signal: AbortSignal.timeout(20_000),
     headers: {
       Authorization: `Bearer ${settings.openrouterApiKey}`,
       'Content-Type': 'application/json',

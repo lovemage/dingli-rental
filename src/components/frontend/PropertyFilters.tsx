@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
@@ -101,12 +101,10 @@ type FiltersProps = {
 
 export default function PropertyFilters({ total, taxonomies }: FiltersProps) {
   const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
   const t = useTranslations('propertyFilters');
   const locale = useLocale();
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [keyword, setKeyword] = useState('');
 
   const TYPES = taxonomies?.propertyTypes?.length ? taxonomies.propertyTypes : (PROPERTY_TYPES as readonly string[]);
   const BLDS = taxonomies?.buildingTypes?.length ? taxonomies.buildingTypes : (BUILDING_TYPES as readonly string[]);
@@ -132,8 +130,6 @@ export default function PropertyFilters({ total, taxonomies }: FiltersProps) {
     q: searchParams.get('q') || '',
     sort: searchParams.get('sort') || '',
   }), [searchParams]);
-
-  useEffect(() => { setKeyword(v.q); }, [v.q]);
 
   const districts = v.region ? CITY_DISTRICTS[v.region] || [] : [];
 
@@ -187,13 +183,18 @@ export default function PropertyFilters({ total, taxonomies }: FiltersProps) {
       <div className="flex flex-wrap gap-2 items-center">
         <form
           className="flex-1 min-w-[200px] max-w-md"
-          onSubmit={(e) => { e.preventDefault(); pushFilters({ q: keyword.trim() }); }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            const form = new FormData(e.currentTarget);
+            const q = String(form.get('q') || '').trim();
+            pushFilters({ q });
+          }}
         >
           <div className="relative">
             <input
+              name="q"
               type="text"
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
+              defaultValue={v.q}
               placeholder={t('searchPlaceholder')}
               className="w-full pl-9 pr-3 py-2 text-sm rounded-full border border-line bg-white focus:outline-none focus:border-brand-green-500 focus:ring-2 focus:ring-brand-green-500/20"
             />

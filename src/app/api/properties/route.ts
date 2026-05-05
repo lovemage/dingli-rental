@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
+import { after } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentAdmin } from '@/lib/auth';
-import { triggerTranslateInBackground } from '@/lib/property-translate';
+import { translateProperty } from '@/lib/property-translate';
 
 export const dynamic = 'force-dynamic';
 
@@ -81,8 +82,12 @@ export async function POST(req: Request) {
       include: { images: true },
     });
 
-    // fire-and-forget 翻譯為英文 / 日文
-    triggerTranslateInBackground(created.id);
+    // 在 response 後執行翻譯，避免 serverless request 結束就中斷
+    after(async () => {
+      await translateProperty(created.id).catch((e) => {
+        console.error(`[after translateProperty:create] ${created.id}`, (e as Error).message);
+      });
+    });
 
     return NextResponse.json(created);
   } catch (e: any) {

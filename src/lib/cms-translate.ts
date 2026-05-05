@@ -44,45 +44,40 @@ export async function translateCmsSection(
   const sourceHash = computeHash(data);
   const cacheKey = cacheSection(section, locale);
 
+  let cachedData: Record<string, unknown> | null = null;
   try {
     const existing = await prisma.siteContent.findUnique({ where: { section: cacheKey } });
     if (existing) {
       const blob = existing.data as unknown as CmsCacheBlob | null;
-      if (blob && typeof blob === 'object' && blob.sourceHash === sourceHash && blob.data) {
-        return blob.data;
+      if (blob && typeof blob === 'object' && blob.data) {
+        cachedData = blob.data;
+        if (blob.sourceHash === sourceHash) {
+          return blob.data;
+        }
       }
     }
   } catch {
-    // ignore — 後面重新翻譯
+    // ignore
   }
 
-  // 翻譯
-  let translated: Record<string, unknown>;
-  try {
-    const out = await translateJsonObject(data, locale);
-    if (out && typeof out === 'object') {
-      translated = out as Record<string, unknown>;
-    } else {
-      return data;
+  // cache miss / stale：背景刷新翻譯，先回傳舊資料或中文，避免阻塞公開頁 TTFB
+  void (async () => {
+    try {
+      const out = await translateJsonObject(data, locale);
+      if (!out || typeof out !== 'object') return;
+      const translated = out as Record<string, unknown>;
+      const blob: CmsCacheBlob = { sourceHash, data: translated };
+      await prisma.siteContent.upsert({
+        where: { section: cacheKey },
+        create: { section: cacheKey, data: blob as any },
+        update: { data: blob as any },
+      });
+    } catch (e) {
+      console.warn(`[cms-translate] ${section}/${locale} refresh failed:`, (e as Error).message);
     }
-  } catch (e) {
-    console.warn(`[cms-translate] ${section}/${locale} failed:`, (e as Error).message);
-    return data;
-  }
+  })();
 
-  // 寫 cache
-  try {
-    const blob: CmsCacheBlob = { sourceHash, data: translated };
-    await prisma.siteContent.upsert({
-      where: { section: cacheKey },
-      create: { section: cacheKey, data: blob as any },
-      update: { data: blob as any },
-    });
-  } catch (e) {
-    console.warn(`[cms-translate] cache write failed for ${cacheKey}:`, (e as Error).message);
-  }
-
-  return translated;
+  return cachedData ?? data;
 }
 
 /** 清除某個 section 的所有翻譯 cache（admin 編輯 section 時呼叫）。 */

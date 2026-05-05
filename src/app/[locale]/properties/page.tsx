@@ -89,15 +89,36 @@ async function search(params: SearchParams, locale: string) {
   }
 
   if (params.q) {
-    andClauses.push({
-      OR: [
-        { title: { contains: params.q, mode: 'insensitive' } },
-        { description: { contains: params.q, mode: 'insensitive' } },
-        { community: { contains: params.q, mode: 'insensitive' } },
-        { district: { contains: params.q, mode: 'insensitive' } },
-        { street: { contains: params.q, mode: 'insensitive' } },
-      ],
-    });
+    const sourceOr: Prisma.PropertyWhereInput[] = [
+      { title: { contains: params.q, mode: 'insensitive' } },
+      { description: { contains: params.q, mode: 'insensitive' } },
+      { community: { contains: params.q, mode: 'insensitive' } },
+      { district: { contains: params.q, mode: 'insensitive' } },
+      { street: { contains: params.q, mode: 'insensitive' } },
+    ];
+    if (locale === 'zh') {
+      andClauses.push({ OR: sourceOr });
+    } else {
+      andClauses.push({
+        OR: [
+          ...sourceOr,
+          {
+            translations: {
+              some: {
+                locale,
+                OR: [
+                  { title: { contains: params.q, mode: 'insensitive' } },
+                  { description: { contains: params.q, mode: 'insensitive' } },
+                  { community: { contains: params.q, mode: 'insensitive' } },
+                  { district: { contains: params.q, mode: 'insensitive' } },
+                  { street: { contains: params.q, mode: 'insensitive' } },
+                ],
+              },
+            },
+          },
+        ],
+      });
+    }
   }
 
   if (andClauses.length) where.AND = andClauses;

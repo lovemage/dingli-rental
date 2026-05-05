@@ -113,7 +113,6 @@ type Props = {
 
 export default function AiChatWidget({ triggerClassName, triggerLabel = '鼎立 AI' }: Props) {
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const [language, setLanguage] = useState<Language | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -121,8 +120,6 @@ export default function AiChatWidget({ triggerClassName, triggerLabel = '鼎立 
   const [lineUrl, setLineUrl] = useState('https://lin.ee/z9d5558');
   const [error, setError] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -187,7 +184,7 @@ export default function AiChatWidget({ triggerClassName, triggerLabel = '鼎立 
     }
   }
 
-  const modal = open && (
+  const modal = open && typeof document !== 'undefined' && (
     <div
       className="fixed inset-0 z-[55] bg-ink-900/60 backdrop-blur-sm sm:grid sm:place-items-end sm:justify-end sm:p-6"
       onClick={() => setOpen(false)}
@@ -342,7 +339,7 @@ export default function AiChatWidget({ triggerClassName, triggerLabel = '鼎立 
         {triggerLabel}
       </button>
       {/* Portal 到 body 跳出任何 backdrop-filter / transform 造成的 containing block */}
-      {mounted && modal && createPortal(modal, document.body)}
+      {modal && createPortal(modal, document.body)}
     </>
   );
 }

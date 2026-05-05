@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
+import { after } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentAdmin } from '@/lib/auth';
 import { deleteUpload } from '@/lib/storage';
-import { triggerTranslateInBackground } from '@/lib/property-translate';
+import { translateProperty } from '@/lib/property-translate';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,8 +64,12 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       include: { images: true },
     });
 
-    // fire-and-forget 重新翻譯（內容變更時 sourceHash 不同會觸發重譯）
-    triggerTranslateInBackground(updated.id);
+    // 在 response 後執行翻譯，避免 serverless request 結束就中斷
+    after(async () => {
+      await translateProperty(updated.id).catch((e) => {
+        console.error(`[after translateProperty:update] ${updated.id}`, (e as Error).message);
+      });
+    });
 
     return NextResponse.json(updated);
   } catch (e: any) {

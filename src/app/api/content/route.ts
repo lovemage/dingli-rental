@@ -37,6 +37,9 @@ export async function PUT(req: Request) {
 
   // 內容變更後清掉該 section 的 EN/JA 翻譯 cache，下次訪客觸發重譯
   invalidateCmsTranslations(section).catch(() => {});
+  if (section === 'about') {
+    invalidateCmsTranslations('home_testimonials').catch(() => {});
+  }
 
   return NextResponse.json(saved);
 }
