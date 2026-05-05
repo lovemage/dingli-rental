@@ -5,6 +5,32 @@ import { readSessionToken, SESSION_COOKIE } from '@/lib/auth-edge';
 
 const intlMiddleware = createIntlMiddleware(routing);
 
+function normalizeRedirectLocation(request: NextRequest, response: NextResponse) {
+  const location = response.headers.get('location');
+  if (!location || !/^https?:\/\//i.test(location)) return response;
+
+  try {
+    const u = new URL(location);
+    const isInternalHost =
+      u.hostname === 'localhost' ||
+      u.hostname === '127.0.0.1' ||
+      u.port === '8080';
+    if (!isInternalHost) return response;
+
+    const forwardedProto = request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim();
+    const forwardedHost = request.headers.get('x-forwarded-host')?.split(',')[0]?.trim();
+    const proto = forwardedProto || 'https';
+    const host = forwardedHost || request.headers.get('host') || request.nextUrl.host;
+    if (!host) return response;
+
+    const fixed = `${proto}://${host}${u.pathname}${u.search}${u.hash}`;
+    response.headers.set('location', fixed);
+  } catch {
+    // ignore malformed url
+  }
+  return response;
+}
+
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
@@ -18,12 +44,13 @@ export async function proxy(req: NextRequest) {
       const url = req.nextUrl.clone();
       url.pathname = '/admin/login';
       url.searchParams.set('next', pathname);
-      return NextResponse.redirect(url);
+      return normalizeRedirectLocation(req, NextResponse.redirect(url));
     }
     return NextResponse.next();
   }
 
-  return intlMiddleware(req);
+  const response = intlMiddleware(req);
+  return response ? normalizeRedirectLocation(req, response) : response;
 }
 
 export const config = {
