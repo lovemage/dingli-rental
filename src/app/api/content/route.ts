@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentAdmin } from '@/lib/auth';
+import { invalidateCmsTranslations } from '@/lib/cms-translate';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,5 +34,9 @@ export async function PUT(req: Request) {
     create: { section, data },
     update: { data },
   });
+
+  // 內容變更後清掉該 section 的 EN/JA 翻譯 cache，下次訪客觸發重譯
+  invalidateCmsTranslations(section).catch(() => {});
+
   return NextResponse.json(saved);
 }

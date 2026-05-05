@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 type Props = {
   title?: string;
@@ -15,6 +16,7 @@ export default function ContactForm({
   note = '送出後我們將於 24 小時內聯繫，感謝您！',
   successMessage = '已收到您的訊息，業務專員將於當日內聯繫您。',
 }: Props) {
+  const t = useTranslations('contact');
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -43,10 +45,10 @@ export default function ContactForm({
         body: JSON.stringify(payload),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json?.error || '送出失敗');
+      if (!res.ok) throw new Error(json?.error || t('formSubmitFailed'));
       setSubmitted(true);
     } catch (err: any) {
-      setError(err?.message || '送出失敗，請稍後再試或來電聯繫');
+      setError(err?.message || t('formSubmitFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -58,7 +60,7 @@ export default function ContactForm({
         <div className="w-14 h-14 mx-auto rounded-full bg-brand-green-50 grid place-items-center text-brand-green-700 text-2xl font-black mb-4">
           ✓
         </div>
-        <h2 className="text-xl font-black mb-2">送出成功</h2>
+        <h2 className="text-xl font-black mb-2">{t('formSuccessTitle')}</h2>
         <p className="text-ink-700">{successMessage}</p>
       </div>
     );
@@ -69,53 +71,61 @@ export default function ContactForm({
       <h2 className="text-xl font-black mb-5">{title}</h2>
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
-          <label className="label-base">姓名 *</label>
+          <label className="label-base">{t('formNameLabel')}</label>
           <input name="name" required maxLength={50} className="input-base" />
         </div>
         <div>
-          <label className="label-base">聯絡電話 *</label>
+          <label className="label-base">{t('formPhoneLabel')}</label>
           <input name="phone" required type="tel" maxLength={30} className="input-base" />
         </div>
         <div>
-          <label className="label-base">Email</label>
+          <label className="label-base">{t('formEmailLabel')}</label>
           <input name="email" type="email" className="input-base" />
         </div>
         <div>
-          <label className="label-base">希望地區</label>
+          <label className="label-base">{t('formRegionLabel')}</label>
           <select name="region" className="input-base" defaultValue="不限">
-            <option>不限</option>
-            <option>台北市</option>
-            <option>新北市</option>
-            <option>基隆市</option>
-            <option>桃園市</option>
-            <option>新竹市</option>
+            <option value="不限">{t('formAny')}</option>
+            <option value="台北市">台北市 / Taipei</option>
+            <option value="新北市">新北市 / New Taipei</option>
+            <option value="基隆市">基隆市 / Keelung</option>
+            <option value="桃園市">桃園市 / Taoyuan</option>
+            <option value="新竹市">新竹市 / Hsinchu</option>
           </select>
         </div>
         <div>
-          <label className="label-base">物件類型</label>
+          <label className="label-base">{t('formPropertyTypeLabel')}</label>
           <select name="propertyType" className="input-base" defaultValue="不限">
-            <option>不限</option>
-            <option>整層住家</option>
-            <option>獨立套房</option>
-            <option>分租套房</option>
-            <option>雅房</option>
-            <option>車位</option>
+            <option value="不限">{t('formAny')}</option>
+            <option value="整層住家">整層住家 / Whole-Floor</option>
+            <option value="獨立套房">獨立套房 / Studio</option>
+            <option value="分租套房">分租套房 / Shared Suite</option>
+            <option value="雅房">雅房 / Single Room</option>
+            <option value="車位">車位 / Parking</option>
           </select>
         </div>
         <div>
-          <label className="label-base">預算（每月）</label>
+          <label className="label-base">{t('formBudgetLabel')}</label>
           <input name="budget" type="number" placeholder="NT$" className="input-base" />
         </div>
         <div className="sm:col-span-2">
-          <label className="label-base">需求描述</label>
-          <textarea name="message" rows={4} maxLength={2000} className="input-base resize-none" placeholder="請告訴我們您的居住人數、通勤地點、生活習慣等..." />
+          <label className="label-base">{t('formMessageLabel')}</label>
+          <textarea
+            name="message"
+            rows={4}
+            maxLength={2000}
+            className="input-base resize-none"
+            placeholder={t('formMessagePlaceholder')}
+          />
         </div>
       </div>
-      {error && (
-        <p className="mt-3 text-sm text-red-600">{error}</p>
-      )}
-      <button type="submit" disabled={submitting} className="btn btn-primary w-full mt-6 disabled:opacity-60">
-        {submitting ? '送出中...' : submitText}
+      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      <button
+        type="submit"
+        disabled={submitting}
+        className="btn btn-primary w-full mt-6 disabled:opacity-60"
+      >
+        {submitting ? t('formSubmitting') : submitText}
       </button>
       <p className="text-xs text-ink-500 mt-3 text-center">{note}</p>
     </form>

@@ -1,7 +1,8 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import {
   REGIONS,
   PROPERTY_TYPES,
@@ -13,47 +14,47 @@ import {
 import type { Taxonomies } from '@/lib/taxonomies-shared';
 import AiChatWidget from '@/components/frontend/AiChatWidget';
 
-const RENT_PRESETS: { label: string; min?: string; max?: string }[] = [
-  { label: '不限' },
-  { label: '1 萬以下', max: '10000' },
-  { label: '1 - 1.5 萬', min: '10000', max: '15000' },
-  { label: '1.5 - 2 萬', min: '15000', max: '20000' },
-  { label: '2 - 3 萬', min: '20000', max: '30000' },
-  { label: '3 - 5 萬', min: '30000', max: '50000' },
-  { label: '5 萬以上', min: '50000' },
+const RENT_PRESETS: { labelKey: string; min?: string; max?: string }[] = [
+  { labelKey: 'noLimit' },
+  { labelKey: 'rent_le_10k', max: '10000' },
+  { labelKey: 'rent_10_15k', min: '10000', max: '15000' },
+  { labelKey: 'rent_15_20k', min: '15000', max: '20000' },
+  { labelKey: 'rent_20_30k', min: '20000', max: '30000' },
+  { labelKey: 'rent_30_50k', min: '30000', max: '50000' },
+  { labelKey: 'rent_ge_50k', min: '50000' },
 ];
 
-const AREA_PRESETS: { label: string; min?: string; max?: string }[] = [
-  { label: '不限' },
-  { label: '10 坪以下', max: '10' },
-  { label: '10 - 20 坪', min: '10', max: '20' },
-  { label: '20 - 30 坪', min: '20', max: '30' },
-  { label: '30 - 50 坪', min: '30', max: '50' },
-  { label: '50 坪以上', min: '50' },
+const AREA_PRESETS: { labelKey: string; min?: string; max?: string }[] = [
+  { labelKey: 'noLimit' },
+  { labelKey: 'area_le_10', max: '10' },
+  { labelKey: 'area_10_20', min: '10', max: '20' },
+  { labelKey: 'area_20_30', min: '20', max: '30' },
+  { labelKey: 'area_30_50', min: '30', max: '50' },
+  { labelKey: 'area_ge_50', min: '50' },
 ];
 
 const ROOMS_PRESETS = [
-  { label: '不限', value: '' },
-  { label: '1 房', value: '1' },
-  { label: '2 房', value: '2' },
-  { label: '3 房', value: '3' },
-  { label: '4 房以上', value: '4' },
+  { labelKey: 'noLimit', value: '' },
+  { labelKey: 'rooms_1', value: '1' },
+  { labelKey: 'rooms_2', value: '2' },
+  { labelKey: 'rooms_3', value: '3' },
+  { labelKey: 'rooms_4plus', value: '4' },
 ];
 
 const AGE_PRESETS = [
-  { label: '不限', value: '' },
-  { label: '3 年內', value: '3' },
-  { label: '10 年內', value: '10' },
-  { label: '20 年內', value: '20' },
+  { labelKey: 'noLimit', value: '' },
+  { labelKey: 'age_le_3', value: '3' },
+  { labelKey: 'age_le_10', value: '10' },
+  { labelKey: 'age_le_20', value: '20' },
 ];
 
 const SORT_OPTIONS = [
-  { label: '預設（精選優先）', value: '' },
-  { label: '最新刊登', value: 'newest' },
-  { label: '租金低 → 高', value: 'rent_asc' },
-  { label: '租金高 → 低', value: 'rent_desc' },
-  { label: '坪數大 → 小', value: 'area_desc' },
-  { label: '屋齡新 → 舊', value: 'age_asc' },
+  { labelKey: 'sortDefault', value: '' },
+  { labelKey: 'sortNewest', value: 'newest' },
+  { labelKey: 'sortRentAsc', value: 'rent_asc' },
+  { labelKey: 'sortRentDesc', value: 'rent_desc' },
+  { labelKey: 'sortAreaDesc', value: 'area_desc' },
+  { labelKey: 'sortAgeAsc', value: 'age_asc' },
 ];
 
 export type PropertyFiltersValue = {
@@ -100,13 +101,15 @@ type FiltersProps = {
 
 export default function PropertyFilters({ total, taxonomies }: FiltersProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
+  const t = useTranslations('propertyFilters');
+  const locale = useLocale();
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [keyword, setKeyword] = useState('');
 
   const TYPES = taxonomies?.propertyTypes?.length ? taxonomies.propertyTypes : (PROPERTY_TYPES as readonly string[]);
-  const BLDS  = taxonomies?.buildingTypes?.length ? taxonomies.buildingTypes : (BUILDING_TYPES as readonly string[]);
+  const BLDS = taxonomies?.buildingTypes?.length ? taxonomies.buildingTypes : (BUILDING_TYPES as readonly string[]);
   const EQUIP = taxonomies?.equipment?.length ? taxonomies.equipment : (EQUIPMENT_OPTIONS as readonly string[]);
   const POLICY = taxonomies?.policyTags?.length ? taxonomies.policyTags : (FEATURE_TAGS as readonly string[]);
 
@@ -134,6 +137,8 @@ export default function PropertyFilters({ total, taxonomies }: FiltersProps) {
 
   const districts = v.region ? CITY_DISTRICTS[v.region] || [] : [];
 
+  const propertiesPath = locale === 'zh' ? '/properties' : `/${locale}/properties`;
+
   function pushFilters(next: Partial<PropertyFiltersValue>, opts?: { resetPage?: boolean }) {
     const merged = { ...v, ...next };
     const params = new URLSearchParams();
@@ -143,11 +148,11 @@ export default function PropertyFilters({ total, taxonomies }: FiltersProps) {
     if (!opts || opts.resetPage !== false) {
       params.delete('page');
     }
-    router.push(`/properties${params.toString() ? `?${params.toString()}` : ''}`);
+    router.push(`${propertiesPath}${params.toString() ? `?${params.toString()}` : ''}`);
   }
 
   function reset() {
-    router.push('/properties');
+    router.push(propertiesPath);
   }
 
   const activeCount = useMemo(() => {
@@ -179,7 +184,6 @@ export default function PropertyFilters({ total, taxonomies }: FiltersProps) {
 
   return (
     <div className="sticky top-16 z-20 bg-paper/85 backdrop-blur-md border-b border-line py-4 -mt-4 -mx-6 px-6 sm:rounded-none">
-      {/* 第一列：關鍵字 + chips */}
       <div className="flex flex-wrap gap-2 items-center">
         <form
           className="flex-1 min-w-[200px] max-w-md"
@@ -190,7 +194,7 @@ export default function PropertyFilters({ total, taxonomies }: FiltersProps) {
               type="text"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
-              placeholder="搜尋路名、社區、物件名"
+              placeholder={t('searchPlaceholder')}
               className="w-full pl-9 pr-3 py-2 text-sm rounded-full border border-line bg-white focus:outline-none focus:border-brand-green-500 focus:ring-2 focus:ring-brand-green-500/20"
             />
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500">🔍</span>
@@ -198,50 +202,48 @@ export default function PropertyFilters({ total, taxonomies }: FiltersProps) {
         </form>
 
         <ChipSelect
-          label="縣市"
+          label={t('regionLabel')}
           value={v.region}
-          options={[{ label: '不限', value: '' }, ...REGIONS.map((r) => ({ label: r, value: r }))]}
+          options={[{ label: t('noLimit'), value: '' }, ...REGIONS.map((r) => ({ label: r, value: r }))]}
           onChange={(val) => pushFilters({ region: val, district: '' })}
         />
 
         {v.region && districts.length > 0 && (
           <ChipSelect
-            label="區域"
+            label={t('districtLabel')}
             value={v.district}
-            options={[{ label: '不限', value: '' }, ...districts.map((d) => ({ label: d, value: d }))]}
+            options={[{ label: t('noLimit'), value: '' }, ...districts.map((d) => ({ label: d, value: d }))]}
             onChange={(val) => pushFilters({ district: val })}
           />
         )}
 
         <ChipSelect
-          label="類型"
+          label={t('typeLabel')}
           value={v.type}
-          options={[{ label: '不限', value: '' }, ...PROPERTY_TYPES.map((t) => ({ label: t, value: t }))]}
+          options={[{ label: t('noLimit'), value: '' }, ...TYPES.map((tp) => ({ label: tp, value: tp }))]}
           onChange={(val) => pushFilters({ type: val })}
         />
 
         <ChipPreset
-          label="租金"
-          presets={RENT_PRESETS}
+          label={t('rentLabel')}
+          presets={RENT_PRESETS.map((p) => ({ ...p, label: t(p.labelKey) }))}
           activeIdx={rentPresetIndex(v.minRent, v.maxRent)}
           onPick={(p) => pushFilters({ minRent: p.min || '', maxRent: p.max || '' })}
-          formatActive={(idx) => idx > 0 ? RENT_PRESETS[idx].label : ''}
         />
 
         <ChipSelect
-          label="房型"
+          label={t('roomsLabel')}
           value={v.rooms}
-          options={ROOMS_PRESETS}
+          options={ROOMS_PRESETS.map((p) => ({ label: t(p.labelKey), value: p.value }))}
           onChange={(val) => pushFilters({ rooms: val })}
           formatActive={(opt) => opt.label}
         />
 
         <ChipPreset
-          label="坪數"
-          presets={AREA_PRESETS}
+          label={t('areaLabel')}
+          presets={AREA_PRESETS.map((p) => ({ ...p, label: t(p.labelKey) }))}
           activeIdx={areaPresetIndex(v.minArea, v.maxArea)}
           onPick={(p) => pushFilters({ minArea: p.min || '', maxArea: p.max || '' })}
-          formatActive={(idx) => idx > 0 ? AREA_PRESETS[idx].label : ''}
         />
 
         <button
@@ -249,7 +251,7 @@ export default function PropertyFilters({ total, taxonomies }: FiltersProps) {
           onClick={() => setAdvancedOpen((s) => !s)}
           className={`text-sm font-medium px-3.5 py-1.5 rounded-full border transition ${advancedOpen ? 'bg-brand-green-700 text-white border-brand-green-700' : 'bg-white text-ink-700 border-line hover:border-brand-green-500'}`}
         >
-          更多篩選 {advancedOpen ? '▴' : '▾'}
+          {t('filterTitle')} {advancedOpen ? '▴' : '▾'}
         </button>
 
         {activeCount > 0 && (
@@ -258,68 +260,66 @@ export default function PropertyFilters({ total, taxonomies }: FiltersProps) {
             onClick={reset}
             className="text-sm text-ink-500 hover:text-brand-green-700 underline ml-1"
           >
-            清除（{activeCount}）
+            {t('resetFilters')}（{activeCount}）
           </button>
         )}
 
         <div className="ml-auto">
           <AiChatWidget
-            triggerLabel="鼎立 AI"
+            triggerLabel={t('aiButton')}
             triggerClassName="ai-glow-btn text-sm font-extrabold px-3.5 py-1.5 rounded-full bg-brand-green-700 text-white hover:bg-brand-green-900 transition shadow-sm whitespace-nowrap"
           />
         </div>
       </div>
 
-      {/* 第二列：結果數 + 排序 */}
       <div className="flex flex-wrap items-center justify-between gap-2 mt-3">
         <p className="text-sm text-ink-500">
-          共 <span className="font-bold text-ink-900">{total}</span> 筆物件
+          {t('totalCount', { count: total })}
         </p>
         <label className="flex items-center gap-2 text-sm">
-          <span className="text-ink-500">排序</span>
+          <span className="text-ink-500">{t('sortLabel')}</span>
           <select
             className="bg-white border border-line rounded-full px-3 py-1.5 text-sm focus:outline-none focus:border-brand-green-500"
             value={v.sort}
             onChange={(e) => pushFilters({ sort: e.target.value })}
           >
             {SORT_OPTIONS.map((s) => (
-              <option key={s.value} value={s.value}>{s.label}</option>
+              <option key={s.value} value={s.value}>{t(s.labelKey)}</option>
             ))}
           </select>
         </label>
       </div>
 
-      {/* 進階篩選抽屜 */}
       {advancedOpen && (
         <div className="mt-4 bg-white border border-line rounded-xl p-5 shadow-sm">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            <FilterGroup title="建物">
+            <FilterGroup title={t('buildingLabel')}>
               <Pills
-                options={[{ label: '不限', value: '' }, ...BUILDING_TYPES.map((b) => ({ label: b, value: b }))]}
+                options={[{ label: t('noLimit'), value: '' }, ...BLDS.map((b) => ({ label: b, value: b }))]}
                 value={v.building}
                 onChange={(val) => pushFilters({ building: val })}
               />
             </FilterGroup>
 
-            <FilterGroup title="屋齡">
+            <FilterGroup title={t('ageMaxLabel')}>
               <Pills
-                options={AGE_PRESETS}
+                options={AGE_PRESETS.map((p) => ({ label: t(p.labelKey), value: p.value }))}
                 value={v.ageMax}
                 onChange={(val) => pushFilters({ ageMax: val })}
               />
             </FilterGroup>
 
-            <FilterGroup title="必備條件">
+            <FilterGroup title={t('filterRequired') || t('elevatorLabel')}>
               <div className="flex flex-wrap gap-2">
-                <ToggleChip label="電梯" active={v.elevator === '1'} onClick={() => pushFilters({ elevator: v.elevator === '1' ? '' : '1' })} />
-                <ToggleChip label="寵物友善" active={v.pets === '1'} onClick={() => pushFilters({ pets: v.pets === '1' ? '' : '1' })} />
-                <ToggleChip label="可開伙" active={v.cooking === '1'} onClick={() => pushFilters({ cooking: v.cooking === '1' ? '' : '1' })} />
+                <ToggleChip label={t('elevatorLabel')} active={v.elevator === '1'} onClick={() => pushFilters({ elevator: v.elevator === '1' ? '' : '1' })} />
+                <ToggleChip label={t('petsLabel')} active={v.pets === '1'} onClick={() => pushFilters({ pets: v.pets === '1' ? '' : '1' })} />
+                <ToggleChip label={t('cookingLabel')} active={v.cooking === '1'} onClick={() => pushFilters({ cooking: v.cooking === '1' ? '' : '1' })} />
               </div>
             </FilterGroup>
 
-            <FilterGroup title="設備（任一）">
+            <FilterGroup title={t('equipmentLabel')}>
               <div className="flex flex-wrap gap-2">
-                {EQUIPMENT_OPTIONS.map((opt) => (
+                {EQUIP.map((opt) => (
                   <ToggleChip
                     key={opt}
                     label={opt}
@@ -330,9 +330,9 @@ export default function PropertyFilters({ total, taxonomies }: FiltersProps) {
               </div>
             </FilterGroup>
 
-            <FilterGroup title="特色標籤" colSpan={2}>
+            <FilterGroup title={t('tagsLabel')} colSpan={2}>
               <div className="flex flex-wrap gap-2">
-                {FEATURE_TAGS.map((opt) => (
+                {POLICY.map((opt) => (
                   <ToggleChip
                     key={opt}
                     label={opt}
@@ -348,8 +348,6 @@ export default function PropertyFilters({ total, taxonomies }: FiltersProps) {
     </div>
   );
 }
-
-// ─── 子元件 ─────────────────────────────────────────────────────────
 
 type Option = { label: string; value: string };
 
@@ -399,13 +397,11 @@ function ChipPreset({
   presets,
   activeIdx,
   onPick,
-  formatActive,
 }: {
   label: string;
   presets: { label: string; min?: string; max?: string }[];
   activeIdx: number;
   onPick: (p: { min?: string; max?: string }) => void;
-  formatActive: (idx: number) => string;
 }) {
   const active = activeIdx > 0;
   const ref = useRef<HTMLDivElement>(null);
@@ -427,7 +423,7 @@ function ChipPreset({
         onClick={() => setOpen((s) => !s)}
         className={`inline-flex items-center gap-1 px-3.5 py-1.5 text-sm font-medium rounded-full border transition ${active ? 'bg-brand-green-700 text-white border-brand-green-700' : 'bg-white text-ink-700 border-line hover:border-brand-green-500'}`}
       >
-        {active ? formatActive(activeIdx) : label}
+        {active ? presets[activeIdx].label : label}
         <span className="text-xs">▾</span>
       </button>
       {open && (

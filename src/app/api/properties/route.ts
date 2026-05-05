@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentAdmin } from '@/lib/auth';
+import { triggerTranslateInBackground } from '@/lib/property-translate';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,6 +80,9 @@ export async function POST(req: Request) {
       },
       include: { images: true },
     });
+
+    // fire-and-forget 翻譯為英文 / 日文
+    triggerTranslateInBackground(created.id);
 
     return NextResponse.json(created);
   } catch (e: any) {

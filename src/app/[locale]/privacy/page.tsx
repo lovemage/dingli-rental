@@ -1,11 +1,28 @@
 import LegalDocument from '@/components/frontend/LegalDocument';
 import { LEGAL_LAST_UPDATED } from '@/data/legal-content';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 
-export const metadata = { title: '隱私權政策' };
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'privacyPage' });
+  return { title: t('metaTitle') };
+}
 
-export default function PrivacyPage() {
+export default async function PrivacyPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations('privacyPage');
+
   return (
-    <LegalDocument title="隱私權政策" lastUpdated={LEGAL_LAST_UPDATED}>
+    <LegalDocument title={t('title')} lastUpdated={LEGAL_LAST_UPDATED}>
       <p>
         歡迎您造訪鼎立租售管理（<code>dingli-rental.com</code>）。為了讓您能安心使用本網站
         各項服務，特此向您說明本公司隱私權保護政策，請您詳閱下列內容：

@@ -2,17 +2,28 @@ import Header from '@/components/frontend/Header';
 import Footer from '@/components/frontend/Footer';
 import Link from 'next/link';
 import MaterialIcon from '@/components/MaterialIcon';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { prisma } from '@/lib/prisma';
 import { CAREERS_DEFAULTS, type CareersContent } from '@/data/careers-defaults';
+import { translateCmsSection } from '@/lib/cms-translate';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: '人才招募' };
 
-async function getCareersContent(): Promise<CareersContent> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'careersPage' });
+  return { title: t('metaTitle') };
+}
+
+async function getCareersContent(locale: string): Promise<CareersContent> {
   try {
     const row = await prisma.siteContent.findUnique({ where: { section: 'careers' } });
     const data = (row?.data as Partial<CareersContent>) || {};
-    return {
+    const merged: CareersContent = {
       ...CAREERS_DEFAULTS,
       ...data,
       benefits: Array.isArray(data.benefits) && data.benefits.length
@@ -22,19 +33,33 @@ async function getCareersContent(): Promise<CareersContent> {
         ? data.positions
         : CAREERS_DEFAULTS.positions,
     };
+    if (locale === 'zh') return merged;
+    const translated = await translateCmsSection(
+      'careers',
+      merged as unknown as Record<string, unknown>,
+      locale
+    );
+    return { ...merged, ...(translated as Partial<CareersContent>) } as CareersContent;
   } catch {
     return CAREERS_DEFAULTS;
   }
 }
 
-export default async function CareersPage() {
-  const c = await getCareersContent();
+export default async function CareersPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+
+  const c = await getCareersContent(locale);
+  const t = await getTranslations('careersPage');
 
   return (
     <>
       <Header />
       <main className="bg-paper-2">
-        {/* === Hero === */}
         <section className="bg-white border-b border-line">
           <div className="container-page py-12 sm:py-16">
             <div className="grid lg:grid-cols-[1.1fr_1.4fr] gap-8 lg:gap-14 items-center">
@@ -43,24 +68,17 @@ export default async function CareersPage() {
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black mt-3 mb-4 leading-tight">
                   {c.titleLine1}<br className="sm:hidden" />{c.titleLine2}
                 </h1>
-                <p className="text-ink-700 text-base sm:text-lg leading-relaxed">
-                  {c.description}
-                </p>
+                <p className="text-ink-700 text-base sm:text-lg leading-relaxed">{c.description}</p>
               </div>
               <div className="rounded-2xl overflow-hidden shadow-sm border border-line">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={c.heroImageUrl}
-                  alt="鼎立租售管理 團隊"
-                  className="w-full h-auto object-cover aspect-[16/9]"
-                />
+                <img src={c.heroImageUrl} alt="" className="w-full h-auto object-cover aspect-[16/9]" />
               </div>
             </div>
           </div>
         </section>
 
         <div className="container-page py-14 sm:py-20">
-          {/* === 福利 === */}
           <h2 className="text-2xl sm:text-3xl font-black mb-6 text-center">{c.benefitsTitle}</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-16">
             {c.benefits.map((b, i) => (
@@ -77,7 +95,6 @@ export default async function CareersPage() {
             ))}
           </div>
 
-          {/* === 職缺 === */}
           <h2 className="text-2xl sm:text-3xl font-black mb-6">{c.positionsTitle}</h2>
           <div className="space-y-4 mb-16">
             {c.positions.map((p, i) => (
@@ -115,18 +132,14 @@ export default async function CareersPage() {
             ))}
           </div>
 
-          {/* === CTA === */}
           <div className="bg-white border border-line rounded-xl p-10 text-center">
             <h2 className="text-2xl font-black mb-2">{c.ctaTitle}</h2>
             <p className="text-ink-500 mb-6">
-              請將履歷寄至{' '}
-              <a
-                href={`mailto:${c.ctaEmail}`}
-                className="text-brand-green-700 underline"
-              >
+              {t('ctaSendResumeBefore')}
+              <a href={`mailto:${c.ctaEmail}`} className="text-brand-green-700 underline">
                 {c.ctaEmail}
               </a>
-              ，主旨註明「應徵職缺名稱」。
+              {t('ctaSendResumeAfter')}
             </p>
             <Link href={c.contactCtaLink} className="btn btn-primary">
               {c.contactCtaText}

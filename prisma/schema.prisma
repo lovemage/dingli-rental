@@ -21,6 +21,36 @@ model Admin {
   updatedAt    DateTime @updatedAt
 }
 
+// 物件翻譯（英文 / 日文 / 未來其他語言）
+model PropertyTranslation {
+  id           Int      @id @default(autoincrement())
+  propertyId   Int
+  property     Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  locale       String   // 'en' | 'ja' (預留 'vi' / 'th' / 'id')
+  title        String
+  description  String?  @db.Text
+  featureTags  Json     @default("[]") // 翻譯後的特色標籤陣列
+  equipment    Json     @default("[]") // 翻譯後的設備清單
+  furniture    Json     @default("[]") // 翻譯後的家具清單
+  rentIncludes Json     @default("[]") // 翻譯後的租金包含項目
+  tenantTypes  Json     @default("[]") // 翻譯後的身份要求
+  region       String?  // 例：Taipei City
+  district     String?  // 例：Zhongshan District
+  street       String?
+  community    String?
+  typeMid      String?  // 例：Whole-Floor Residence
+  buildingType String?  // 例：Apartment
+  deposit      String?  // 例：Two months / 二ヶ月分
+  minLease     String?  // 例：1 year / 1年
+  direction    String?  // 例：South-facing / 南向
+  sourceHash   String   // 來源中文內容的 hash，內容變更後重譯
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([propertyId, locale])
+  @@index([locale])
+}
+
 // 物件
 model Property {
   id              Int      @id @default(autoincrement())
@@ -99,6 +129,9 @@ model Property {
 
   // 圖片
   images          PropertyImage[]
+
+  // 翻譯（en / ja）
+  translations    PropertyTranslation[]
 
   // 上下架
   status          String   @default("active") // active / inactive / pending

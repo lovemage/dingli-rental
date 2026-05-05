@@ -1,11 +1,28 @@
 import LegalDocument from '@/components/frontend/LegalDocument';
 import { LEGAL_LAST_UPDATED } from '@/data/legal-content';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 
-export const metadata = { title: '服務條款' };
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'termsPage' });
+  return { title: t('metaTitle') };
+}
 
-export default function TermsPage() {
+export default async function TermsPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations('termsPage');
+
   return (
-    <LegalDocument title="服務條款" lastUpdated={LEGAL_LAST_UPDATED}>
+    <LegalDocument title={t('title')} lastUpdated={LEGAL_LAST_UPDATED}>
       <h2>1. 條款接受與適用</h2>
       <p>
         「鼎立租售管理」（網址：<code>dingli-rental.com</code>，以下簡稱「本網站」）由

@@ -1,9 +1,11 @@
 import Link from 'next/link';
+import { getTranslations, getLocale, setRequestLocale } from 'next-intl/server';
 import Header from '@/components/frontend/Header';
 import Footer from '@/components/frontend/Footer';
-import PropertyCard, { type PropertyCardData } from '@/components/frontend/PropertyCard';
+import PropertyCard from '@/components/frontend/PropertyCard';
 import PropertyFilters from '@/components/frontend/PropertyFilters';
 import { prisma } from '@/lib/prisma';
+import { getLocalizedPropertyCards } from '@/lib/property-translate';
 import type { Prisma } from '@/generated/prisma/client';
 
 export const dynamic = 'force-dynamic';
@@ -36,14 +38,13 @@ function parseSort(sort?: string): Prisma.PropertyOrderByWithRelationInput[] {
     case 'rent_desc': return [{ rent: 'desc' }];
     case 'area_desc': return [{ usableArea: 'desc' }];
     case 'age_asc':
-      // null 屋齡放最後
       return [{ buildingAge: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }];
     default:
       return [{ featured: 'desc' }, { createdAt: 'desc' }];
   }
 }
 
-async function search(params: SearchParams) {
+async function search(params: SearchParams, locale: string) {
   const where: Prisma.PropertyWhereInput = { status: 'active' };
 
   if (params.region) where.region = params.region;
@@ -51,7 +52,6 @@ async function search(params: SearchParams) {
   if (params.type) where.typeMid = params.type;
   if (params.building) where.buildingType = params.building;
 
-  // 租金 / 坪數區間
   const rentRange: Prisma.IntFilter = {};
   if (params.minRent) rentRange.gte = Number(params.minRent);
   if (params.maxRent) rentRange.lte = Number(params.maxRent);
@@ -62,20 +62,14 @@ async function search(params: SearchParams) {
   if (params.maxArea) areaRange.lte = Number(params.maxArea);
   if (Object.keys(areaRange).length) where.usableArea = areaRange;
 
-  // 房型最少
   if (params.rooms) where.rooms = { gte: Number(params.rooms) };
-
-  // 屋齡上限
   if (params.ageMax) where.buildingAge = { lte: Number(params.ageMax) };
-
-  // 必備條件
   if (params.elevator === '1') where.hasElevator = true;
   if (params.pets === '1') where.petsAllowed = true;
   if (params.cooking === '1') where.cookingAllowed = true;
 
   const andClauses: Prisma.PropertyWhereInput[] = [];
 
-  // 多選 tags（任一即可）
   if (params.tags) {
     const tagsList = params.tags.split(',').map((t) => t.trim()).filter(Boolean);
     if (tagsList.length) {
@@ -85,7 +79,6 @@ async function search(params: SearchParams) {
     }
   }
 
-  // 多選 equipment（任一）
   if (params.equipment) {
     const eqList = params.equipment.split(',').map((t) => t.trim()).filter(Boolean);
     if (eqList.length) {
@@ -95,7 +88,6 @@ async function search(params: SearchParams) {
     }
   }
 
-  // 關鍵字
   if (params.q) {
     andClauses.push({
       OR: [
@@ -117,7 +109,10 @@ async function search(params: SearchParams) {
     const [items, total] = await Promise.all([
       prisma.property.findMany({
         where,
-        include: { images: { orderBy: { order: 'asc' }, take: 1 } },
+        include: {
+          images: { orderBy: { order: 'asc' }, take: 1 },
+          translations: locale === 'zh' ? false : { where: { locale } },
+        },
         orderBy: parseSort(params.sort),
         skip: (page - 1) * pageSize,
         take: pageSize,
@@ -131,38 +126,25 @@ async function search(params: SearchParams) {
 }
 
 export default async function PropertiesPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<SearchParams>;
 }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+
   const sp = await searchParams;
-  const { items, total, page, pageSize } = await search(sp);
+  const { items, total, page, pageSize } = await search(sp, locale);
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
-  const cards: PropertyCardData[] = items.map((p: any) => ({
-    id: p.id,
-    title: p.title,
-    region: p.region,
-    district: p.district,
-    street: p.street,
-    community: p.community,
-    typeMid: p.typeMid,
-    rooms: p.rooms,
-    bathrooms: p.bathrooms,
-    livingRooms: p.livingRooms,
-    usableArea: p.usableArea,
-    rent: p.rent,
-    imageUrl: p.images[0]?.url ?? null,
-    featureTags: Array.isArray(p.featureTags) ? p.featureTags : [],
-    buildingAge: p.buildingAge,
-    hasElevator: p.hasElevator,
-    petsAllowed: p.petsAllowed,
-    cookingAllowed: p.cookingAllowed,
-    description: p.description,
-    hideAddress: p.hideAddress,
-    featured: p.featured,
-    listingStatus: p.listingStatus,
-  }));
+  const t = await getTranslations('properties');
+  const currentLocale = await getLocale();
+  const lp = (p: string) => (currentLocale === 'zh' ? p : `/${currentLocale}${p}`);
+
+  const heroImg = '/images/properties-hero.webp';
+  const cards = getLocalizedPropertyCards(items as any, locale);
 
   return (
     <>
@@ -172,21 +154,18 @@ export default async function PropertiesPage({
           <div className="container-page py-10 sm:py-14">
             <div className="grid lg:grid-cols-[1.1fr_1.4fr] gap-8 lg:gap-14 items-center">
               <div>
-                <span className="eyebrow"><span className="dot" />PROPERTIES</span>
+                <span className="eyebrow"><span className="dot" />{t('pageEyebrow')}</span>
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black mt-3 mb-3 leading-tight">
-                  找一個讓家人<br className="sm:hidden" />安心入住的好物件
+                  {t('pageTitleLine1')}<br className="sm:hidden" />
+                  {t('pageTitleLine2')}
                 </h1>
                 <p className="text-ink-700 text-base sm:text-lg leading-relaxed">
-                  深耕北北基桃竹，嚴選真實在地物件，每一筆都由業務親自確認屋況。
+                  {t('pageSubtitle')}
                 </p>
               </div>
               <div className="rounded-2xl overflow-hidden shadow-sm border border-line">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/images/properties-hero.webp"
-                  alt="家庭一起瀏覽物件"
-                  className="w-full h-auto object-cover aspect-[16/9]"
-                />
+                <img src={heroImg} alt="" className="w-full h-auto object-cover aspect-[16/9]" />
               </div>
             </div>
           </div>
@@ -198,11 +177,11 @@ export default async function PropertiesPage({
 
             {cards.length === 0 ? (
               <div className="bg-paper-2 rounded-xl border border-line p-12 text-center text-ink-500 mt-8">
-                <p className="text-lg mb-2">目前沒有符合條件的物件</p>
+                <p className="text-lg mb-2">{t('noResultsTitle')}</p>
                 <p className="text-sm">
-                  請調整搜尋條件，或聯繫業務專員：
-                  <Link href="/contact" className="text-brand-green-700 underline">
-                    聯絡我們
+                  {t('noResultsHint')}
+                  <Link href={lp('/contact')} className="text-brand-green-700 underline">
+                    {t('noResultsContactLink')}
                   </Link>
                 </p>
               </div>
@@ -215,7 +194,7 @@ export default async function PropertiesPage({
             )}
 
             {totalPages > 1 && (
-              <Pagination total={totalPages} current={page} sp={sp} />
+              <Pagination total={totalPages} current={page} sp={sp} basePath={lp('/properties')} />
             )}
           </div>
         </section>
@@ -229,10 +208,12 @@ function Pagination({
   total,
   current,
   sp,
+  basePath,
 }: {
   total: number;
   current: number;
   sp: SearchParams;
+  basePath: string;
 }) {
   return (
     <div className="flex justify-center gap-2 mt-12">
@@ -246,7 +227,7 @@ function Pagination({
         return (
           <Link
             key={n}
-            href={`/properties?${params.toString()}`}
+            href={`${basePath}?${params.toString()}`}
             className={`w-10 h-10 grid place-items-center rounded-full text-sm font-medium transition ${n === current ? 'bg-brand-green-700 text-white' : 'bg-white border border-line text-ink-700 hover:border-brand-green-500'}`}
           >
             {n}

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { getTranslations, getLocale, setRequestLocale } from 'next-intl/server';
 import Header from '@/components/frontend/Header';
 import Footer from '@/components/frontend/Footer';
 import HeroCarousel, { HeroSlide as HeroSlideType } from '@/components/frontend/HeroCarousel';
@@ -15,6 +16,8 @@ import {
   type CategoriesContent,
   type ServicesContent,
 } from '@/data/homepage-defaults';
+import { translateCmsSection } from '@/lib/cms-translate';
+import { getLocalizedPropertyCards } from '@/lib/property-translate';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,63 +66,51 @@ const FALLBACK_TESTIMONIALS: Testimonial[] = [
   },
 ];
 
-async function getFeaturedProperties(): Promise<PropertyCardData[]> {
+async function getFeaturedProperties(locale: string): Promise<PropertyCardData[]> {
   try {
     const items = await prisma.property.findMany({
       where: { status: 'active', featured: true },
-      include: { images: { orderBy: { order: 'asc' }, take: 1 } },
+      include: {
+        images: { orderBy: { order: 'asc' }, take: 1 },
+        translations: locale === 'zh' ? false : { where: { locale } },
+      },
       orderBy: [{ updatedAt: 'desc' }],
       take: 6,
     });
-    return items.map((p) => ({
-      id: p.id,
-      title: p.title,
-      region: p.region,
-      district: p.district,
-      street: p.street,
-      community: p.community,
-      typeMid: p.typeMid,
-      rooms: p.rooms,
-      livingRooms: p.livingRooms,
-      bathrooms: p.bathrooms,
-      usableArea: p.usableArea,
-      rent: p.rent,
-      imageUrl: p.images[0]?.url ?? null,
-      featureTags: Array.isArray(p.featureTags) ? (p.featureTags as string[]) : [],
-      buildingAge: p.buildingAge,
-      hasElevator: p.hasElevator,
-      petsAllowed: p.petsAllowed,
-      cookingAllowed: p.cookingAllowed,
-      description: p.description,
-      hideAddress: p.hideAddress,
-      featured: p.featured,
-      listingStatus: p.listingStatus,
-    }));
+    return getLocalizedPropertyCards(items, locale);
   } catch {
     return [];
   }
 }
 
-async function getHomepageContent() {
+async function getHomepageContent(locale: string) {
   try {
     const items = await prisma.siteContent.findMany({
       where: { section: { in: ['homepage_hero', 'homepage_categories', 'homepage_services'] } },
     });
     const map = new Map(items.map((i) => [i.section, i.data as Record<string, unknown>]));
-    const hero: HeroContent = { ...HERO_DEFAULTS, ...(map.get('homepage_hero') || {}) };
-    const cRaw = map.get('homepage_categories') as { items?: unknown } | undefined;
+    const heroRaw = (map.get('homepage_hero') || {}) as Record<string, unknown>;
+    const categoriesRaw = (map.get('homepage_categories') || {}) as Record<string, unknown>;
+    const servicesRaw = (map.get('homepage_services') || {}) as Record<string, unknown>;
+
+    const [heroT, categoriesT, servicesT] = await Promise.all([
+      translateCmsSection('homepage_hero', heroRaw, locale),
+      translateCmsSection('homepage_categories', categoriesRaw, locale),
+      translateCmsSection('homepage_services', servicesRaw, locale),
+    ]);
+
+    const hero: HeroContent = { ...HERO_DEFAULTS, ...(heroT as Partial<HeroContent>) };
+    const cRaw = categoriesT as { items?: unknown };
     const categories: CategoriesContent = {
-      items: Array.isArray(cRaw?.items) && cRaw!.items!.length
-        ? (cRaw!.items as CategoriesContent['items'])
+      items: Array.isArray(cRaw?.items) && cRaw.items.length
+        ? (cRaw.items as CategoriesContent['items'])
         : CATEGORIES_DEFAULTS.items,
     };
-    const sRaw = (map.get('homepage_services') || {}) as Partial<ServicesContent>;
+    const sRaw = servicesT as Partial<ServicesContent>;
     const services: ServicesContent = {
       ...SERVICES_DEFAULTS,
       ...sRaw,
-      items: Array.isArray(sRaw.items) && sRaw.items.length
-        ? sRaw.items
-        : SERVICES_DEFAULTS.items,
+      items: Array.isArray(sRaw.items) && sRaw.items.length ? sRaw.items : SERVICES_DEFAULTS.items,
     };
     return { hero, categories, services };
   } catch {
@@ -131,7 +122,7 @@ async function getHomepageContent() {
   }
 }
 
-async function getTestimonials(): Promise<Testimonial[]> {
+async function getTestimonials(locale: string): Promise<Testimonial[]> {
   try {
     const about = await prisma.siteContent.findUnique({ where: { section: 'about' } });
     const data = (about?.data as Record<string, unknown>) || {};
@@ -151,7 +142,15 @@ async function getTestimonials(): Promise<Testimonial[]> {
           return { name: row.name, role: row.role, quote: row.quote };
         })
         .filter((x): x is Testimonial => x !== null);
-      if (normalized.length) return normalized;
+      if (normalized.length) {
+        const translated = await translateCmsSection(
+          'home_testimonials',
+          { items: normalized },
+          locale
+        );
+        const out = (translated as { items?: Testimonial[] }).items;
+        return Array.isArray(out) && out.length ? out : normalized;
+      }
     }
     return FALLBACK_TESTIMONIALS;
   } catch {
@@ -159,11 +158,22 @@ async function getTestimonials(): Promise<Testimonial[]> {
   }
 }
 
-export default async function HomePage() {
+export default async function HomePage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+
+  const t = await getTranslations('home');
+  const currentLocale = await getLocale();
+  const lp = (p: string) => (currentLocale === 'zh' ? p : `/${currentLocale}${p}`);
+
   const { slides, intervalSec } = await getHero();
-  const testimonials = await getTestimonials();
-  const featured = await getFeaturedProperties();
-  const { hero, categories, services } = await getHomepageContent();
+  const testimonials = await getTestimonials(locale);
+  const featured = await getFeaturedProperties(locale);
+  const { hero, categories, services } = await getHomepageContent(locale);
   const taxonomies = await getTaxonomies();
 
   return (
@@ -213,6 +223,7 @@ export default async function HomePage() {
                   tag={cat.tag}
                   title={cat.title}
                   desc={cat.desc}
+                  viewMoreLabel={t('categoryViewMore')}
                 />
               ))}
             </div>
@@ -224,9 +235,9 @@ export default async function HomePage() {
           <section className="py-24 bg-paper-2" id="featured">
             <div className="container-page">
               <SectionHead
-                eyebrow="精選推薦"
-                title="本週嚴選好物件"
-                sub="系統依您所在地區與預算自動推薦關聯物件，省下大量搜尋時間。"
+                eyebrow={t('featuredEyebrow')}
+                title={t('featuredTitle')}
+                sub={t('featuredSub')}
               />
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5 lg:gap-7">
                 {featured.map((p) => (
@@ -234,8 +245,8 @@ export default async function HomePage() {
                 ))}
               </div>
               <div className="text-center mt-12">
-                <Link href="/properties" className="btn btn-primary">
-                  查看所有物件 →
+                <Link href={lp('/properties')} className="btn btn-primary">
+                  {t('viewAllProperties')}
                 </Link>
               </div>
             </div>
@@ -259,52 +270,30 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* WHY DINGLI 租屋這件事，值得被認真對待 */}
+        {/* WHY DINGLI */}
         <section className="py-24" id="why-dingli">
           <div className="container-page">
             <div className="grid lg:grid-cols-[1.05fr_1fr] gap-14 items-center">
               <div className="relative rounded-2xl overflow-hidden shadow-lg aspect-[5/4]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/images/property2.webp"
-                  alt="挑高夾層公寓室內"
-                  className="w-full h-full object-cover"
-                />
+                <img src="/images/property2.webp" alt="" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-tr from-ink-900/30 via-transparent to-transparent" />
               </div>
               <div>
                 <span className="eyebrow">
                   <span className="dot" />
-                  WHY DINGLI
+                  {t('whyEyebrow')}
                 </span>
                 <h2 className="text-3xl sm:text-4xl font-black mt-3 mb-5 leading-tight">
-                  租屋這件事，<br />
-                  <span className="text-brand-green-700">值得被認真對待</span>
+                  {t('whyTitleLine1')}<br />
+                  <span className="text-brand-green-700">{t('whyTitleLine2')}</span>
                 </h2>
-                <p className="text-ink-500 mb-8">
-                  我們不只是把鑰匙交給您 — 從帶看、議價、簽約到入住後續，鼎立的真人業務全程把關，讓您每一個決定都安心。
-                </p>
+                <p className="text-ink-500 mb-8">{t('whySubtitle')}</p>
                 <div className="grid sm:grid-cols-2 gap-5">
-                  <WhyCard
-                    num="01"
-                    title="10 年以上在地經驗"
-                    desc="熟悉雙北、桃園、新竹各大商圈行情，價格不被吃豆腐。"
-                  />
-                  <WhyCard
-                    num="02"
-                    title="真人專員一對一"
-                    desc="從帶看到簽約由同一位業務全程跟進，不會被踢來踢去。"
-                  />
-                  <WhyCard
-                    num="03"
-                    title="嚴選真實物件"
-                    desc="每筆物件皆經業務親自看過，不放假房源也不灌水。"
-                  />
-                  <WhyCard
-                    num="04"
-                    title="入住後仍持續關心"
-                    desc="遇到修繕、退押金或續約問題，我們依然是您的後盾。"
-                  />
+                  <WhyCard num="01" title={t('why01Title')} desc={t('why01Desc')} />
+                  <WhyCard num="02" title={t('why02Title')} desc={t('why02Desc')} />
+                  <WhyCard num="03" title={t('why03Title')} desc={t('why03Desc')} />
+                  <WhyCard num="04" title={t('why04Title')} desc={t('why04Desc')} />
                 </div>
               </div>
             </div>
@@ -315,7 +304,11 @@ export default async function HomePage() {
         <section className="py-24 bg-paper-2 relative overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(243,156,18,0.08),_transparent_55%),radial-gradient(circle_at_bottom_left,_rgba(46,157,47,0.08),_transparent_55%)] pointer-events-none" />
           <div className="container-page relative">
-            <SectionHead eyebrow="TESTIMONIALS" title="租客真實回饋" sub="我們重視每一次帶看與簽約體驗，以下是租客的真實分享。" />
+            <SectionHead
+              eyebrow={t('testimonialsEyebrow')}
+              title={t('testimonialsTitle')}
+              sub={t('testimonialsSub')}
+            />
             <div className="testimonial-marquee py-2">
               <div className="testimonial-track">
                 {[...testimonials, ...testimonials].map((item, idx) => (
@@ -341,17 +334,42 @@ function SectionHead({ eyebrow, title, sub }: { eyebrow: string; title: string; 
   );
 }
 
-function CatCard({ href, img, tag, title, desc }: { href: string; img: string; tag: string; title: string; desc: string }) {
+function CatCard({
+  href,
+  img,
+  tag,
+  title,
+  desc,
+  viewMoreLabel,
+}: {
+  href: string;
+  img: string;
+  tag: string;
+  title: string;
+  desc: string;
+  viewMoreLabel: string;
+}) {
   return (
-    <Link href={href} className="relative block rounded-xl overflow-hidden aspect-square shadow-sm hover:shadow-lg hover:-translate-y-1.5 transition group">
+    <Link
+      href={href}
+      className="relative block rounded-xl overflow-hidden aspect-square shadow-sm hover:shadow-lg hover:-translate-y-1.5 transition group"
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={img} alt={title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+      <img
+        src={img}
+        alt={title}
+        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+      />
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-ink-900/85" />
       <div className="absolute left-3 right-3 bottom-3 sm:left-6 sm:right-6 sm:bottom-6 text-white">
-        <span className="hidden sm:inline-block bg-brand-orange-500 text-xs font-bold px-2.5 py-1 rounded-full mb-2 tracking-wide">{tag}</span>
+        <span className="hidden sm:inline-block bg-brand-orange-500 text-xs font-bold px-2.5 py-1 rounded-full mb-2 tracking-wide">
+          {tag}
+        </span>
         <h3 className="text-base sm:text-2xl font-extrabold sm:mb-1.5 leading-tight">{title}</h3>
         <p className="hidden sm:block text-sm opacity-90">{desc}</p>
-        <span className="hidden sm:inline-flex items-center gap-1 mt-3 font-bold text-sm text-brand-orange-300">查看物件 →</span>
+        <span className="hidden sm:inline-flex items-center gap-1 mt-3 font-bold text-sm text-brand-orange-300">
+          {viewMoreLabel}
+        </span>
       </div>
     </Link>
   );
@@ -366,7 +384,7 @@ const AVATAR_PALETTE = [
 
 function TestimonialCard({ item, idx }: { item: Testimonial; idx: number }) {
   const palette = AVATAR_PALETTE[idx % AVATAR_PALETTE.length];
-  const initial = item.name.trim().slice(0, 1) || '客';
+  const initial = item.name.trim().slice(0, 1) || 'D';
 
   return (
     <article className="testimonial-card group relative bg-white rounded-2xl border border-line/80 p-7 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-brand-green-500/60 transition-all duration-300">

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentAdmin } from '@/lib/auth';
 import { deleteUpload } from '@/lib/storage';
+import { triggerTranslateInBackground } from '@/lib/property-translate';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,6 +62,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       },
       include: { images: true },
     });
+
+    // fire-and-forget 重新翻譯（內容變更時 sourceHash 不同會觸發重譯）
+    triggerTranslateInBackground(updated.id);
 
     return NextResponse.json(updated);
   } catch (e: any) {

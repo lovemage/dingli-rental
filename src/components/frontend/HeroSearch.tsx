@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import AiChatWidget from '@/components/frontend/AiChatWidget';
 import MaterialIcon from '@/components/MaterialIcon';
 
@@ -12,20 +13,24 @@ type Props = {
   propertyTypes?: string[];
 };
 
-const BUDGET_OPTIONS: { label: string; min?: string; max?: string }[] = [
-  { label: '不限' },
-  { label: 'NT$1萬以下', max: '10000' },
-  { label: 'NT$1-3萬', min: '10000', max: '30000' },
-  { label: 'NT$3-5萬', min: '30000', max: '50000' },
-  { label: 'NT$5萬以上', min: '50000' },
+const BUDGET_OPTIONS: { labelKey: string; min?: string; max?: string }[] = [
+  { labelKey: 'budget_any' },
+  { labelKey: 'budget_le_10k', max: '10000' },
+  { labelKey: 'budget_10_30k', min: '10000', max: '30000' },
+  { labelKey: 'budget_30_50k', min: '30000', max: '50000' },
+  { labelKey: 'budget_ge_50k', min: '50000' },
 ];
 
 export default function HeroSearch({ propertyTypes }: Props = {}) {
   const router = useRouter();
+  const t = useTranslations('heroSearch');
+  const locale = useLocale();
   const [region, setRegion] = useState('');
   const [type, setType] = useState('');
   const [budgetIdx, setBudgetIdx] = useState(0);
   const TYPE_OPTIONS = propertyTypes && propertyTypes.length ? propertyTypes : DEFAULT_TYPE_OPTIONS;
+
+  const propertiesPath = locale === 'zh' ? '/properties' : `/${locale}/properties`;
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -36,7 +41,7 @@ export default function HeroSearch({ propertyTypes }: Props = {}) {
     if (budget?.min) params.set('minRent', budget.min);
     if (budget?.max) params.set('maxRent', budget.max);
     const qs = params.toString();
-    router.push(qs ? `/properties?${qs}` : '/properties');
+    router.push(qs ? `${propertiesPath}?${qs}` : propertiesPath);
   }
 
   return (
@@ -46,13 +51,9 @@ export default function HeroSearch({ propertyTypes }: Props = {}) {
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
         <div>
-          <label className="label-base">縣市</label>
-          <select
-            value={region}
-            onChange={(e) => setRegion(e.target.value)}
-            className="input-base"
-          >
-            <option value="">全部</option>
+          <label className="label-base">{t('regionLabel')}</label>
+          <select value={region} onChange={(e) => setRegion(e.target.value)} className="input-base">
+            <option value="">{t('regionAll')}</option>
             {REGION_OPTIONS.map((r) => (
               <option key={r} value={r}>
                 {r}
@@ -61,30 +62,26 @@ export default function HeroSearch({ propertyTypes }: Props = {}) {
           </select>
         </div>
         <div>
-          <label className="label-base">物件類型</label>
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-            className="input-base"
-          >
-            <option value="">全部</option>
-            {TYPE_OPTIONS.map((t) => (
-              <option key={t} value={t}>
-                {t}
+          <label className="label-base">{t('typeLabel')}</label>
+          <select value={type} onChange={(e) => setType(e.target.value)} className="input-base">
+            <option value="">{t('typeAll')}</option>
+            {TYPE_OPTIONS.map((tp) => (
+              <option key={tp} value={tp}>
+                {tp}
               </option>
             ))}
           </select>
         </div>
         <div>
-          <label className="label-base">預算範圍</label>
+          <label className="label-base">{t('budgetLabel')}</label>
           <select
             value={budgetIdx}
             onChange={(e) => setBudgetIdx(Number(e.target.value))}
             className="input-base"
           >
             {BUDGET_OPTIONS.map((b, i) => (
-              <option key={b.label} value={i}>
-                {b.label}
+              <option key={b.labelKey} value={i}>
+                {t(b.labelKey)}
               </option>
             ))}
           </select>
@@ -93,12 +90,12 @@ export default function HeroSearch({ propertyTypes }: Props = {}) {
           <button
             type="submit"
             className="bg-brand-orange-500 hover:bg-brand-orange-700 text-white rounded-lg w-11 h-[42px] flex-shrink-0 grid place-items-center transition shadow-sm"
-            aria-label="搜尋物件"
+            aria-label={t('searchAria')}
           >
             <MaterialIcon name="search" className="!text-xl" />
           </button>
           <AiChatWidget
-            triggerLabel="鼎立 AI"
+            triggerLabel={t('aiButton')}
             triggerClassName="ai-glow-btn bg-brand-green-700 hover:bg-brand-green-900 text-white rounded-lg h-[42px] px-4 flex-1 inline-flex items-center justify-center font-extrabold text-sm whitespace-nowrap transition shadow-sm"
           />
         </div>

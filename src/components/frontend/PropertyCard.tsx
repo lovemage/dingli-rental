@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useLocale, useTranslations } from 'next-intl';
 import {
   classifyFeatureTags,
   getDerivedTags,
@@ -16,11 +19,19 @@ export const LISTING_STATUS_OPTIONS: { value: ListingStatus; label: string }[] =
   { value: 'closed', label: '結束' },
 ];
 
+const LISTING_STATUS_CLASS: Record<ListingStatus, string> = {
+  active: 'bg-brand-green-700 text-white',
+  rented: 'bg-ink-700 text-white',
+  sold:   'bg-brand-orange-600 text-white',
+  closed: 'bg-ink-300 text-ink-700',
+};
+
+// 兼容既有引用
 export const LISTING_STATUS_BADGE: Record<ListingStatus, { label: string; className: string }> = {
-  active: { label: '出租中', className: 'bg-brand-green-700 text-white' },
-  rented: { label: '已出租', className: 'bg-ink-700 text-white' },
-  sold:   { label: '售出',   className: 'bg-brand-orange-600 text-white' },
-  closed: { label: '結束',   className: 'bg-ink-300 text-ink-700' },
+  active: { label: '出租中', className: LISTING_STATUS_CLASS.active },
+  rented: { label: '已出租', className: LISTING_STATUS_CLASS.rented },
+  sold:   { label: '售出',   className: LISTING_STATUS_CLASS.sold },
+  closed: { label: '結束',   className: LISTING_STATUS_CLASS.closed },
 };
 
 export type PropertyCardData = {
@@ -54,7 +65,15 @@ type Props = {
   maxTags?: number;
 };
 
+function localePath(locale: string, path: string) {
+  if (locale === 'zh') return path;
+  return `/${locale}${path === '/' ? '' : path}`;
+}
+
 export default function PropertyCard({ property: p, maxTags = 3 }: Props) {
+  const t = useTranslations('propertyCard');
+  const locale = useLocale();
+
   const locParts = [p.region, p.district];
   if (!p.hideAddress) {
     if (p.community) locParts.push(p.community);
@@ -64,16 +83,23 @@ export default function PropertyCard({ property: p, maxTags = 3 }: Props) {
 
   const policyAndCustom = classifyFeatureTags(p.featureTags);
   const derived = getDerivedTags(p);
-  // 制度標籤優先 → 衍生標籤 → 自由特色，限制顯示數量
   const allTags = mergeTags(
     policyAndCustom.filter((t) => t.tone === 'green'),
     derived,
     policyAndCustom.filter((t) => t.tone !== 'green'),
   ).slice(0, maxTags);
 
+  const statusKey = (p.listingStatus ?? 'active') as ListingStatus;
+  const statusLabelKey =
+    statusKey === 'rented' ? 'statusRented'
+    : statusKey === 'sold'   ? 'statusSold'
+    : statusKey === 'closed' ? 'statusClosed'
+    : 'statusActive';
+  const statusClassName = LISTING_STATUS_CLASS[statusKey] ?? LISTING_STATUS_CLASS.active;
+
   return (
     <Link
-      href={`/properties/${p.id}`}
+      href={localePath(locale, `/properties/${p.id}`)}
       className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col border border-line"
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-paper-2">
@@ -85,28 +111,19 @@ export default function PropertyCard({ property: p, maxTags = 3 }: Props) {
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
         ) : (
-          <div className="w-full h-full grid place-items-center text-ink-300 text-sm">暫無圖片</div>
+          <div className="w-full h-full grid place-items-center text-ink-300 text-sm">—</div>
         )}
 
-        {/* 左上：刊登狀態 badge */}
-        {(() => {
-          const key = (p.listingStatus ?? 'active') as ListingStatus;
-          const meta = LISTING_STATUS_BADGE[key] ?? LISTING_STATUS_BADGE.active;
-          return (
-            <span className={`absolute top-3 left-3 ${meta.className} text-xs font-bold px-3 py-1 rounded-full shadow-sm`}>
-              {meta.label}
-            </span>
-          );
-        })()}
+        <span className={`absolute top-3 left-3 ${statusClassName} text-xs font-bold px-3 py-1 rounded-full shadow-sm`}>
+          {t(statusLabelKey)}
+        </span>
 
-        {/* 精選標記（疊在狀態 badge 右側） */}
         {p.featured && (
           <span className="absolute top-3 left-[84px] bg-brand-orange-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
-            ★ 精選
+            ★ {t('featured')}
           </span>
         )}
 
-        {/* 右上：類型 */}
         <span className="absolute top-3 right-3 bg-white/95 text-ink-700 text-xs font-medium px-2.5 py-1 rounded-full shadow-sm">
           {p.typeMid}
         </span>
@@ -114,8 +131,8 @@ export default function PropertyCard({ property: p, maxTags = 3 }: Props) {
 
       <div className="p-5 flex flex-col flex-1">
         <h3 className="text-2xl font-black text-brand-green-900 mb-1 tracking-tight">
-          NT$ {p.rent.toLocaleString()}
-          <span className="text-sm text-ink-500 font-medium"> / 月</span>
+          {t('currencyPrefix')} {p.rent.toLocaleString()}
+          <span className="text-sm text-ink-500 font-medium">{t('rentSuffix')}</span>
         </h3>
         <h4 className="text-base font-bold mb-1.5 line-clamp-1 group-hover:text-brand-green-700 transition">
           {p.title}
@@ -130,9 +147,9 @@ export default function PropertyCard({ property: p, maxTags = 3 }: Props) {
         )}
 
         <div className="flex gap-4 pt-4 border-t border-line text-xs text-ink-700 mt-auto">
-          <span className="flex items-center gap-1">🛏 {p.rooms} 房</span>
-          <span className="flex items-center gap-1">🚿 {p.bathrooms} 衛</span>
-          <span className="flex items-center gap-1">📐 {p.usableArea} 坪</span>
+          <span className="flex items-center gap-1">🛏 {t('rooms', { count: p.rooms })}</span>
+          <span className="flex items-center gap-1">🚿 {t('bathrooms', { count: p.bathrooms })}</span>
+          <span className="flex items-center gap-1">📐 {t('ping', { count: p.usableArea })}</span>
         </div>
       </div>
     </Link>
