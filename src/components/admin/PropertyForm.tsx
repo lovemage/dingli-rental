@@ -116,6 +116,8 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
   const [aiUploading, setAiUploading] = useState(false);
   const [aiRunning, setAiRunning] = useState(false);
   const [aiPhotos, setAiPhotos] = useState<string[]>([]);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [aiMsg, setAiMsg] = useState('');
   const [aiAppliedKeys, setAiAppliedKeys] = useState<string[]>([]);
 
@@ -154,6 +156,19 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
 
   function removeImage(url: string) {
     update('images', v.images.filter((u) => u !== url));
+  }
+
+  function moveImage(from: number, to: number) {
+    if (from === to || from < 0 || to < 0 || from >= v.images.length || to >= v.images.length) return;
+    const next = [...v.images];
+    const [picked] = next.splice(from, 1);
+    next.splice(to, 0, picked);
+    update('images', next);
+  }
+
+  function setCoverImage(index: number) {
+    if (index <= 0 || index >= v.images.length) return;
+    moveImage(index, 0);
   }
 
   // ===== AI 辨識 =====
@@ -355,6 +370,72 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
           </p>
         )}
       </div>
+
+      {/* === 照片（放在 OCR 區塊下方） === */}
+      <Card title="照片（最多 20 張）">
+        <input
+          type="file"
+          multiple
+          accept="image/*"
+          onChange={(e) => uploadFiles(e.target.files)}
+          className="block text-sm"
+        />
+        {uploading && <p className="text-sm text-brand-orange-700 mt-2">上傳中...</p>}
+        {v.images.length > 0 && (
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3 mt-4">
+            {v.images.map((url, i) => (
+              <div
+                key={url}
+                className={`relative group ${dragIndex === i ? 'opacity-60' : ''} ${dragOverIndex === i ? 'ring-2 ring-brand-green-500 rounded-lg' : ''}`}
+                draggable
+                onDragStart={(e) => {
+                  setDragIndex(i);
+                  e.dataTransfer.effectAllowed = 'move';
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOverIndex(i);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (dragIndex == null) return;
+                  moveImage(dragIndex, i);
+                  setDragIndex(null);
+                  setDragOverIndex(null);
+                }}
+                onDragEnd={() => {
+                  setDragIndex(null);
+                  setDragOverIndex(null);
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url} alt="" className="w-full aspect-square object-cover rounded-lg border border-line" />
+                <button type="button" onClick={() => removeImage(url)} className="absolute top-1 right-1 bg-white/95 rounded-full w-7 h-7 grid place-items-center text-sm border border-line shadow-sm opacity-0 group-hover:opacity-100 transition">
+                  <MaterialIcon name="close" className="text-base" />
+                </button>
+                <span className="absolute top-1 left-1 bg-white/90 text-ink-700 text-[11px] px-1.5 py-0.5 rounded border border-line font-bold">
+                  <MaterialIcon name="drag_indicator" className="!text-xs mr-0.5" />
+                  拖曳排序
+                </span>
+                <div className="absolute bottom-1 left-1 right-1 flex items-center justify-between gap-1">
+                  {i === 0 ? (
+                    <span className="bg-brand-green-700 text-white text-xs px-2 py-0.5 rounded-full font-bold">封面</span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setCoverImage(i)}
+                      className="bg-white/95 text-ink-700 text-xs px-2 py-0.5 rounded-full border border-line font-bold hover:border-brand-green-500 hover:text-brand-green-700 transition"
+                    >
+                      設為封面
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <p className="text-xs text-ink-500 mt-2">第一張會作為列表封面。可拖曳圖片調整順序，或點「設為封面」。</p>
+      </Card>
 
       {/* === 物件分類（大/中/小） === */}
       <Card title="物件分類">
@@ -675,33 +756,6 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
           />
           <p className="text-xs text-ink-500 mt-1">已輸入 {v.description.length} 字，還剩 {2500 - v.description.length} 字</p>
         </Field>
-      </Card>
-
-      {/* === 照片 === */}
-      <Card title="照片（最多 20 張）">
-        <input
-          type="file"
-          multiple
-          accept="image/*"
-          onChange={(e) => uploadFiles(e.target.files)}
-          className="block text-sm"
-        />
-        {uploading && <p className="text-sm text-brand-orange-700 mt-2">上傳中...</p>}
-        {v.images.length > 0 && (
-          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3 mt-4">
-            {v.images.map((url, i) => (
-              <div key={url} className="relative group">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt="" className="w-full aspect-square object-cover rounded-lg border border-line" />
-                <button type="button" onClick={() => removeImage(url)} className="absolute top-1 right-1 bg-white/95 rounded-full w-7 h-7 grid place-items-center text-sm border border-line shadow-sm opacity-0 group-hover:opacity-100 transition">
-                  <MaterialIcon name="close" className="text-base" />
-                </button>
-                {i === 0 && <span className="absolute bottom-1 left-1 bg-brand-green-700 text-white text-xs px-2 py-0.5 rounded-full font-bold">封面</span>}
-              </div>
-            ))}
-          </div>
-        )}
-        <p className="text-xs text-ink-500 mt-2">第一張會作為列表的封面圖。</p>
       </Card>
 
       {/* === 上下架 === */}
