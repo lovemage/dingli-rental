@@ -121,13 +121,21 @@ export default async function PropertyDetailPage({
                   <div className="w-full h-full grid place-items-center text-ink-300">{t('noImage')}</div>
                 )}
               </div>
-              <div className="hidden lg:grid grid-rows-2 gap-1">
-                {raw.images.slice(1, 3).map((img) => (
+              <div className="hidden lg:grid gap-1 max-h-[600px] overflow-y-auto">
+                {raw.images.slice(1).map((img) => (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img key={img.id} src={img.url} alt="" className="w-full h-full object-cover" />
+                  <img key={img.id} src={img.url} alt="" className="w-full h-36 object-cover" />
                 ))}
               </div>
             </div>
+            {raw.images.length > 1 && (
+              <div className="lg:hidden bg-paper-2 p-1 grid grid-cols-3 gap-1">
+                {raw.images.slice(1).map((img) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={img.id} src={img.url} alt="" className="w-full aspect-square object-cover" />
+                ))}
+              </div>
+            )}
 
             <div className="p-6 sm:p-10 grid lg:grid-cols-[1fr_320px] gap-8">
               <div>
