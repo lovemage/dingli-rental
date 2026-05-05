@@ -198,10 +198,12 @@ export function getLocalizedPropertyCards(
   items: any[],
   locale: string
 ): PropertyCardData[] {
+  const localeCandidates =
+    locale === 'ja' ? ['ja', 'jp'] : [locale];
   return items.map((p) => {
     const tr =
       locale !== 'zh'
-        ? p.translations?.find((t: any) => t.locale === locale)
+        ? p.translations?.find((t: any) => localeCandidates.includes(t.locale))
         : undefined;
 
     return {
@@ -238,8 +240,12 @@ export function getLocalizedPropertyCards(
 
 /** 給詳情頁用：把所有翻譯欄位都套用 */
 export function localizePropertyForDetail(p: any, locale: string) {
+  const localeCandidates =
+    locale === 'ja' ? ['ja', 'jp'] : [locale];
   const tr =
-    locale !== 'zh' ? p.translations?.find((t: any) => t.locale === locale) : undefined;
+    locale !== 'zh'
+      ? p.translations?.find((t: any) => localeCandidates.includes(t.locale))
+      : undefined;
   return {
     ...p,
     title: tr?.title || p.title,

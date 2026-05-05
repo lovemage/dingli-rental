@@ -45,6 +45,7 @@ function parseSort(sort?: string): Prisma.PropertyOrderByWithRelationInput[] {
 }
 
 async function search(params: SearchParams, locale: string) {
+  const localeCandidates = locale === 'ja' ? ['ja', 'jp'] : [locale];
   const where: Prisma.PropertyWhereInput = { status: 'active' };
 
   if (params.region) where.region = params.region;
@@ -102,13 +103,13 @@ async function search(params: SearchParams, locale: string) {
       andClauses.push({
         OR: [
           ...sourceOr,
-          {
-            translations: {
-              some: {
-                locale,
-                OR: [
-                  { title: { contains: params.q, mode: 'insensitive' } },
-                  { description: { contains: params.q, mode: 'insensitive' } },
+                  {
+                    translations: {
+                      some: {
+                        locale: { in: localeCandidates },
+                        OR: [
+                          { title: { contains: params.q, mode: 'insensitive' } },
+                          { description: { contains: params.q, mode: 'insensitive' } },
                   { community: { contains: params.q, mode: 'insensitive' } },
                   { district: { contains: params.q, mode: 'insensitive' } },
                   { street: { contains: params.q, mode: 'insensitive' } },
@@ -132,7 +133,10 @@ async function search(params: SearchParams, locale: string) {
         where,
         include: {
           images: { orderBy: { order: 'asc' }, take: 1 },
-          translations: locale === 'zh' ? false : { where: { locale } },
+          translations:
+            locale === 'zh'
+              ? false
+              : { where: { locale: { in: localeCandidates } } },
         },
         orderBy: parseSort(params.sort),
         skip: (page - 1) * pageSize,

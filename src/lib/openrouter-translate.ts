@@ -1,6 +1,8 @@
 import { loadAiSettings } from '@/lib/ai-extract';
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const TRANSLATE_TIMEOUT_MS = Number(process.env.OPENROUTER_TRANSLATE_TIMEOUT_MS || 60000);
+const TRANSLATE_MAX_RETRIES = Number(process.env.OPENROUTER_TRANSLATE_RETRIES || 1);
 
 const LOCALE_NAME: Record<string, string> = {
   en: 'English (US)',
@@ -86,41 +88,58 @@ Return ONLY the translated JSON, no markdown fences, no commentary.`;
 
   const userMessage = `Translate this JSON to ${targetName}:\n\n${JSON.stringify(data, null, 2)}`;
 
-  const res = await fetch(OPENROUTER_URL, {
-    method: 'POST',
-    signal: AbortSignal.timeout(20_000),
-    headers: {
-      Authorization: `Bearer ${settings.openrouterApiKey}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'https://dingli-rental.com',
-      'X-Title': 'Dingli Rental - Content Translation',
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage },
-      ],
-      temperature: 0.2,
-      response_format: { type: 'json_object' },
-    }),
-  });
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt <= TRANSLATE_MAX_RETRIES; attempt++) {
+    try {
+      const res = await fetch(OPENROUTER_URL, {
+        method: 'POST',
+        signal: AbortSignal.timeout(TRANSLATE_TIMEOUT_MS),
+        headers: {
+          Authorization: `Bearer ${settings.openrouterApiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'https://dingli-rental.com',
+          'X-Title': 'Dingli Rental - Content Translation',
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userMessage },
+          ],
+          temperature: 0.2,
+          response_format: { type: 'json_object' },
+        }),
+      });
 
-  if (!res.ok) {
-    const errText = await res.text().catch(() => '');
-    throw new Error(`OpenRouter translate failed: ${res.status} ${errText.slice(0, 200)}`);
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        const retriable = res.status >= 500 || res.status === 429;
+        if (retriable && attempt < TRANSLATE_MAX_RETRIES) {
+          await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+          continue;
+        }
+        throw new Error(`OpenRouter translate failed: ${res.status} ${errText.slice(0, 200)}`);
+      }
+
+      const json = await res.json();
+      const text: string =
+        json?.choices?.[0]?.message?.content ??
+        json?.choices?.[0]?.message?.reasoning ??
+        '';
+      const parsed = parseJson(text);
+      if (parsed == null) {
+        throw new Error('OpenRouter translate: 回應無法解析為 JSON');
+      }
+      return parsed;
+    } catch (e: any) {
+      lastError = e as Error;
+      const isAbort = e?.name === 'AbortError' || String(e?.message || '').includes('aborted');
+      if (!isAbort || attempt >= TRANSLATE_MAX_RETRIES) break;
+      await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+    }
   }
 
-  const json = await res.json();
-  const text: string =
-    json?.choices?.[0]?.message?.content ??
-    json?.choices?.[0]?.message?.reasoning ??
-    '';
-  const parsed = parseJson(text);
-  if (parsed == null) {
-    throw new Error('OpenRouter translate: 回應無法解析為 JSON');
-  }
-  return parsed;
+  throw lastError ?? new Error('OpenRouter translate failed');
 }
 
 /**

@@ -19,6 +19,7 @@ export default async function PropertyDetailPage({
   params: Promise<{ id: string; locale: string }>;
 }) {
   const { id: rawId, locale } = await params;
+  const localeCandidates = locale === 'ja' ? ['ja', 'jp'] : [locale];
   setRequestLocale(locale);
 
   const id = Number(rawId);
@@ -32,7 +33,10 @@ export default async function PropertyDetailPage({
       where: { id },
       include: {
         images: { orderBy: { order: 'asc' } },
-        translations: locale === 'zh' ? false : { where: { locale } },
+        translations:
+          locale === 'zh'
+            ? false
+            : { where: { locale: { in: localeCandidates } } },
       },
     })
     .catch(() => null);
