@@ -106,9 +106,9 @@ async function getHomepageContent(locale: string) {
       where: { section: { in: ['homepage_hero', 'homepage_categories', 'homepage_services'] } },
     });
     const map = new Map(items.map((i) => [i.section, i.data as Record<string, unknown>]));
-    const heroRaw = (map.get('homepage_hero') || {}) as Record<string, unknown>;
-    const categoriesRaw = (map.get('homepage_categories') || {}) as Record<string, unknown>;
-    const servicesRaw = (map.get('homepage_services') || {}) as Record<string, unknown>;
+    const heroRaw = ((map.get('homepage_hero') as Record<string, unknown> | undefined) || HERO_DEFAULTS) as Record<string, unknown>;
+    const categoriesRaw = ((map.get('homepage_categories') as Record<string, unknown> | undefined) || CATEGORIES_DEFAULTS) as Record<string, unknown>;
+    const servicesRaw = ((map.get('homepage_services') as Record<string, unknown> | undefined) || SERVICES_DEFAULTS) as Record<string, unknown>;
 
     const [heroT, categoriesT, servicesT] = await Promise.all([
       translateCmsSection('homepage_hero', heroRaw, locale),
@@ -139,7 +139,7 @@ async function getHomepageContent(locale: string) {
   }
 }
 
-async function getTestimonials(locale: string): Promise<Testimonial[]> {
+async function getTestimonials(): Promise<Testimonial[]> {
   try {
     const about = await prisma.siteContent.findUnique({ where: { section: 'about' } });
     const data = (about?.data as Record<string, unknown>) || {};
@@ -160,13 +160,8 @@ async function getTestimonials(locale: string): Promise<Testimonial[]> {
         })
         .filter((x): x is Testimonial => x !== null);
       if (normalized.length) {
-        const translated = await translateCmsSection(
-          'home_testimonials',
-          { items: normalized },
-          locale
-        );
-        const out = (translated as { items?: Testimonial[] }).items;
-        return Array.isArray(out) && out.length ? out : normalized;
+        // 評論內容固定使用原文，不做多語翻譯
+        return normalized;
       }
     }
     return FALLBACK_TESTIMONIALS;
@@ -188,7 +183,7 @@ export default async function HomePage({
   const lp = (p: string) => (currentLocale === 'zh' ? p : `/${currentLocale}${p}`);
 
   const { slides, intervalSec } = await getHero();
-  const testimonials = await getTestimonials(locale);
+  const testimonials = await getTestimonials();
   const featured = await getFeaturedProperties(locale);
   const { hero, categories, services } = await getHomepageContent(locale);
   const taxonomies = await getTaxonomies();
