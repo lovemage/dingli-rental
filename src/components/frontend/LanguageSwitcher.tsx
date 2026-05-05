@@ -24,6 +24,20 @@ function buildLocalePath(pathname: string, currentLocale: string, nextLocale: st
   return `/${nextLocale}${stripped === '/' ? '' : stripped}`;
 }
 
+function persistLocale(nextLocale: string) {
+  if (typeof document === 'undefined') return;
+  document.cookie = `NEXT_LOCALE=${nextLocale}; Path=/; Max-Age=31536000; SameSite=Lax`;
+}
+
+function navigateTo(target: string, nextLocale: string, router: ReturnType<typeof useRouter>) {
+  if (nextLocale === routing.defaultLocale) {
+    // `/en` -> `/` 在某些情境下 router.replace 可能不觸發，改成完整導頁確保生效
+    window.location.assign(target);
+    return;
+  }
+  router.replace(target);
+}
+
 /** 桌面版：globe icon + 下拉 */
 export function LanguageSwitcherDesktop() {
   const locale = useLocale();
@@ -43,7 +57,9 @@ export function LanguageSwitcherDesktop() {
 
   const switchTo = (next: string) => {
     setOpen(false);
-    router.replace(buildLocalePath(pathname, locale, next));
+    persistLocale(next);
+    const target = buildLocalePath(pathname, locale, next);
+    navigateTo(target, next, router);
   };
 
   return (
@@ -96,7 +112,9 @@ export function LanguageSwitcherMobile({ onPick }: { onPick?: () => void }) {
 
   const switchTo = (next: string) => {
     onPick?.();
-    router.replace(buildLocalePath(pathname, locale, next));
+    persistLocale(next);
+    const target = buildLocalePath(pathname, locale, next);
+    navigateTo(target, next, router);
   };
 
   return (

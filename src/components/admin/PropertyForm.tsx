@@ -112,6 +112,9 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
   const CUSTOM_SUGS  = taxonomies?.customTagSuggestions || (CUSTOM_TAG_SUGGESTIONS as readonly string[]);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savePromptOpen, setSavePromptOpen] = useState(false);
+  const [pendingPayload, setPendingPayload] = useState<any | null>(null);
+  const [saveStage, setSaveStage] = useState<'saving' | 'translating' | ''>('');
   const [err, setErr] = useState('');
   const [aiUploading, setAiUploading] = useState(false);
   const [aiRunning, setAiRunning] = useState(false);
@@ -244,57 +247,81 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
     }
   }
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  function buildPayload() {
+    return {
+      ...v,
+      region: v.city, // 大分類 = 縣市
+      rent: Number(v.rent),
+      rooms: Number(v.rooms),
+      livingRooms: Number(v.livingRooms),
+      bathrooms: Number(v.bathrooms),
+      balconies: Number(v.balconies),
+      usableArea: Number(v.usableArea),
+      registeredArea: v.registeredArea === '' ? null : Number(v.registeredArea),
+      managementFee: v.managementFee === '' ? null : Number(v.managementFee),
+      buildingAge: v.buildingAge === '' ? null : Number(v.buildingAge),
+      moveInDate: v.moveInDate || null,
+    };
+  }
+
+  async function persist(doTranslate: boolean) {
+    if (!pendingPayload) return;
     setErr('');
     setSaving(true);
-
-    // 必填基本檢查
-    if (!v.title || v.title.length < 6 || v.title.length > 30) {
-      setErr('廣告標題請填寫 6 ~ 30 個字'); setSaving(false); return;
-    }
-    if (!v.city || !v.district || !v.number) {
-      setErr('請完整填寫地址（縣市/鄉鎮/號）'); setSaving(false); return;
-    }
-    if (!v.usableArea || Number(v.usableArea) <= 0) {
-      setErr('請填寫可使用坪數'); setSaving(false); return;
-    }
-    if (!v.rent || Number(v.rent) <= 0) {
-      setErr('請填寫租金'); setSaving(false); return;
-    }
-
+    setSavePromptOpen(false);
+    setSaveStage('saving');
     try {
-      const payload = {
-        ...v,
-        region: v.city, // 大分類 = 縣市
-        rent: Number(v.rent),
-        rooms: Number(v.rooms),
-        livingRooms: Number(v.livingRooms),
-        bathrooms: Number(v.bathrooms),
-        balconies: Number(v.balconies),
-        usableArea: Number(v.usableArea),
-        registeredArea: v.registeredArea === '' ? null : Number(v.registeredArea),
-        managementFee: v.managementFee === '' ? null : Number(v.managementFee),
-        buildingAge: v.buildingAge === '' ? null : Number(v.buildingAge),
-        moveInDate: v.moveInDate || null,
-      };
-
       const url = propertyId ? `/api/properties/${propertyId}` : '/api/properties';
       const res = await fetch(url, {
         method: propertyId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(pendingPayload),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || '儲存失敗');
+
+      if (doTranslate) {
+        const id = data?.id;
+        if (!id) throw new Error('儲存成功但找不到物件 ID，無法翻譯');
+        setSaveStage('translating');
+        const trRes = await fetch(`/api/properties/${id}/translate`, { method: 'POST' });
+        const trData = await trRes.json().catch(() => ({}));
+        if (!trRes.ok) {
+          throw new Error(trData?.error || '物件已儲存，但多語言翻譯失敗');
+        }
+      }
 
       router.push('/admin/properties');
       router.refresh();
     } catch (e: any) {
       setErr(e?.message || '儲存失敗');
     } finally {
+      setSaveStage('');
       setSaving(false);
+      setPendingPayload(null);
     }
+  }
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setErr('');
+
+    // 必填基本檢查
+    if (!v.title || v.title.length < 6 || v.title.length > 30) {
+      setErr('廣告標題請填寫 6 ~ 30 個字'); return;
+    }
+    if (!v.city || !v.district || !v.number) {
+      setErr('請完整填寫地址（縣市/鄉鎮/號）'); return;
+    }
+    if (!v.usableArea || Number(v.usableArea) <= 0) {
+      setErr('請填寫可使用坪數'); return;
+    }
+    if (!v.rent || Number(v.rent) <= 0) {
+      setErr('請填寫租金'); return;
+    }
+
+    setPendingPayload(buildPayload());
+    setSavePromptOpen(true);
   }
 
   return (
@@ -782,9 +809,54 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
       <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-white border-t border-line px-4 py-3 z-20">
         <div className="max-w-[1200px] mx-auto flex justify-end gap-2">
           <button type="button" onClick={() => router.push('/admin/properties')} className="btn btn-secondary">取消</button>
-          <button type="submit" disabled={saving} className="btn btn-primary">{saving ? '儲存中...' : (propertyId ? '儲存修改' : '建立物件')}</button>
+          <button type="submit" disabled={saving} className="btn btn-primary">
+            {saving
+              ? saveStage === 'translating'
+                ? '翻譯中...'
+                : '儲存中...'
+              : (propertyId ? '儲存修改' : '建立物件')}
+          </button>
         </div>
       </div>
+
+      {/* === 儲存前多語言確認 === */}
+      {savePromptOpen && (
+        <div
+          className="fixed inset-0 z-[65] bg-ink-900/55 backdrop-blur-sm grid place-items-center px-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-lg font-extrabold mb-2">該物件是否需要多語言？</h3>
+            <div className="flex justify-end gap-2 mt-5">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setSavePromptOpen(false)}
+                disabled={saving}
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => void persist(false)}
+                disabled={saving}
+              >
+                No
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => void persist(true)}
+                disabled={saving}
+              >
+                Yes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* === OCR 進行中遮罩 === */}
       {aiRunning && (
