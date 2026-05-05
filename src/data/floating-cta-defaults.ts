@@ -12,7 +12,7 @@ export type FloatingCtaContent = {
 
 export const FLOATING_CTA_DEFAULTS: FloatingCtaContent = {
   enabled: true,
-  avatarUrl: '/images/floating-cta-avatar.webp',
+  avatarUrl: '/images/103125.webp',
   linkUrl: 'https://lin.ee/z9d5558',
   bubbleTitle: 'LINE 諮詢',
   bubbleSubtitle: '點我聯絡客服',
