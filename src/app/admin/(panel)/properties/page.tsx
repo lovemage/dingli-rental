@@ -7,21 +7,41 @@ export const dynamic = 'force-dynamic';
 
 export default async function AdminPropertiesList() {
   let items: any[] = [];
+  let loadError = '';
   try {
     items = await prisma.property.findMany({
       include: {
         images: { orderBy: { order: 'asc' }, take: 1 },
-        translations: { select: { locale: true, sourceHash: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
-  } catch {}
+  } catch (e: any) {
+    loadError = e?.message || '物件讀取失敗';
+  }
+
+  // 翻譯狀態資料可能因部署時 DB schema 尚未更新而暫時不可用，不能影響主列表顯示
+  let translationsByProperty = new Map<number, Array<{ locale: string; sourceHash: string }>>();
+  try {
+    const rows = await prisma.propertyTranslation.findMany({
+      select: { propertyId: true, locale: true, sourceHash: true },
+    });
+    const map = new Map<number, Array<{ locale: string; sourceHash: string }>>();
+    for (const r of rows) {
+      const arr = map.get(r.propertyId) ?? [];
+      arr.push({ locale: r.locale, sourceHash: r.sourceHash });
+      map.set(r.propertyId, arr);
+    }
+    translationsByProperty = map;
+  } catch {
+    // ignore
+  }
 
   // 統計：每筆物件 EN / JA 翻譯是否最新
   function translationStatus(p: any): { en: 'fresh' | 'stale' | 'missing'; ja: 'fresh' | 'stale' | 'missing' } {
     const hash = computePropertySourceHash(p);
+    const trs = translationsByProperty.get(p.id) || [];
     const detect = (loc: string) => {
-      const tr = p.translations?.find((t: any) => t.locale === loc);
+      const tr = trs.find((t: any) => t.locale === loc);
       if (!tr) return 'missing' as const;
       return tr.sourceHash === hash ? ('fresh' as const) : ('stale' as const);
     };
@@ -34,6 +54,7 @@ export default async function AdminPropertiesList() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-black mb-1">物件管理</h1>
           <p className="text-ink-500 text-sm">共 {items.length} 筆</p>
+          {loadError && <p className="text-red-600 text-xs mt-1">{loadError}</p>}
         </div>
         <div className="flex items-start gap-3 flex-wrap">
           <TranslatePendingButton />
