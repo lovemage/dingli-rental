@@ -134,6 +134,19 @@ export default async function PropertyDetailPage({
                 <h1 className="text-2xl sm:text-3xl font-black mb-2">{p.title}</h1>
                 <p className="text-ink-500 mb-6">📍 {addressDisplay}</p>
 
+                {featureTags.length > 0 && (
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    {featureTags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="bg-brand-orange-50 text-brand-orange-700 text-xs font-bold px-2.5 py-1 rounded-full"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
                 <h2 className="font-bold text-lg mb-3">{t('basicInfo')}</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                   <Info label={t('layout')} value={layoutStr} />
@@ -190,18 +203,6 @@ export default async function PropertyDetailPage({
                   </>
                 )}
 
-                {featureTags.length > 0 && (
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {featureTags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="bg-brand-orange-50 text-brand-orange-700 text-xs font-bold px-2.5 py-1 rounded-full"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
               </div>
 
               <aside className="bg-paper-2 rounded-xl p-6 h-fit lg:sticky lg:top-24">
