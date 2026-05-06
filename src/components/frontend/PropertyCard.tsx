@@ -130,9 +130,9 @@ export default function PropertyCard({ property: p, maxTags = 3 }: Props) {
       </div>
 
       <div className="p-5 flex flex-col flex-1">
-        <h3 className="text-2xl font-black text-brand-green-900 mb-1 tracking-tight">
+        <h3 className="text-xl sm:text-2xl font-black text-brand-green-900 mb-1 tracking-tight whitespace-nowrap">
           {t('currencyPrefix')} {p.rent.toLocaleString()}
-          <span className="text-sm text-ink-500 font-medium">{t('rentSuffix')}</span>
+          <span className="text-xs sm:text-sm text-ink-500 font-medium">{t('rentSuffix')}</span>
         </h3>
         <h4 className="text-base font-bold mb-1.5 line-clamp-1 group-hover:text-brand-green-700 transition">
           {p.title}
