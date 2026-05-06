@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import Header from '@/components/frontend/Header';
 import Footer from '@/components/frontend/Footer';
+import PropertyGallery from '@/components/frontend/PropertyGallery';
 import { prisma } from '@/lib/prisma';
 import { localizePropertyForDetail } from '@/lib/property-translate';
 
@@ -112,30 +113,7 @@ export default async function PropertyDetailPage({
           </Link>
 
           <div className="bg-white rounded-xl shadow-md border border-line overflow-hidden">
-            <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-1 bg-paper-2">
-              <div className="aspect-[16/10] overflow-hidden">
-                {raw.images[0] ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={raw.images[0].url} alt={p.title} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full grid place-items-center text-ink-300">{t('noImage')}</div>
-                )}
-              </div>
-              <div className="hidden lg:grid gap-1 max-h-[600px] overflow-y-auto">
-                {raw.images.slice(1).map((img) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img key={img.id} src={img.url} alt="" className="w-full h-36 object-cover" />
-                ))}
-              </div>
-            </div>
-            {raw.images.length > 1 && (
-              <div className="lg:hidden bg-paper-2 p-1 grid grid-cols-3 gap-1">
-                {raw.images.slice(1).map((img) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img key={img.id} src={img.url} alt="" className="w-full aspect-square object-cover" />
-                ))}
-              </div>
-            )}
+            <PropertyGallery images={raw.images} title={p.title} noImageText={t('noImage')} />
 
             <div className="p-6 sm:p-10 grid lg:grid-cols-[1fr_320px] gap-8">
               <div>
