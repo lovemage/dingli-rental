@@ -25,7 +25,7 @@ export default function PropertyGallery({
 
   return (
     <>
-      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-1 bg-paper-2">
+      <div className="bg-paper-2">
         <div className="aspect-[16/10] overflow-hidden">
           {selectedImage ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -34,36 +34,24 @@ export default function PropertyGallery({
             <div className="w-full h-full grid place-items-center text-ink-300">{noImageText}</div>
           )}
         </div>
-        <div className="hidden lg:grid gap-1 max-h-[600px] overflow-y-auto">
-          {images.slice(1).map((image) => (
-            <button
-              key={image.id}
-              type="button"
-              onClick={() => setSelectedImageId(image.id)}
-              className={`overflow-hidden ${selectedImage?.id === image.id ? 'ring-2 ring-brand-green-600' : ''}`}
-              aria-label="Select property image"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={image.url} alt="" className="w-full h-36 object-cover" />
-            </button>
-          ))}
-        </div>
       </div>
 
       {images.length > 1 && (
-        <div className="lg:hidden bg-paper-2 p-1 grid grid-cols-4 gap-1">
+        <div className="bg-paper-2 p-2 overflow-x-auto">
+          <div className="flex gap-2 w-max">
           {images.map((image) => (
             <button
               key={image.id}
               type="button"
               onClick={() => setSelectedImageId(image.id)}
-              className={`overflow-hidden ${selectedImage?.id === image.id ? 'ring-2 ring-brand-green-600' : ''}`}
+              className={`overflow-hidden shrink-0 rounded ${selectedImage?.id === image.id ? 'ring-2 ring-brand-green-600' : ''}`}
               aria-label="Select property image"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={image.url} alt="" className="w-full aspect-square object-cover" />
+              <img src={image.url} alt="" className="w-24 h-24 sm:w-28 sm:h-28 object-cover" />
             </button>
           ))}
+          </div>
         </div>
       )}
     </>
