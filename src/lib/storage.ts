@@ -68,6 +68,58 @@ export async function saveImageAsWebp(
 }
 
 /**
+ * 影片上傳（Cloudinary）
+ * - 轉為 mp4（H.264 + AAC）
+ * - 限制最大 1080p
+ * - q_auto:good 讓 Cloudinary 自動壓縮
+ */
+export async function saveVideoAsMp4(
+  buffer: Buffer,
+  opts: { subdir?: string } = {}
+): Promise<{ url: string; sizeBytes: number; width: number; height: number }> {
+  const subdir = (opts.subdir || '').replace(/^\/+|\/+$/g, '');
+  ensureConfigured();
+
+  const publicId = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}`;
+
+  const result: UploadApiResponse = await new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        public_id: publicId,
+        folder: subdir || undefined,
+        resource_type: 'video',
+        format: 'mp4',
+        overwrite: false,
+        eager: [
+          {
+            format: 'mp4',
+            quality: 'auto:good',
+            width: 1920,
+            height: 1080,
+            crop: 'limit',
+            video_codec: 'h264',
+            audio_codec: 'aac',
+          },
+        ],
+      },
+      (err, res) => {
+        if (err) return reject(err);
+        if (!res) return reject(new Error('Cloudinary 上傳沒有回傳結果'));
+        resolve(res);
+      },
+    );
+    stream.end(buffer);
+  });
+
+  return {
+    url: result.secure_url,
+    sizeBytes: result.bytes,
+    width: result.width ?? 0,
+    height: result.height ?? 0,
+  };
+}
+
+/**
  * 刪除 Cloudinary 上的圖片。
  * - 只處理 res.cloudinary.com 的 URL（避免誤刪外部 / 舊 S3 / 本機資源）
  * - 失敗（含 not found）一律不 throw，避免擋住關聯紀錄的刪除流程
@@ -77,14 +129,16 @@ export async function deleteUpload(publicUrl: string): Promise<void> {
   if (!process.env.CLOUDINARY_URL) return;
   if (!/res\.cloudinary\.com/.test(publicUrl)) return; // 舊 S3 / 靜態資源直接略過
 
-  // URL 格式：https://res.cloudinary.com/<cloud>/image/upload/[v<num>/]<public_id>.<ext>
-  const m = publicUrl.match(/\/image\/upload\/(?:v\d+\/)?(.+?)\.[a-z0-9]+(?:\?.*)?$/i);
+  // URL 格式：
+  // https://res.cloudinary.com/<cloud>/<image|video>/upload/[v<num>/]<public_id>.<ext>
+  const m = publicUrl.match(/\/(image|video)\/upload\/(?:v\d+\/)?(.+?)\.[a-z0-9]+(?:\?.*)?$/i);
   if (!m) return;
-  const publicId = m[1];
+  const resourceType = m[1].toLowerCase() as 'image' | 'video';
+  const publicId = m[2];
 
   try {
     ensureConfigured();
-    await cloudinary.uploader.destroy(publicId, { resource_type: 'image', invalidate: true });
+    await cloudinary.uploader.destroy(publicId, { resource_type: resourceType, invalidate: true });
   } catch (e: any) {
     console.error('[storage] cloudinary destroy failed', publicUrl, e?.message);
   }

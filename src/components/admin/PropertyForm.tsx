@@ -21,6 +21,7 @@ import {
 } from '@/data/taiwan-addresses';
 import type { Taxonomies } from '@/lib/taxonomies-shared';
 import { LISTING_STATUS_OPTIONS } from '@/components/frontend/PropertyCard';
+import { isVideoUrl, normalizePropertyMediaOrder } from '@/lib/property-media';
 
 export type PropertyFormValue = {
   region: string;
@@ -134,6 +135,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [aiMsg, setAiMsg] = useState('');
   const [aiAppliedKeys, setAiAppliedKeys] = useState<string[]>([]);
+  const videoCount = v.images.filter(isVideoUrl).length;
 
   const districts = CITY_DISTRICTS[v.city] || [];
 
@@ -159,8 +161,22 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
       const res = await fetch('/api/upload?subdir=properties', { method: 'POST', body: fd });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || '上傳失敗');
-      const newUrls = (data.files as any[]).map((f) => f.url);
-      update('images', [...v.images, ...newUrls].slice(0, 20));
+      const uploaded = (data.files as any[]) || [];
+      const currentVideos = v.images.filter(isVideoUrl).length;
+      const uploadedVideoCount = uploaded.filter((f) => f.mediaType === 'video').length;
+      if (currentVideos + uploadedVideoCount > 2) {
+        setErr('單一物件最多只能上傳 2 支影片');
+      }
+      let videoQuota = Math.max(0, 2 - currentVideos);
+      const allowedUploads = uploaded.filter((f) => {
+        if (f.mediaType !== 'video') return true;
+        if (videoQuota <= 0) return false;
+        videoQuota -= 1;
+        return true;
+      });
+      const newUrls = allowedUploads.map((f) => f.url).filter(Boolean);
+      const next = normalizePropertyMediaOrder([...v.images, ...newUrls].slice(0, 20));
+      update('images', next);
     } catch (e: any) {
       setErr(e?.message || '上傳失敗');
     } finally {
@@ -169,7 +185,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
   }
 
   function removeImage(url: string) {
-    update('images', v.images.filter((u) => u !== url));
+    update('images', normalizePropertyMediaOrder(v.images.filter((u) => u !== url)));
   }
 
   function moveImage(from: number, to: number) {
@@ -177,11 +193,15 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
     const next = [...v.images];
     const [picked] = next.splice(from, 1);
     next.splice(to, 0, picked);
-    update('images', next);
+    update('images', normalizePropertyMediaOrder(next));
   }
 
   function setCoverImage(index: number) {
     if (index <= 0 || index >= v.images.length) return;
+    if (isVideoUrl(v.images[index])) {
+      setErr('影片不可設為封面');
+      return;
+    }
     moveImage(index, 0);
   }
 
@@ -281,6 +301,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
       managementFee: v.managementFee === '' ? null : Number(v.managementFee),
       buildingAge: v.buildingAge === '' ? null : Number(v.buildingAge),
       moveInDate: v.moveInDate || null,
+      images: normalizePropertyMediaOrder(v.images),
     };
   }
 
@@ -326,6 +347,9 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
     }
     if (!v.rent || Number(v.rent) <= 0) {
       setErr('請填寫租金'); return;
+    }
+    if (v.images.length > 0 && !v.images.some((u) => !isVideoUrl(u))) {
+      setErr('請至少保留 1 張圖片作為封面，影片不可單獨上架'); return;
     }
 
     await persist(buildPayload());
@@ -406,15 +430,16 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
       </div>
 
       {/* === 照片（放在 OCR 區塊下方） === */}
-      <Card title="照片（最多 20 張）">
+      <Card title="照片與影片（最多 20 個媒體，影片最多 2 支）">
         <input
           type="file"
           multiple
-          accept="image/*"
+          accept="image/*,video/mp4,video/webm,video/quicktime"
           onChange={(e) => uploadFiles(e.target.files)}
           className="block text-sm"
         />
         {uploading && <p className="text-sm text-brand-orange-700 mt-2">上傳中...</p>}
+        <p className="text-xs text-ink-500 mt-1">目前影片數：{videoCount} / 2（影片會自動排在第 2、3 位，且不可作為封面）</p>
         {v.images.length > 0 && (
           <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3 mt-4">
             {v.images.map((url, i) => (
@@ -442,14 +467,18 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
                   setDragOverIndex(null);
                 }}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt="" className="w-full aspect-square object-cover rounded-lg border border-line" />
+                {isVideoUrl(url) ? (
+                  <video src={url} className="w-full aspect-square object-cover rounded-lg border border-line bg-black" muted playsInline preload="metadata" />
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={url} alt="" className="w-full aspect-square object-cover rounded-lg border border-line" />
+                )}
                 <button type="button" onClick={() => removeImage(url)} className="absolute top-1 right-1 bg-white/95 rounded-full w-7 h-7 grid place-items-center text-sm border border-line shadow-sm opacity-0 group-hover:opacity-100 transition">
                   <MaterialIcon name="close" className="text-base" />
                 </button>
                 <span className="absolute top-1 left-1 bg-white/90 text-ink-700 text-[11px] px-1.5 py-0.5 rounded border border-line font-bold">
                   <MaterialIcon name="drag_indicator" className="!text-xs mr-0.5" />
-                  拖曳排序
+                  {isVideoUrl(url) ? '影片' : '拖曳排序'}
                 </span>
                 <div className="absolute bottom-1 left-1 right-1 flex items-center justify-between gap-1">
                   {i === 0 ? (
@@ -458,6 +487,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
                     <button
                       type="button"
                       onClick={() => setCoverImage(i)}
+                      disabled={isVideoUrl(url)}
                       className="bg-white/95 text-ink-700 text-xs px-2 py-0.5 rounded-full border border-line font-bold hover:border-brand-green-500 hover:text-brand-green-700 transition"
                     >
                       設為封面
@@ -468,7 +498,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
             ))}
           </div>
         )}
-        <p className="text-xs text-ink-500 mt-2">第一張會作為列表封面。可拖曳圖片調整順序，或點「設為封面」。</p>
+        <p className="text-xs text-ink-500 mt-2">第一張會作為列表封面（必須是圖片）。影片會自動固定在第 2/3 位。</p>
       </Card>
 
       {/* === 物件分類（大/中/小） === */}

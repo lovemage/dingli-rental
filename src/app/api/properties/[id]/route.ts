@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { getCurrentAdmin } from '@/lib/auth';
 import { deleteUpload } from '@/lib/storage';
 import { translateProperty } from '@/lib/property-translate';
+import { isVideoUrl, normalizePropertyMediaOrder } from '@/lib/property-media';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,12 +31,24 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   try {
     const body = await req.json();
     const { images = [], ...data } = body;
+    const rawMedia = Array.isArray(images) ? images : [];
+    const orderedMedia = normalizePropertyMediaOrder(rawMedia);
+    if (rawMedia.length > 0 && orderedMedia.length === 0) {
+      return NextResponse.json({ error: '請至少上傳 1 張圖片作為封面，影片不可單獨上架' }, { status: 400 });
+    }
+    const videoCount = orderedMedia.filter(isVideoUrl).length;
+    if (videoCount > 2) {
+      return NextResponse.json({ error: '單一物件最多只能上傳 2 支影片' }, { status: 400 });
+    }
+    if (orderedMedia.length > 0 && isVideoUrl(orderedMedia[0])) {
+      return NextResponse.json({ error: '影片不可作為封面，請至少上傳 1 張圖片作為封面' }, { status: 400 });
+    }
 
     const existing = await prisma.property.findUnique({ where: { id }, include: { images: true } });
     if (!existing) return NextResponse.json({ error: 'not found' }, { status: 404 });
 
     // 替換圖片：刪除舊的不在新清單的圖
-    const newUrlSet = new Set<string>(images);
+    const newUrlSet = new Set<string>(orderedMedia);
     for (const img of existing.images) {
       if (!newUrlSet.has(img.url)) {
         await deleteUpload(img.url);
@@ -58,7 +71,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         moveInDate: data.moveInDate ? new Date(data.moveInDate) : null,
         images: {
           deleteMany: {},
-          create: images.map((url: string, idx: number) => ({ url, order: idx })),
+          create: orderedMedia.map((url: string, idx: number) => ({ url, order: idx })),
         },
       },
       include: { images: true },
