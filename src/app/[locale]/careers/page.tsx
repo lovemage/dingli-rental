@@ -55,6 +55,7 @@ export default async function CareersPage({
 
   const c = await getCareersContent(locale);
   const t = await getTranslations('careersPage');
+  const jobApplyLink = 'https://www.104.com.tw/company/1a2x6bmkli#info06';
 
   return (
     <>
@@ -69,6 +70,16 @@ export default async function CareersPage({
                   {c.titleLine1}<br className="sm:hidden" />{c.titleLine2}
                 </h1>
                 <p className="text-ink-700 text-base sm:text-lg leading-relaxed">{c.description}</p>
+                <div className="mt-6">
+                  <a
+                    href={jobApplyLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-primary"
+                  >
+                    {t('joinDingli')}
+                  </a>
+                </div>
               </div>
               <div className="rounded-2xl overflow-hidden shadow-sm border border-line">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -114,7 +125,17 @@ export default async function CareersPage({
                       </span>
                     </div>
                   </div>
-                  <p className="text-brand-orange-700 font-bold">{p.salary}</p>
+                  <div className="flex items-start gap-3">
+                    <p className="text-brand-orange-700 font-bold">{p.salary}</p>
+                    <a
+                      href={jobApplyLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-primary !h-9 !px-4 text-sm"
+                    >
+                      {t('joinDingli')}
+                    </a>
+                  </div>
                 </div>
                 <p className="text-ink-700 mb-3">{p.desc}</p>
                 <ul className="text-sm text-ink-700 space-y-1.5 list-none p-0 m-0">

@@ -285,7 +285,8 @@
   "careersPage": {
     "metaTitle": "人才招募",
     "ctaSendResumeBefore": "請將履歷寄至 ",
-    "ctaSendResumeAfter": "，主旨註明「應徵職缺名稱」。"
+    "ctaSendResumeAfter": "，主旨註明「應徵職缺名稱」。",
+    "joinDingli": "加入鼎立"
   },
   "termsPage": {
     "metaTitle": "服務條款",

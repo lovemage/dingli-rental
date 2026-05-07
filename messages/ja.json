@@ -285,7 +285,8 @@
   "careersPage": {
     "metaTitle": "採用情報",
     "ctaSendResumeBefore": "履歴書は ",
-    "ctaSendResumeAfter": " までお送りください。件名に応募職種をご記載ください。"
+    "ctaSendResumeAfter": " までお送りください。件名に応募職種をご記載ください。",
+    "joinDingli": "鼎立に応募する"
   },
   "termsPage": {
     "metaTitle": "利用規約",

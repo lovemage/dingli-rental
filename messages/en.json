@@ -285,7 +285,8 @@
   "careersPage": {
     "metaTitle": "Careers",
     "ctaSendResumeBefore": "Send your resume to ",
-    "ctaSendResumeAfter": " with the position name in the subject line."
+    "ctaSendResumeAfter": " with the position name in the subject line.",
+    "joinDingli": "Join Dingli"
   },
   "termsPage": {
     "metaTitle": "Terms of Service",
