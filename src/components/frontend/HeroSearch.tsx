@@ -5,8 +5,8 @@ import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import AiChatWidget from '@/components/frontend/AiChatWidget';
 import MaterialIcon from '@/components/MaterialIcon';
+import { REGION_OPTIONS } from '@/data/taiwan-addresses';
 
-const REGION_OPTIONS = ['台北市', '新北市', '基隆市', '桃園市', '新竹市', '新竹縣'];
 const DEFAULT_TYPE_OPTIONS = ['整層住家', '獨立套房', '分租套房', '雅房', '其他'];
 
 type Props = {
@@ -24,6 +24,7 @@ const BUDGET_OPTIONS: { labelKey: string; min?: string; max?: string }[] = [
 export default function HeroSearch({ propertyTypes }: Props = {}) {
   const router = useRouter();
   const t = useTranslations('heroSearch');
+  const tRegions = useTranslations('regions');
   const locale = useLocale();
   const [region, setRegion] = useState('');
   const [type, setType] = useState('');
@@ -55,8 +56,8 @@ export default function HeroSearch({ propertyTypes }: Props = {}) {
           <select value={region} onChange={(e) => setRegion(e.target.value)} className="input-base">
             <option value="">{t('regionAll')}</option>
             {REGION_OPTIONS.map((r) => (
-              <option key={r} value={r}>
-                {r}
+              <option key={r.value} value={r.value}>
+                {tRegions(r.labelKey)}
               </option>
             ))}
           </select>

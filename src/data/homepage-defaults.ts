@@ -40,7 +40,7 @@ export type ServicesContent = {
 };
 
 export const HERO_DEFAULTS: HeroContent = {
-  eyebrow: 'Dingli Rental Service · 安心租屋首選',
+  eyebrow: 'Dingli Rental Service · 北北基桃竹真人租屋',
   titleLine1: '找到一個家，',
   titleLine2: '不只是找一間房',
   description:

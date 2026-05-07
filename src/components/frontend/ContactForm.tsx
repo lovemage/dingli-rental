@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { REGION_OPTIONS } from '@/data/taiwan-addresses';
 
 type Props = {
   title?: string;
@@ -17,6 +18,7 @@ export default function ContactForm({
   successMessage = '已收到您的訊息，業務專員將於當日內聯繫您。',
 }: Props) {
   const t = useTranslations('contact');
+  const tRegions = useTranslations('regions');
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -86,11 +88,9 @@ export default function ContactForm({
           <label className="label-base">{t('formRegionLabel')}</label>
           <select name="region" className="input-base" defaultValue="不限">
             <option value="不限">{t('formAny')}</option>
-            <option value="台北市">台北市 / Taipei</option>
-            <option value="新北市">新北市 / New Taipei</option>
-            <option value="基隆市">基隆市 / Keelung</option>
-            <option value="桃園市">桃園市 / Taoyuan</option>
-            <option value="新竹市">新竹市 / Hsinchu</option>
+            {REGION_OPTIONS.map((r) => (
+              <option key={r.value} value={r.value}>{tRegions(r.labelKey)}</option>
+            ))}
           </select>
         </div>
         <div>

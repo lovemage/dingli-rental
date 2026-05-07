@@ -4,6 +4,7 @@ import Header from '@/components/frontend/Header';
 import Footer from '@/components/frontend/Footer';
 import HeroCarousel, { HeroSlide as HeroSlideType } from '@/components/frontend/HeroCarousel';
 import HeroSearch from '@/components/frontend/HeroSearch';
+import HeroCtaPanel from '@/components/frontend/HeroCtaPanel';
 import PropertyCard, { type PropertyCardData } from '@/components/frontend/PropertyCard';
 import MaterialIcon from '@/components/MaterialIcon';
 import { prisma } from '@/lib/prisma';
@@ -65,23 +66,23 @@ type Testimonial = {
   quote: string;
 };
 
-const FALLBACK_TESTIMONIALS: Testimonial[] = [
-  {
-    name: '陳小姐',
-    role: '外商行銷經理',
-    quote: '帶看很有效率，業務把每個物件優缺點講得很清楚，兩天內就找到理想租屋。',
-  },
-  {
-    name: '佐藤先生',
-    role: '日本工程師',
-    quote: '可以用日文溝通真的很安心，合約條款也逐條解說，整個流程非常專業。',
-  },
-  {
-    name: '王先生',
-    role: '新創團隊負責人',
-    quote: '從辦公室選址到租約談判都有幫上忙，省下很多時間成本。',
-  },
-];
+function normalizeTestimonials(raw: unknown): Testimonial[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item): Testimonial | null => {
+      if (!item || typeof item !== 'object') return null;
+      const row = item as Record<string, unknown>;
+      if (
+        typeof row.name !== 'string' ||
+        typeof row.role !== 'string' ||
+        typeof row.quote !== 'string'
+      ) {
+        return null;
+      }
+      return { name: row.name, role: row.role, quote: row.quote };
+    })
+    .filter((x): x is Testimonial => x !== null);
+}
 
 async function getFeaturedProperties(locale: string): Promise<PropertyCardData[]> {
   try {
@@ -139,34 +140,35 @@ async function getHomepageContent(locale: string) {
   }
 }
 
-async function getTestimonials(): Promise<Testimonial[]> {
+async function getTestimonials(locale: string): Promise<Testimonial[]> {
+  // 讀取優先序：
+  // 1. data.testimonialsByLocale[locale] — admin 在後台針對該語言策展的評論
+  // 2. zh 路由限定：data.testimonials（legacy zh-only schema，向下相容舊資料）
+  // 3. i18n messages 的 home.testimonials fallback
   try {
     const about = await prisma.siteContent.findUnique({ where: { section: 'about' } });
     const data = (about?.data as Record<string, unknown>) || {};
-    const raw = data.testimonials;
-    if (Array.isArray(raw)) {
-      const normalized = raw
-        .map((item) => {
-          if (!item || typeof item !== 'object') return null;
-          const row = item as Record<string, unknown>;
-          if (
-            typeof row.name !== 'string' ||
-            typeof row.role !== 'string' ||
-            typeof row.quote !== 'string'
-          ) {
-            return null;
-          }
-          return { name: row.name, role: row.role, quote: row.quote };
-        })
-        .filter((x): x is Testimonial => x !== null);
-      if (normalized.length) {
-        // 評論內容固定使用原文，不做多語翻譯
-        return normalized;
-      }
+
+    const byLocale = data.testimonialsByLocale;
+    if (byLocale && typeof byLocale === 'object' && !Array.isArray(byLocale)) {
+      const localeList = (byLocale as Record<string, unknown>)[locale];
+      const normalized = normalizeTestimonials(localeList);
+      if (normalized.length) return normalized;
     }
-    return FALLBACK_TESTIMONIALS;
+
+    if (locale === 'zh') {
+      const legacy = normalizeTestimonials(data.testimonials);
+      if (legacy.length) return legacy;
+    }
   } catch {
-    return FALLBACK_TESTIMONIALS;
+    // ignore — fall through to i18n fallback
+  }
+
+  try {
+    const t = await getTranslations({ locale, namespace: 'home' });
+    return normalizeTestimonials(t.raw('testimonials'));
+  } catch {
+    return [];
   }
 }
 
@@ -183,10 +185,14 @@ export default async function HomePage({
   const lp = (p: string) => (currentLocale === 'zh' ? p : `/${currentLocale}${p}`);
 
   const { slides, intervalSec } = await getHero();
-  const testimonials = await getTestimonials();
+  const testimonials = await getTestimonials(locale);
   const featured = await getFeaturedProperties(locale);
   const { hero, categories, services } = await getHomepageContent(locale);
   const taxonomies = await getTaxonomies();
+  const heroQuickLinks = categories.items.slice(0, 3).map((item) => ({
+    label: item.title,
+    href: localizeHref(item.href, currentLocale),
+  }));
 
   return (
     <>
@@ -208,10 +214,12 @@ export default async function HomePage({
                 <p className="text-lg text-ink-700 max-w-xl mb-8 whitespace-pre-line">
                   {hero.description}
                 </p>
-                <div className="flex flex-wrap gap-3 mb-10">
-                  <Link href={localizeHref(hero.primaryCtaLink, currentLocale)} className="btn btn-primary">{hero.primaryCtaText}</Link>
-                  <Link href={localizeHref(hero.secondaryCtaLink, currentLocale)} className="btn btn-secondary">{hero.secondaryCtaText}</Link>
-                </div>
+                <HeroCtaPanel
+                  primaryText={hero.primaryCtaText}
+                  secondaryText={hero.secondaryCtaText}
+                  secondaryHref={localizeHref(hero.secondaryCtaLink, currentLocale)}
+                  quickLinks={heroQuickLinks}
+                />
               </div>
 
               <HeroCarousel slides={slides} intervalSec={intervalSec} />

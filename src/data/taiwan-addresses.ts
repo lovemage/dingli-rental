@@ -32,6 +32,24 @@ export const CITIES = Object.keys(CITY_DISTRICTS);
 // 大分類
 export const REGIONS = ['台北市', '新北市', '基隆市', '桃園市', '新竹市', '新竹縣'] as const;
 
+/**
+ * 共用的縣市選項（i18n 友善版）。
+ * - `value` 是中文字串：URL query string 與 DB region 欄位的穩定識別，不可改。
+ * - `labelKey` 對應 `messages/<locale>.json` 的 `regions.<key>`，
+ *   由 `useTranslations('regions')(labelKey)` 取得在地化文字。
+ *
+ * 前台縣市選單（HeroSearch、PropertyFilters、ContactForm）都應從這裡讀，
+ * 避免硬編碼中文字串造成 en/ja 路由失守。
+ */
+export const REGION_OPTIONS: { value: string; labelKey: string }[] = [
+  { value: '台北市', labelKey: 'taipei' },
+  { value: '新北市', labelKey: 'new_taipei' },
+  { value: '基隆市', labelKey: 'keelung' },
+  { value: '桃園市', labelKey: 'taoyuan' },
+  { value: '新竹市', labelKey: 'hsinchu_city' },
+  { value: '新竹縣', labelKey: 'hsinchu_county' },
+];
+
 // 中分類
 export const PROPERTY_TYPES = [
   '整層住家', '獨立套房', '分租套房', '雅房', '車位', '其他',

@@ -124,8 +124,6 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
   const CUSTOM_SUGS  = taxonomies?.customTagSuggestions || (CUSTOM_TAG_SUGGESTIONS as readonly string[]);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [savePromptOpen, setSavePromptOpen] = useState(false);
-  const [pendingPayload, setPendingPayload] = useState<any | null>(null);
   const [saveStage, setSaveStage] = useState<'saving' | 'translating' | ''>('');
   const [saveMsgIdx, setSaveMsgIdx] = useState(0);
   const [err, setErr] = useState('');
@@ -286,33 +284,20 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
     };
   }
 
-  async function persist(doTranslate: boolean) {
-    if (!pendingPayload) return;
+  async function persist(payload: any) {
     setErr('');
     setSaving(true);
     setSaveMsgIdx(0);
-    setSavePromptOpen(false);
     setSaveStage('saving');
     try {
       const url = propertyId ? `/api/properties/${propertyId}` : '/api/properties';
       const res = await fetch(url, {
         method: propertyId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(pendingPayload),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || '儲存失敗');
-
-      if (doTranslate) {
-        const id = data?.id;
-        if (!id) throw new Error('儲存成功但找不到物件 ID，無法翻譯');
-        setSaveStage('translating');
-        const trRes = await fetch(`/api/properties/${id}/translate`, { method: 'POST' });
-        const trData = await trRes.json().catch(() => ({}));
-        if (!trRes.ok) {
-          throw new Error(trData?.error || '物件已儲存，但多語言翻譯失敗');
-        }
-      }
 
       router.push('/admin/properties');
       router.refresh();
@@ -322,7 +307,6 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
       setSaveStage('');
       setSaving(false);
       setSaveMsgIdx(0);
-      setPendingPayload(null);
     }
   }
 
@@ -344,8 +328,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
       setErr('請填寫租金'); return;
     }
 
-    setPendingPayload(buildPayload());
-    setSavePromptOpen(true);
+    await persist(buildPayload());
   }
 
   return (
@@ -842,45 +825,6 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
           </button>
         </div>
       </div>
-
-      {/* === 儲存前多語言確認 === */}
-      {savePromptOpen && (
-        <div
-          className="fixed inset-0 z-[65] bg-ink-900/55 backdrop-blur-sm grid place-items-center px-4"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <h3 className="text-lg font-extrabold mb-2">該物件是否需要多語言？</h3>
-            <div className="flex justify-end gap-2 mt-5">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setSavePromptOpen(false)}
-                disabled={saving}
-              >
-                取消
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => void persist(false)}
-                disabled={saving}
-              >
-                No
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => void persist(true)}
-                disabled={saving}
-              >
-                Yes
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* === 儲存/翻譯進度彈窗 === */}
       {saving && (

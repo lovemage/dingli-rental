@@ -6,12 +6,23 @@ import Footer from '@/components/frontend/Footer';
 import PropertyGallery from '@/components/frontend/PropertyGallery';
 import { prisma } from '@/lib/prisma';
 import { localizePropertyForDetail } from '@/lib/property-translate';
+import { FLOATING_CTA_DEFAULTS, type FloatingCtaContent } from '@/data/floating-cta-defaults';
 
 export const dynamic = 'force-dynamic';
 
 function localePath(locale: string, path: string) {
   if (locale === 'zh') return path;
   return `/${locale}${path === '/' ? '' : path}`;
+}
+
+async function loadOfficialLineUrl(): Promise<string> {
+  try {
+    const row = await prisma.siteContent.findUnique({ where: { section: 'floating_cta' } });
+    const data = (row?.data as Partial<FloatingCtaContent>) || {};
+    return (data.linkUrl || FLOATING_CTA_DEFAULTS.linkUrl).trim();
+  } catch {
+    return FLOATING_CTA_DEFAULTS.linkUrl;
+  }
 }
 
 export default async function PropertyDetailPage({
@@ -28,6 +39,7 @@ export default async function PropertyDetailPage({
 
   const t = await getTranslations('propertyDetail');
   const lp = (p: string) => localePath(locale, p);
+  const officialLineUrl = await loadOfficialLineUrl();
 
   const raw = await prisma.property
     .findUnique({
@@ -232,9 +244,14 @@ export default async function PropertyDetailPage({
                   )}
                 </div>
 
-                <Link href={lp('/contact')} className="btn btn-primary w-full mt-6">
+                <a
+                  href={officialLineUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-primary w-full mt-6 text-center"
+                >
                   {t('contactCta')}
-                </Link>
+                </a>
               </aside>
             </div>
           </div>

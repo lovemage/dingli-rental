@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
-  REGIONS,
+  REGION_OPTIONS,
   PROPERTY_TYPES,
   BUILDING_TYPES,
   CITY_DISTRICTS,
@@ -103,6 +103,7 @@ export default function PropertyFilters({ total, taxonomies }: FiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const t = useTranslations('propertyFilters');
+  const tRegions = useTranslations('regions');
   const locale = useLocale();
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
@@ -205,7 +206,10 @@ export default function PropertyFilters({ total, taxonomies }: FiltersProps) {
         <ChipSelect
           label={t('regionLabel')}
           value={v.region}
-          options={[{ label: t('noLimit'), value: '' }, ...REGIONS.map((r) => ({ label: r, value: r }))]}
+          options={[
+            { label: t('noLimit'), value: '' },
+            ...REGION_OPTIONS.map((r) => ({ label: tRegions(r.labelKey), value: r.value })),
+          ]}
           onChange={(val) => pushFilters({ region: val, district: '' })}
         />
 

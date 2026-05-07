@@ -31,7 +31,7 @@
     "linkContact": "聯絡我們",
     "contactInfoHeading": "聯絡資訊",
     "addressLabel": "公司地址",
-    "addressValue": "新北市新莊區西盛街199號2樓",
+    "addressValue": "台北市中山區中山北路三段49號3樓之2",
     "emailLabel": "客服信箱",
     "hoursLabel": "服務時間",
     "hoursValue": "週一至週日 09:00 - 21:00",
@@ -42,8 +42,8 @@
   "home": {
     "viewAllProperties": "查看所有物件 →",
     "featuredEyebrow": "精選推薦",
-    "featuredTitle": "本週嚴選好物件",
-    "featuredSub": "系統依您所在地區與預算自動推薦關聯物件，省下大量搜尋時間。",
+    "featuredTitle": "業務嚴選好物件",
+    "featuredSub": "業務最近親自看過、可以直接帶看的物件。先從這裡逛起，找不到再看全部。",
     "whyEyebrow": "WHY DINGLI",
     "whyTitleLine1": "租屋這件事，",
     "whyTitleLine2": "值得被認真對待",
@@ -59,7 +59,24 @@
     "testimonialsEyebrow": "TESTIMONIALS",
     "testimonialsTitle": "租客真實回饋",
     "testimonialsSub": "我們重視每一次帶看與簽約體驗，以下是租客的真實分享。",
-    "categoryViewMore": "查看物件 →"
+    "categoryViewMore": "查看物件 →",
+    "testimonials": [
+      {
+        "name": "陳小姐",
+        "role": "外商行銷經理",
+        "quote": "帶看很有效率，業務把每個物件優缺點講得很清楚，兩天內就找到理想租屋。"
+      },
+      {
+        "name": "佐藤先生",
+        "role": "日本工程師",
+        "quote": "可以用日文溝通真的很安心，合約條款也逐條解說，整個流程非常專業。"
+      },
+      {
+        "name": "王先生",
+        "role": "新創團隊負責人",
+        "quote": "從辦公室選址到租約談判都有幫上忙，省下很多時間成本。"
+      }
+    ]
   },
   "properties": {
     "pageEyebrow": "PROPERTIES",
@@ -142,6 +159,14 @@
     "age_le_10": "10 年內",
     "age_le_20": "20 年內"
   },
+  "regions": {
+    "taipei": "台北市",
+    "new_taipei": "新北市",
+    "keelung": "基隆市",
+    "taoyuan": "桃園市",
+    "hsinchu_city": "新竹市",
+    "hsinchu_county": "新竹縣"
+  },
   "heroSearch": {
     "regionLabel": "縣市",
     "regionAll": "全部",
@@ -220,7 +245,7 @@
     "managementFeeNone": "無",
     "managementFeeAmount": "NT$ {amount} / 月",
     "rentIncludes": "租金包含",
-    "contactCta": "聯絡業務專員 →",
+    "contactCta": "官方 LINE 諮詢 →",
     "dash": "-",
     "lane": "巷",
     "alley": "弄",

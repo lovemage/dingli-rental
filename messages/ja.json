@@ -31,7 +31,7 @@
     "linkContact": "お問い合わせ",
     "contactInfoHeading": "連絡先情報",
     "addressLabel": "会社住所",
-    "addressValue": "新北市新荘区西盛街199号2階",
+    "addressValue": "台北市中山区中山北路三段49号3階之2",
     "emailLabel": "カスタマーサービス",
     "hoursLabel": "営業時間",
     "hoursValue": "毎日 09:00 – 21:00",
@@ -42,8 +42,8 @@
   "home": {
     "viewAllProperties": "すべての物件を見る →",
     "featuredEyebrow": "おすすめ",
-    "featuredTitle": "今週の厳選物件",
-    "featuredSub": "ご希望のエリアと予算に合わせて自動でおすすめ。お部屋探しの時間を大幅に短縮します。",
+    "featuredTitle": "担当者が厳選した物件",
+    "featuredSub": "担当者が直近で内見・確認した物件です。まずはここから。条件に合わなければ全件をご覧ください。",
     "whyEyebrow": "WHY DINGLI",
     "whyTitleLine1": "お部屋探しは、",
     "whyTitleLine2": "もっと丁寧であるべき",
@@ -59,7 +59,24 @@
     "testimonialsEyebrow": "TESTIMONIALS",
     "testimonialsTitle": "入居者のリアルな声",
     "testimonialsSub": "内見と契約のすべての体験を大切にしています。入居者の声をご紹介します。",
-    "categoryViewMore": "物件を見る →"
+    "categoryViewMore": "物件を見る →",
+    "testimonials": [
+      {
+        "name": "佐藤さん",
+        "role": "IT エンジニア",
+        "quote": "日本語で全部やり取りでき、契約書も翻訳付きで安心でした。家賃交渉まで対応してもらえて助かりました。"
+      },
+      {
+        "name": "田中さん",
+        "role": "駐在員",
+        "quote": "短期間で内見と契約を完了。担当者が周辺環境まで丁寧に説明してくれて、家族で安心して住めるエリアを選べました。"
+      },
+      {
+        "name": "鈴木さん",
+        "role": "起業家",
+        "quote": "オフィス物件の選定から契約交渉まで一貫してサポートしていただき、創業期の貴重な時間を確保できました。"
+      }
+    ]
   },
   "properties": {
     "pageEyebrow": "PROPERTIES",
@@ -142,6 +159,14 @@
     "age_le_10": "10年以内",
     "age_le_20": "20年以内"
   },
+  "regions": {
+    "taipei": "台北市",
+    "new_taipei": "新北市",
+    "keelung": "基隆市",
+    "taoyuan": "桃園市",
+    "hsinchu_city": "新竹市",
+    "hsinchu_county": "新竹県"
+  },
   "heroSearch": {
     "regionLabel": "エリア",
     "regionAll": "すべて",
@@ -220,7 +245,7 @@
     "managementFeeNone": "なし",
     "managementFeeAmount": "NT$ {amount} / 月",
     "rentIncludes": "家賃に含まれるもの",
-    "contactCta": "担当者に相談する →",
+    "contactCta": "公式LINEで相談する →",
     "dash": "-",
     "lane": "巷",
     "alley": "弄",

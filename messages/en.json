@@ -31,7 +31,7 @@
     "linkContact": "Contact Us",
     "contactInfoHeading": "Contact Information",
     "addressLabel": "Address",
-    "addressValue": "2F, No. 199, Xisheng St., Xinzhuang Dist., New Taipei City",
+    "addressValue": "3F-2, No. 49, Sec. 3, Zhongshan N. Rd., Zhongshan Dist., Taipei City",
     "emailLabel": "Customer Service Email",
     "hoursLabel": "Service Hours",
     "hoursValue": "Mon–Sun, 09:00 – 21:00",
@@ -42,8 +42,8 @@
   "home": {
     "viewAllProperties": "View all listings →",
     "featuredEyebrow": "FEATURED",
-    "featuredTitle": "This week's hand-picked listings",
-    "featuredSub": "Personalized recommendations based on your preferred region and budget — saving you hours of search time.",
+    "featuredTitle": "Hand-picked by our consultants",
+    "featuredSub": "Listings our consultants recently visited and verified in person. Start here — browse the full catalog if nothing fits.",
     "whyEyebrow": "WHY DINGLI",
     "whyTitleLine1": "Renting a home",
     "whyTitleLine2": "deserves real care",
@@ -59,7 +59,24 @@
     "testimonialsEyebrow": "TESTIMONIALS",
     "testimonialsTitle": "Real tenant feedback",
     "testimonialsSub": "Every viewing and signing matters. Here's what tenants have to say.",
-    "categoryViewMore": "View listings →"
+    "categoryViewMore": "View listings →",
+    "testimonials": [
+      {
+        "name": "Sarah W.",
+        "role": "International school teacher",
+        "quote": "Just relocated from Singapore — Dingli walked me through every clause in plain English and helped negotiate pet-friendly terms. Moved in within a week."
+      },
+      {
+        "name": "Mark R.",
+        "role": "Tech consultant",
+        "quote": "Found a serviced office near MRT in three viewings. Transparent fees, no surprises at signing."
+      },
+      {
+        "name": "Yumi T.",
+        "role": "Localization manager",
+        "quote": "Got a bilingual lease and a consultant who actually replied within hours. That's not standard around here."
+      }
+    ]
   },
   "properties": {
     "pageEyebrow": "PROPERTIES",
@@ -142,6 +159,14 @@
     "age_le_10": "Within 10 yrs",
     "age_le_20": "Within 20 yrs"
   },
+  "regions": {
+    "taipei": "Taipei",
+    "new_taipei": "New Taipei",
+    "keelung": "Keelung",
+    "taoyuan": "Taoyuan",
+    "hsinchu_city": "Hsinchu City",
+    "hsinchu_county": "Hsinchu County"
+  },
   "heroSearch": {
     "regionLabel": "Region",
     "regionAll": "All",
@@ -220,7 +245,7 @@
     "managementFeeNone": "None",
     "managementFeeAmount": "NT$ {amount} / month",
     "rentIncludes": "Rent includes",
-    "contactCta": "Talk to a consultant →",
+    "contactCta": "Official LINE Support →",
     "dash": "-",
     "lane": "Ln.",
     "alley": "Aly.",
