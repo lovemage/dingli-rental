@@ -3,17 +3,35 @@ import crypto from 'node:crypto';
 
 /**
  * 從 Next.js Request 萃取訪客 IP。
- * 走 x-forwarded-for 第一段（最接近使用者的 proxy hop）→ x-real-ip → req.headers.host 兜底。
- * 拿不到任何 IP 時回傳空字串（呼叫端會將該次記錄略過）。
+ *
+ * 信任原則：只接受由 known 反向代理 / 平台寫入的 header（這些 header 被平台「無條件覆寫」，
+ * 訪客自己送 cf-connecting-ip 不會被信任）。x-forwarded-for 屬於使用者可偽造的 header，
+ * 預設不採用；除非部署環境明確設定 `TRUST_X_FORWARDED_FOR=1`（意即有自家可信代理在前）。
+ *
+ * 沒拿到 IP 一律回空字串，由呼叫端略過記錄（不會把所有訪客都歸到同一個空 hash）。
  */
+const PLATFORM_TRUSTED_HEADERS = [
+  'cf-connecting-ip',         // Cloudflare
+  'x-vercel-forwarded-for',   // Vercel
+  'fly-client-ip',            // Fly.io
+  'x-real-ip',                // 一般 reverse proxy（nginx 等）寫入
+];
+
 export function getClientIp(req: Request): string {
-  const xff = req.headers.get('x-forwarded-for');
-  if (xff) {
-    const first = xff.split(',')[0]?.trim();
-    if (first) return first;
+  for (const h of PLATFORM_TRUSTED_HEADERS) {
+    const v = req.headers.get(h);
+    if (!v) continue;
+    const ip = v.split(',')[0]?.trim();
+    if (ip) return ip;
   }
-  const xri = req.headers.get('x-real-ip');
-  if (xri) return xri.trim();
+  // x-forwarded-for 預設視為可偽造，僅當部署明確開啟才接受
+  if (process.env.TRUST_X_FORWARDED_FOR === '1') {
+    const xff = req.headers.get('x-forwarded-for');
+    if (xff) {
+      const first = xff.split(',')[0]?.trim();
+      if (first) return first;
+    }
+  }
   return '';
 }
 

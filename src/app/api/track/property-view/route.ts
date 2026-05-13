@@ -14,6 +14,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'invalid propertyId' }, { status: 400 });
     }
 
+    // 驗證物件存在後才寫入，避免被灌任意 ID 製造 view 資料
+    // （schema FK 也會擋下 P2003，但這裡先擋一拍，回傳訊息更清楚、減少 DB 重試）
+    const exists = await prisma.property.findUnique({
+      where: { id: propertyId },
+      select: { id: true },
+    });
+    if (!exists) {
+      return NextResponse.json({ ok: false, error: 'property not found' }, { status: 404 });
+    }
+
     const ip = getClientIp(req);
     const ipHash = hashIp(ip);
     if (!ipHash) {
@@ -30,6 +40,8 @@ export async function POST(req: Request) {
     } catch (e: any) {
       // P2002 = 已經計過，視為成功
       if (e?.code === 'P2002') return NextResponse.json({ ok: true, counted: false });
+      // P2003 = FK violation（物件在 existence check 後被刪掉的 race window）→ 視為靜默失敗
+      if (e?.code === 'P2003') return NextResponse.json({ ok: false, error: 'property gone' }, { status: 404 });
       throw e;
     }
   } catch (e: any) {

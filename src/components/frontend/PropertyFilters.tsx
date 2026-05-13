@@ -145,11 +145,17 @@ export default function PropertyFilters({ total, taxonomies }: FiltersProps) {
 
   // 本地 draft：吸收快速連點，避免「stale closure → 第二次點擊用舊 URL 算出錯誤 next」
   // 連續操作（例如複選 type）一律以 draft 為基準合併，再批次 replace URL。
+  //
+  // 同步 URL → draft 用 render-phase reset pattern 而非 useEffect：
+  // - 避開 react-hooks/set-state-in-effect lint 錯誤
+  // - 也比 useEffect 早一拍 commit，使用者不會看到 stale draft 閃一下
+  // 參考 React 官方 docs「Adjusting state when prop changes」。
   const [draft, setDraft] = useState<PropertyFiltersValue>(urlValue);
-  // URL 變動時（例如外部 router、上一頁、reset）同步 draft，避免顯示與 URL 不一致
-  useEffect(() => {
+  const [trackedUrl, setTrackedUrl] = useState<PropertyFiltersValue>(urlValue);
+  if (trackedUrl !== urlValue) {
+    setTrackedUrl(urlValue);
     setDraft(urlValue);
-  }, [urlValue]);
+  }
 
   // display 用的 v 一律走 draft（chip 點擊立刻變色，URL 變動慢一點也不影響使用者）
   const v = draft;

@@ -136,6 +136,9 @@ model Property {
   // 翻譯（en / ja）
   translations    PropertyTranslation[]
 
+  // 瀏覽紀錄（後台統計用）
+  views           PropertyView[]
+
   // 上下架
   status          String   @default("active") // active / inactive / pending
   featured        Boolean  @default(false)
@@ -220,9 +223,12 @@ model SiteContent {
 
 // 物件瀏覽次數：以「(propertyId, ipHash, day)」三元組去重
 // 同 IP 同一天進入同一物件詳細頁只計 1 次；建檔即視為 1 次瀏覽。
+// 加 FK + onDelete Cascade：物件被刪除時自動清除歷史紀錄；
+// 同時防止 API 接收到不存在的 propertyId 灌假資料（P2003 會擋下）。
 model PropertyView {
   id         Int      @id @default(autoincrement())
   propertyId Int
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   ipHash     String   // sha256(salt + ip)，避免明文儲存 IP
   day        DateTime @db.Date // UTC 日期（去重粒度）
   createdAt  DateTime @default(now())
