@@ -8,6 +8,7 @@ import PropertyFilters from '@/components/frontend/PropertyFilters';
 import { prisma } from '@/lib/prisma';
 import { getLocalizedPropertyCards } from '@/lib/property-translate';
 import { isPropertyCode, normalizePropertyCode } from '@/lib/property-code';
+import { getTaxonomies } from '@/lib/taxonomies';
 import type { Prisma } from '@/generated/prisma/client';
 
 export const dynamic = 'force-dynamic';
@@ -187,7 +188,10 @@ export default async function PropertiesPage({
     }
   }
 
-  const { items, total, page, pageSize } = await search(sp, locale);
+  const [{ items, total, page, pageSize }, taxonomies] = await Promise.all([
+    search(sp, locale),
+    getTaxonomies(),
+  ]);
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const t = await getTranslations('properties');
@@ -231,7 +235,7 @@ export default async function PropertiesPage({
 
         <section className="pb-16">
           <div className="container-page">
-            <PropertyFilters total={total} />
+            <PropertyFilters total={total} taxonomies={taxonomies} />
 
             {cards.length === 0 ? (
               <div className="bg-paper-2 rounded-xl border border-line p-12 text-center text-ink-500 mt-8">

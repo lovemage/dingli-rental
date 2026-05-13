@@ -121,7 +121,8 @@ export default function PropertyFilters({ total, taxonomies }: FiltersProps) {
   const EQUIP = taxonomies?.equipment?.length ? taxonomies.equipment : (EQUIPMENT_OPTIONS as readonly string[]);
   const POLICY = taxonomies?.policyTags?.length ? taxonomies.policyTags : (FEATURE_TAGS as readonly string[]);
 
-  const v = useMemo<PropertyFiltersValue>(() => ({
+  // URL state（route 真正生效的值）
+  const urlValue = useMemo<PropertyFiltersValue>(() => ({
     region: searchParams.get('region') || '',
     district: searchParams.get('district') || '',
     type: searchParams.get('type') || '',
@@ -142,26 +143,42 @@ export default function PropertyFilters({ total, taxonomies }: FiltersProps) {
     sort: searchParams.get('sort') || '',
   }), [searchParams]);
 
+  // 本地 draft：吸收快速連點，避免「stale closure → 第二次點擊用舊 URL 算出錯誤 next」
+  // 連續操作（例如複選 type）一律以 draft 為基準合併，再批次 replace URL。
+  const [draft, setDraft] = useState<PropertyFiltersValue>(urlValue);
+  // URL 變動時（例如外部 router、上一頁、reset）同步 draft，避免顯示與 URL 不一致
+  useEffect(() => {
+    setDraft(urlValue);
+  }, [urlValue]);
+
+  // display 用的 v 一律走 draft（chip 點擊立刻變色，URL 變動慢一點也不影響使用者）
+  const v = draft;
+
   const districts = v.region ? CITY_DISTRICTS[v.region] || [] : [];
 
   const propertiesPath = locale === 'zh' ? '/properties' : `/${locale}/properties`;
 
   function pushFilters(next: Partial<PropertyFiltersValue>, opts?: { resetPage?: boolean }) {
-    const merged = { ...v, ...next };
-    const params = new URLSearchParams();
-    (Object.keys(merged) as (keyof PropertyFiltersValue)[]).forEach((k) => {
-      if (merged[k]) params.set(k, merged[k]);
-    });
-    if (!opts || opts.resetPage !== false) {
-      params.delete('page');
-    }
-    // replace + transition：避免 history 堆積 & 標記為非緊急讓 UI 維持互動順暢
-    startTransition(() => {
-      router.replace(`${propertiesPath}${params.toString() ? `?${params.toString()}` : ''}`);
+    // 用 functional setState 確保以「最新 draft」為基準合併，吸收快速連點
+    setDraft((prev) => {
+      const merged = { ...prev, ...next };
+      const params = new URLSearchParams();
+      (Object.keys(merged) as (keyof PropertyFiltersValue)[]).forEach((k) => {
+        if (merged[k]) params.set(k, merged[k]);
+      });
+      if (!opts || opts.resetPage !== false) {
+        params.delete('page');
+      }
+      // replace + transition：avoid history 堆積，並讓 UI 維持互動順暢
+      startTransition(() => {
+        router.replace(`${propertiesPath}${params.toString() ? `?${params.toString()}` : ''}`);
+      });
+      return merged;
     });
   }
 
   function reset() {
+    setDraft(EMPTY_FILTERS);
     startTransition(() => {
       router.replace(propertiesPath);
     });
@@ -521,6 +538,23 @@ function CustomRangeInput({
 }) {
   const [min, setMin] = useState(initialMin || '');
   const [max, setMax] = useState(initialMax || '');
+
+  function apply() {
+    let lo = min.trim();
+    let hi = max.trim();
+    // 若兩端都有值且 lo > hi 自動 swap，避免使用者送出後變成 0 筆結果而不知為何
+    if (lo && hi) {
+      const ln = Number(lo);
+      const hn = Number(hi);
+      if (Number.isFinite(ln) && Number.isFinite(hn) && ln > hn) {
+        [lo, hi] = [hi, lo];
+        setMin(lo);
+        setMax(hi);
+      }
+    }
+    onApply(lo, hi);
+  }
+
   return (
     <div className={`mt-1 px-3 py-2 border-t border-line ${isActive ? 'bg-brand-green-50/40' : ''}`}>
       <p className="text-[11px] font-bold text-ink-500 mb-1.5">{label}{unit ? `（${unit}）` : ''}</p>
@@ -544,7 +578,7 @@ function CustomRangeInput({
         />
         <button
           type="button"
-          onClick={() => onApply(min, max)}
+          onClick={apply}
           className="ml-1 text-xs font-bold px-2.5 py-1 rounded bg-brand-green-700 text-white hover:bg-brand-green-900"
         >
           ✓
