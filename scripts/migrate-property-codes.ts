@@ -9,6 +9,7 @@
  * Idempotent — 跑第二次只會處理新加入的物件 / 新型 mismatch。
  */
 
+import 'dotenv/config'; // 確保 tsx 執行時也能讀到 .env 的 DATABASE_URL
 import { prisma } from '../src/lib/prisma';
 import { reserveUniqueCodeForMigration } from '../src/lib/property-code';
 import { TYPE_MID_LETTERS } from '../src/data/taiwan-addresses';

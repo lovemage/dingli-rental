@@ -8,6 +8,10 @@ export const dynamic = 'force-dynamic';
 // 含敏感資訊的 section（如 API key / token），禁止透過此 public 端點存取
 const PROTECTED_SECTIONS = new Set(['ai_settings', 'notification_settings']);
 
+// 純設定型 section（單字母對應、座標、ID 等），無翻譯需求；
+// 寫入時跳過 warmCmsTranslations 避免浪費 token 或產生奇怪的翻譯結果。
+const SKIP_TRANSLATION_SECTIONS = new Set(['property_type_letters']);
+
 // GET ?section=services|careers|contact|about
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -44,7 +48,9 @@ export async function PUT(req: Request) {
   //
   // 註：home_testimonials cache 自 commit 3671fb1 起已不再被讀寫（testimonials 改用原文），
   // 因此不需要做任何衍生 section 的 invalidate / warm。
-  after(() => warmCmsTranslations(section, data));
+  if (!SKIP_TRANSLATION_SECTIONS.has(section)) {
+    after(() => warmCmsTranslations(section, data));
+  }
 
   return NextResponse.json(saved);
 }

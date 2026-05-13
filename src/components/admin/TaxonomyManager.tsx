@@ -7,12 +7,17 @@ import {
   type TaxonomyKey,
   type Taxonomies,
 } from '@/lib/taxonomies-shared';
+import { TYPE_MID_LETTERS } from '@/data/taiwan-addresses';
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
+type LetterMap = Record<string, string>;
 
 export default function TaxonomyManager() {
   const [data, setData] = useState<Taxonomies | null>(null);
   const [original, setOriginal] = useState<Taxonomies | null>(null);
+  // 字母對應（只給 propertyTypes 用，分支 SiteContent section='property_type_letters'）
+  const [letters, setLetters] = useState<LetterMap>({});
+  const [origLetters, setOrigLetters] = useState<LetterMap>({});
   const [loading, setLoading] = useState(true);
   const [activeKey, setActiveKey] = useState<TaxonomyKey>('propertyTypes');
   const [saveStates, setSaveStates] = useState<Record<TaxonomyKey, SaveState>>(
@@ -22,15 +27,44 @@ export default function TaxonomyManager() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/api/taxonomies', { cache: 'no-store' });
-        const json = (await res.json()) as Taxonomies;
-        setData(json);
-        setOriginal(json);
+        const [taxRes, lettersRes] = await Promise.all([
+          fetch('/api/taxonomies', { cache: 'no-store' }),
+          fetch('/api/content?section=property_type_letters', { cache: 'no-store' }),
+        ]);
+        const tax = (await taxRes.json()) as Taxonomies;
+        setData(tax);
+        setOriginal(tax);
+        const lettersJson = await lettersRes.json().catch(() => null);
+        const map = (lettersJson?.data?.map as LetterMap | undefined) || {};
+        setLetters(map);
+        setOrigLetters(map);
       } finally {
         setLoading(false);
       }
     })();
   }, []);
+
+  function effectiveLetter(typeName: string): string {
+    const v = (letters[typeName] || '').toUpperCase();
+    if (/^[A-Z]$/.test(v)) return v;
+    return TYPE_MID_LETTERS[typeName] || 'X';
+  }
+
+  function setLetter(typeName: string, raw: string) {
+    const v = raw.trim().toUpperCase().slice(0, 1);
+    setLetters((m) => {
+      const next = { ...m };
+      if (!v) delete next[typeName];
+      else next[typeName] = v;
+      return next;
+    });
+    setSaveStates((s) => ({ ...s, propertyTypes: 'idle' }));
+  }
+
+  const lettersDirty = useMemo(() => {
+    // 比較兩個 map 序列化
+    return JSON.stringify(letters) !== JSON.stringify(origLetters);
+  }, [letters, origLetters]);
 
   const dirtyKeys = useMemo(() => {
     if (!data || !original) return new Set<TaxonomyKey>();
@@ -40,8 +74,10 @@ export default function TaxonomyManager() {
       const b = original[key].join('|');
       if (a !== b) dirty.add(key);
     }
+    // 字母 mapping 變動也視為 propertyTypes tab dirty
+    if (lettersDirty) dirty.add('propertyTypes');
     return dirty;
-  }, [data, original]);
+  }, [data, original, lettersDirty]);
 
   function update(key: TaxonomyKey, items: string[]) {
     setData((d) => (d ? { ...d, [key]: items } : d));
@@ -52,6 +88,7 @@ export default function TaxonomyManager() {
     if (!data) return;
     setSaveStates((s) => ({ ...s, [key]: 'saving' }));
     try {
+      // 主 taxonomy 區段
       const res = await fetch('/api/content', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -64,6 +101,24 @@ export default function TaxonomyManager() {
         const err = await res.json().catch(() => ({}));
         throw new Error(err?.error || '儲存失敗');
       }
+
+      // propertyTypes tab 額外把字母 mapping 一起存
+      if (key === 'propertyTypes' && lettersDirty) {
+        const res2 = await fetch('/api/content', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            section: 'property_type_letters',
+            data: { map: letters },
+          }),
+        });
+        if (!res2.ok) {
+          const err = await res2.json().catch(() => ({}));
+          throw new Error(err?.error || '字母對應儲存失敗');
+        }
+        setOrigLetters({ ...letters });
+      }
+
       setSaveStates((s) => ({ ...s, [key]: 'saved' }));
       setOriginal((orig) => (orig ? { ...orig, [key]: [...data[key]] } : orig));
       setTimeout(() => setSaveStates((s) => ({ ...s, [key]: 'idle' })), 2500);
@@ -113,6 +168,88 @@ export default function TaxonomyManager() {
         dirty={dirtyKeys.has(activeKey)}
         state={saveStates[activeKey] || 'idle'}
       />
+
+      {/* 字母對應（僅 propertyTypes tab） */}
+      {activeKey === 'propertyTypes' && (
+        <LetterMapCard
+          types={data.propertyTypes}
+          letters={letters}
+          onChange={setLetter}
+          effectiveLetter={effectiveLetter}
+        />
+      )}
+    </div>
+  );
+}
+
+function LetterMapCard({
+  types,
+  letters,
+  onChange,
+  effectiveLetter,
+}: {
+  types: string[];
+  letters: LetterMap;
+  onChange: (typeName: string, raw: string) => void;
+  effectiveLetter: (typeName: string) => string;
+}) {
+  // 統計：有沒有兩個類型用同一字母 → 警告但不擋
+  const letterCounts = new Map<string, string[]>();
+  for (const t of types) {
+    const l = effectiveLetter(t);
+    const arr = letterCounts.get(l) || [];
+    arr.push(t);
+    letterCounts.set(l, arr);
+  }
+  const conflicts = Array.from(letterCounts.entries()).filter(([, arr]) => arr.length > 1);
+
+  return (
+    <div className="admin-card">
+      <div className="mb-3 pb-3 border-b border-line">
+        <h3 className="font-bold text-base">編號字母對應</h3>
+        <p className="text-xs text-ink-500 mt-0.5 leading-relaxed">
+          每個物件類型對應一個英文字母，作為新增物件時的編號開頭。<br />
+          空白即使用系統預設（T 套房 / W 整層住家 / H 別墅 / S 店面 / O 辦公室 / X 其他）；
+          系統沒對應的類型一律 X。已產生的舊編號不會回頭修改。
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+        {types.length === 0 && (
+          <p className="text-sm text-ink-400 col-span-full">請先在上方加入物件類型</p>
+        )}
+        {types.map((tp) => {
+          const userValue = letters[tp] || '';
+          const effective = effectiveLetter(tp);
+          const usingDefault = !userValue;
+          return (
+            <div key={tp} className="flex items-center gap-2 bg-paper-2 border border-line rounded-lg px-3 py-2">
+              <span className="flex-1 text-sm font-medium truncate" title={tp}>{tp}</span>
+              <input
+                value={userValue}
+                onChange={(e) => onChange(tp, e.target.value)}
+                maxLength={1}
+                placeholder={effective}
+                className={`w-10 px-2 py-1 text-center font-mono font-black uppercase border rounded focus:outline-none ${usingDefault ? 'border-line text-ink-400' : 'border-brand-green-500 text-ink-900'}`}
+                title={usingDefault ? `預設 ${effective}` : `自訂 ${userValue}`}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      {conflicts.length > 0 && (
+        <div className="mt-3 p-3 bg-brand-orange-50 border border-brand-orange-200 rounded-lg text-xs text-brand-orange-900">
+          <p className="font-bold mb-1">⚠️ 字母重複（不影響運作，但編號開頭看起來會一樣）</p>
+          <ul className="list-disc list-inside space-y-0.5">
+            {conflicts.map(([letter, names]) => (
+              <li key={letter}>
+                <span className="font-mono font-bold">{letter}</span>：{names.join('、')}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
