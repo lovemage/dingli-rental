@@ -19,7 +19,7 @@
     "languageJa": "日本語"
   },
   "footer": {
-    "tagline": "鼎立租售管理 Dingli Rental Service — 深耕北北基桃竹的專業租賃品牌，以誠信、透明、貼心為核心，陪您找到真正想回去的家。",
+    "tagline": "鼎立租售管理 Dingli Rental Service — 深耕雙北桃園的專業租賃品牌，以誠信、透明、貼心為核心，陪您找到真正想回去的家。",
     "categoriesHeading": "物件分類",
     "categoryWholeFloor": "整層住家",
     "categoryStudio": "套房",
@@ -117,13 +117,19 @@
     "buildingLabel": "建物類型",
     "rentLabel": "租金 (元/月)",
     "areaLabel": "坪數",
-    "roomsLabel": "至少房數",
+    "roomsLabel": "房間數",
+    "ageLabel": "屋齡",
     "ageMaxLabel": "屋齡上限",
-    "elevatorLabel": "需要電梯",
+    "amenitiesLabel": "電梯",
+    "elevatorLabel": "電梯",
     "petsLabel": "可寵物",
     "cookingLabel": "可開伙",
     "tagsLabel": "特色標籤",
     "equipmentLabel": "設備",
+    "customRange": "自訂區間",
+    "rentUnit": "元/月",
+    "areaUnit": "坪",
+    "ageUnit": "年",
     "sortLabel": "排序",
     "sortDefault": "綜合排序",
     "sortNewest": "最新刊登",
@@ -307,5 +313,8 @@
     "backHome": "← 返回首頁",
     "lastUpdated": "最後修改日期：{date}",
     "zhOnlyNotice": "此法律文件僅提供繁體中文版本（依中華民國法律與台灣新北地方法院管轄），如需翻譯協助請聯繫業務專員。"
+  },
+  "floatingCta": {
+    "closeAria": "關閉浮動按鈕"
   }
 }

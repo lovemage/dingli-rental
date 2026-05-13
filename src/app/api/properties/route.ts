@@ -22,7 +22,11 @@ export async function GET(req: Request) {
 
   const where: any = { status: 'active' };
   if (region) where.region = region;
-  if (typeMid) where.typeMid = typeMid;
+  if (typeMid) {
+    const typeList = typeMid.split(',').map((t) => t.trim()).filter(Boolean);
+    if (typeList.length === 1) where.typeMid = typeList[0];
+    else if (typeList.length > 1) where.typeMid = { in: typeList };
+  }
   if (buildingType) where.buildingType = buildingType;
   if (minRent > 0 || maxRent > 0) {
     where.rent = {};

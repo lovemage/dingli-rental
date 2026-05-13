@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import AiChatWidget from '@/components/frontend/AiChatWidget';
 import MaterialIcon from '@/components/MaterialIcon';
@@ -27,23 +27,44 @@ export default function HeroSearch({ propertyTypes }: Props = {}) {
   const tRegions = useTranslations('regions');
   const locale = useLocale();
   const [region, setRegion] = useState('');
-  const [type, setType] = useState('');
+  const [types, setTypes] = useState<string[]>([]);
+  const [typesOpen, setTypesOpen] = useState(false);
   const [budgetIdx, setBudgetIdx] = useState(0);
   const TYPE_OPTIONS = propertyTypes && propertyTypes.length ? propertyTypes : DEFAULT_TYPE_OPTIONS;
+  const typesRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!typesOpen) return;
+    function onClick(e: MouseEvent) {
+      if (typesRef.current && !typesRef.current.contains(e.target as Node)) setTypesOpen(false);
+    }
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [typesOpen]);
 
   const propertiesPath = locale === 'zh' ? '/properties' : `/${locale}/properties`;
+
+  function toggleType(tp: string) {
+    setTypes((arr) => (arr.includes(tp) ? arr.filter((x) => x !== tp) : [...arr, tp]));
+  }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const params = new URLSearchParams();
     if (region) params.set('region', region);
-    if (type) params.set('type', type);
+    if (types.length) params.set('type', types.join(','));
     const budget = BUDGET_OPTIONS[budgetIdx];
     if (budget?.min) params.set('minRent', budget.min);
     if (budget?.max) params.set('maxRent', budget.max);
     const qs = params.toString();
     router.push(qs ? `${propertiesPath}?${qs}` : propertiesPath);
   }
+
+  const typesDisplay = types.length === 0
+    ? t('typeAll')
+    : types.length === 1
+      ? types[0]
+      : `${types[0]} +${types.length - 1}`;
 
   return (
     <form
@@ -62,16 +83,41 @@ export default function HeroSearch({ propertyTypes }: Props = {}) {
             ))}
           </select>
         </div>
-        <div>
+        <div ref={typesRef} className="relative">
           <label className="label-base">{t('typeLabel')}</label>
-          <select value={type} onChange={(e) => setType(e.target.value)} className="input-base">
-            <option value="">{t('typeAll')}</option>
-            {TYPE_OPTIONS.map((tp) => (
-              <option key={tp} value={tp}>
-                {tp}
-              </option>
-            ))}
-          </select>
+          <button
+            type="button"
+            onClick={() => setTypesOpen((s) => !s)}
+            className="input-base text-left flex items-center justify-between"
+          >
+            <span className={types.length ? 'text-ink-900' : 'text-ink-400'}>{typesDisplay}</span>
+            <span className="text-xs text-ink-500">▾</span>
+          </button>
+          {typesOpen && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-line rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+              <button
+                type="button"
+                onClick={() => { setTypes([]); setTypesOpen(false); }}
+                className={`block w-full text-left px-3 py-2 text-sm ${types.length === 0 ? 'bg-brand-green-50 text-brand-green-900 font-medium' : 'hover:bg-paper-2'}`}
+              >
+                {t('typeAll')}
+              </button>
+              {TYPE_OPTIONS.map((tp) => {
+                const checked = types.includes(tp);
+                return (
+                  <button
+                    key={tp}
+                    type="button"
+                    onClick={() => toggleType(tp)}
+                    className={`flex items-center justify-between w-full text-left px-3 py-2 text-sm ${checked ? 'bg-brand-green-50 text-brand-green-900 font-medium' : 'hover:bg-paper-2'}`}
+                  >
+                    <span>{tp}</span>
+                    {checked && <span className="text-brand-green-700">✓</span>}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
         <div>
           <label className="label-base">{t('budgetLabel')}</label>

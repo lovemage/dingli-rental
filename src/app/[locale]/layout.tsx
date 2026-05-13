@@ -7,6 +7,7 @@ import HtmlLangSetter from '@/components/frontend/HtmlLangSetter';
 import FloatingCta from '@/components/frontend/FloatingCta';
 import AnnouncementBar from '@/components/frontend/AnnouncementBar';
 import { prisma } from '@/lib/prisma';
+import { translateCmsSection } from '@/lib/cms-translate';
 import {
   FLOATING_CTA_DEFAULTS,
   type FloatingCtaContent,
@@ -46,29 +47,45 @@ export async function generateMetadata({
   };
 }
 
-async function getFloatingCta(): Promise<FloatingCtaContent> {
+async function getFloatingCta(locale: string): Promise<FloatingCtaContent> {
   try {
     const row = await prisma.siteContent.findUnique({
       where: { section: 'floating_cta' },
     });
-    return {
+    const merged: FloatingCtaContent = {
       ...FLOATING_CTA_DEFAULTS,
       ...((row?.data as Partial<FloatingCtaContent>) || {}),
     };
+    if (locale === 'zh') return merged;
+    // 走 CMS 翻譯快取：admin 儲存時會由 warmCmsTranslations 預熱，
+    // 訪客端拿到的就是已翻譯版（bubbleTitle / bubbleSubtitle / label 等）。
+    const translated = await translateCmsSection(
+      'floating_cta',
+      merged as unknown as Record<string, unknown>,
+      locale
+    );
+    return { ...merged, ...(translated as Partial<FloatingCtaContent>) };
   } catch {
     return FLOATING_CTA_DEFAULTS;
   }
 }
 
-async function getAnnouncement(): Promise<AnnouncementSettings> {
+async function getAnnouncement(locale: string): Promise<AnnouncementSettings> {
   try {
     const row = await prisma.siteContent.findUnique({
       where: { section: 'announcement' },
     });
-    return {
+    const merged: AnnouncementSettings = {
       ...ANNOUNCEMENT_DEFAULTS,
       ...((row?.data as Partial<AnnouncementSettings>) || {}),
     };
+    if (locale === 'zh') return merged;
+    const translated = await translateCmsSection(
+      'announcement',
+      merged as unknown as Record<string, unknown>,
+      locale
+    );
+    return { ...merged, ...(translated as Partial<AnnouncementSettings>) };
   } catch {
     return ANNOUNCEMENT_DEFAULTS;
   }
@@ -87,8 +104,8 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   const [floatingCta, announcement] = await Promise.all([
-    getFloatingCta(),
-    getAnnouncement(),
+    getFloatingCta(locale),
+    getAnnouncement(locale),
   ]);
 
   return (

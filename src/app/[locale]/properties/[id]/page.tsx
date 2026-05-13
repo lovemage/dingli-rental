@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import Header from '@/components/frontend/Header';
 import Footer from '@/components/frontend/Footer';
+import TrackingBeacon from '@/components/frontend/TrackingBeacon';
 import PropertyGallery from '@/components/frontend/PropertyGallery';
 import { prisma } from '@/lib/prisma';
 import { localizePropertyForDetail } from '@/lib/property-translate';
@@ -115,6 +116,7 @@ export default async function PropertyDetailPage({
   return (
     <>
       <Header />
+      <TrackingBeacon kind="property" propertyId={p.id} />
       <main className="bg-paper-2 py-10">
         <div className="container-page">
           <Link

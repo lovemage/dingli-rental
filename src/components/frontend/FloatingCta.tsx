@@ -2,11 +2,13 @@
 
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { FloatingCtaContent } from '@/data/floating-cta-defaults';
 
 export default function FloatingCta({ config }: { config: FloatingCtaContent }) {
   const pathname = usePathname();
   const [hidden, setHidden] = useState(false);
+  const t = useTranslations('floatingCta');
 
   // 在後台 / 登入頁不顯示
   if (!config.enabled) return null;
@@ -22,7 +24,7 @@ export default function FloatingCta({ config }: { config: FloatingCtaContent }) 
         type="button"
         onClick={() => setHidden(true)}
         className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-white border border-line shadow-md grid place-items-center text-ink-500 hover:text-ink-900 text-xs z-10"
-        aria-label="關閉浮動按鈕"
+        aria-label={t('closeAria')}
       >
         ✕
       </button>

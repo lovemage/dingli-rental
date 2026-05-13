@@ -19,7 +19,7 @@
     "languageJa": "日本語"
   },
   "footer": {
-    "tagline": "鼎立レンタル Dingli Rental Service — 北北基桃竹エリアに根ざしたプロのレンタル仲介。誠実・透明・心配りを大切に、本当に帰りたくなる「家」探しをお手伝いします。",
+    "tagline": "鼎立レンタル Dingli Rental Service — 台北・新北・桃園エリアに根ざしたプロのレンタル仲介。誠実・透明・心配りを大切に、本当に帰りたくなる「家」探しをお手伝いします。",
     "categoriesHeading": "物件カテゴリ",
     "categoryWholeFloor": "一棟住宅",
     "categoryStudio": "ワンルーム",
@@ -117,13 +117,19 @@
     "buildingLabel": "建物タイプ",
     "rentLabel": "家賃 (NT$/月)",
     "areaLabel": "面積",
-    "roomsLabel": "最低部屋数",
+    "roomsLabel": "部屋数",
+    "ageLabel": "築年数",
     "ageMaxLabel": "築年数の上限",
-    "elevatorLabel": "エレベーターあり",
+    "amenitiesLabel": "エレベーター",
+    "elevatorLabel": "エレベーター",
     "petsLabel": "ペット可",
     "cookingLabel": "自炊可",
     "tagsLabel": "こだわり条件",
     "equipmentLabel": "設備",
+    "customRange": "カスタム範囲",
+    "rentUnit": "NT$/月",
+    "areaUnit": "坪",
+    "ageUnit": "年",
     "sortLabel": "並び替え",
     "sortDefault": "おすすめ順",
     "sortNewest": "新着順",
@@ -307,5 +313,8 @@
     "backHome": "← トップに戻る",
     "lastUpdated": "最終更新日：{date}",
     "zhOnlyNotice": "本法的文書は繁体字中国語のみで提供しています（中華民国法および台湾新北地方裁判所管轄）。翻訳サポートが必要な場合は担当者までお問い合わせください。"
+  },
+  "floatingCta": {
+    "closeAria": "フローティングボタンを閉じる"
   }
 }

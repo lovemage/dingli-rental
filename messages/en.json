@@ -19,7 +19,7 @@
     "languageJa": "日本語"
   },
   "footer": {
-    "tagline": "Dingli Rental Service — a professional leasing brand rooted in Greater Taipei, Keelung, Taoyuan, and Hsinchu, guiding you home with honesty, transparency, and care.",
+    "tagline": "Dingli Rental Service — a professional leasing brand rooted in Greater Taipei and Taoyuan, guiding you home with honesty, transparency, and care.",
     "categoriesHeading": "Property Categories",
     "categoryWholeFloor": "Whole-Floor Residence",
     "categoryStudio": "Studio",
@@ -117,13 +117,19 @@
     "buildingLabel": "Building type",
     "rentLabel": "Rent (NT$/month)",
     "areaLabel": "Area",
-    "roomsLabel": "Min. bedrooms",
+    "roomsLabel": "Rooms",
+    "ageLabel": "Building age",
     "ageMaxLabel": "Max. building age",
-    "elevatorLabel": "Elevator required",
+    "amenitiesLabel": "Elevator",
+    "elevatorLabel": "Elevator",
     "petsLabel": "Pets allowed",
     "cookingLabel": "Cooking allowed",
     "tagsLabel": "Features",
     "equipmentLabel": "Equipment",
+    "customRange": "Custom range",
+    "rentUnit": "NT$/mo",
+    "areaUnit": "ping",
+    "ageUnit": "yrs",
     "sortLabel": "Sort by",
     "sortDefault": "Recommended",
     "sortNewest": "Newest first",
@@ -307,5 +313,8 @@
     "backHome": "← Back to home",
     "lastUpdated": "Last updated: {date}",
     "zhOnlyNotice": "This legal document is provided in Traditional Chinese only (governed by Republic of China law with Taiwan New Taipei District Court as the venue). For translation assistance please contact a consultant."
+  },
+  "floatingCta": {
+    "closeAria": "Close floating button"
   }
 }

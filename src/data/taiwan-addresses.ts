@@ -60,14 +60,15 @@ export const BUILDING_TYPES = [
   '公寓', '透天厝', '電梯大樓',
 ] as const;
 
-// 設備
+// 設備（床/衣櫃/沙發 從 FURNITURE 移過來，原因：使用者搜尋時把這些當作必備設備而非家具）
 export const EQUIPMENT_OPTIONS = [
   '洗衣機', '冰箱', '電視', '冷氣', '熱水器', '網路', '第四台', '天然瓦斯',
+  '床', '衣櫃', '沙發',
 ] as const;
 
-// 家具
+// 家具（保留作為彈性欄位；admin 可在 /admin/taxonomy 自訂）
 export const FURNITURE_OPTIONS = [
-  '床', '衣櫃', '沙發', '桌子', '椅子',
+  '桌子', '椅子',
 ] as const;
 
 // 身份

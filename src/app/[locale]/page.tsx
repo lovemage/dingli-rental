@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { getTranslations, getLocale, setRequestLocale } from 'next-intl/server';
 import Header from '@/components/frontend/Header';
 import Footer from '@/components/frontend/Footer';
+import TrackingBeacon from '@/components/frontend/TrackingBeacon';
 import HeroCarousel, { HeroSlide as HeroSlideType } from '@/components/frontend/HeroCarousel';
 import HeroSearch from '@/components/frontend/HeroSearch';
 import HeroCtaPanel from '@/components/frontend/HeroCtaPanel';
@@ -197,6 +198,7 @@ export default async function HomePage({
   return (
     <>
       <Header />
+      <TrackingBeacon kind="home" />
       <main>
         {/* HERO */}
         <section className="relative bg-paper-2">
@@ -209,10 +211,19 @@ export default async function HomePage({
             />
             <div className="absolute inset-0 z-[1] bg-ink-900/20" />
             <div className="container-page relative z-10 flex h-full items-center">
-              <div className="max-w-2xl pt-6">
+              {/* 中文版用 max-w-2xl 維持原排版；EN/JA 譯文較長改 max-w-3xl + 略小字級，避免一句被切成 4–5 行 */}
+              <div className={`pt-6 ${currentLocale === 'zh' ? 'max-w-2xl' : 'max-w-3xl'}`}>
                 <span className="eyebrow bg-paper/90"><span className="dot" />{hero.eyebrow}</span>
-                <h1 className="text-4xl md:text-5xl lg:text-[56px] font-black leading-tight my-5 text-paper drop-shadow-[0_2px_18px_rgba(26,36,33,0.35)]">
-                  {hero.titleLine1}<br />
+                <h1
+                  className={
+                    currentLocale === 'zh'
+                      ? 'text-4xl md:text-5xl lg:text-[56px] font-black leading-tight my-5 text-paper drop-shadow-[0_2px_18px_rgba(26,36,33,0.35)]'
+                      : 'text-3xl md:text-4xl lg:text-5xl font-black leading-tight my-5 text-paper drop-shadow-[0_2px_18px_rgba(26,36,33,0.35)]'
+                  }
+                >
+                  {/* zh 強制兩行（短句設計）；EN/JA 譯文較長，讓 line1 與 line2 之間以空格相接、自然 wrap */}
+                  {hero.titleLine1}
+                  {currentLocale === 'zh' ? <br /> : ' '}
                   <span className="text-brand-orange-300 relative inline-block">
                     {hero.titleLine2}
                     <span className="absolute left-0 right-0 bottom-1 h-3.5 bg-brand-green-900/55 -z-10 rounded" />

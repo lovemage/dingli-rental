@@ -217,3 +217,28 @@ model SiteContent {
   data      Json
   updatedAt DateTime @updatedAt
 }
+
+// 物件瀏覽次數：以「(propertyId, ipHash, day)」三元組去重
+// 同 IP 同一天進入同一物件詳細頁只計 1 次；建檔即視為 1 次瀏覽。
+model PropertyView {
+  id         Int      @id @default(autoincrement())
+  propertyId Int
+  ipHash     String   // sha256(salt + ip)，避免明文儲存 IP
+  day        DateTime @db.Date // UTC 日期（去重粒度）
+  createdAt  DateTime @default(now())
+
+  @@unique([propertyId, ipHash, day])
+  @@index([propertyId])
+  @@index([day])
+}
+
+// 首頁訪客次數：同 IP 同一天進入首頁只計 1 次
+model SiteVisit {
+  id        Int      @id @default(autoincrement())
+  ipHash    String
+  day       DateTime @db.Date
+  createdAt DateTime @default(now())
+
+  @@unique([ipHash, day])
+  @@index([day])
+}

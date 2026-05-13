@@ -23,6 +23,7 @@ type SearchParams = {
   minArea?: string;
   maxArea?: string;
   rooms?: string;
+  minAge?: string;
   ageMax?: string;
   elevator?: string;
   pets?: string;
@@ -52,7 +53,12 @@ async function search(params: SearchParams, locale: string) {
 
   if (params.region) where.region = params.region;
   if (params.district) where.district = params.district;
-  if (params.type) where.typeMid = params.type;
+  // type 改支援多選（逗號分隔）：單一值用 equals，多值用 in
+  if (params.type) {
+    const typeList = params.type.split(',').map((t) => t.trim()).filter(Boolean);
+    if (typeList.length === 1) where.typeMid = typeList[0];
+    else if (typeList.length > 1) where.typeMid = { in: typeList };
+  }
   if (params.building) where.buildingType = params.building;
 
   const rentRange: Prisma.IntFilter = {};
@@ -66,7 +72,11 @@ async function search(params: SearchParams, locale: string) {
   if (Object.keys(areaRange).length) where.usableArea = areaRange;
 
   if (params.rooms) where.rooms = { gte: Number(params.rooms) };
-  if (params.ageMax) where.buildingAge = { lte: Number(params.ageMax) };
+  // 屋齡支援下限+上限區間
+  const ageRange: Prisma.IntFilter = {};
+  if (params.minAge) ageRange.gte = Number(params.minAge);
+  if (params.ageMax) ageRange.lte = Number(params.ageMax);
+  if (Object.keys(ageRange).length) where.buildingAge = ageRange;
   if (params.elevator === '1') where.hasElevator = true;
   if (params.pets === '1') where.petsAllowed = true;
   if (params.cooking === '1') where.cookingAllowed = true;
