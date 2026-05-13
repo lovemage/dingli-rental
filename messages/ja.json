@@ -286,7 +286,9 @@
     "metaTitle": "採用情報",
     "ctaSendResumeBefore": "履歴書は ",
     "ctaSendResumeAfter": " までお送りください。件名に応募職種をご記載ください。",
-    "joinDingli": "鼎立に応募する"
+    "joinDingli": "鼎立に応募する",
+    "positionsClosedTitle": "現在募集中の職種はありません",
+    "positionsClosedDesc": "鼎立の採用職種は現在一時的に閉じています。新しい募集がある場合は本ページでお知らせします。"
   },
   "termsPage": {
     "metaTitle": "利用規約",

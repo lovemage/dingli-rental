@@ -1,6 +1,5 @@
 import Header from '@/components/frontend/Header';
 import Footer from '@/components/frontend/Footer';
-import Link from 'next/link';
 import MaterialIcon from '@/components/MaterialIcon';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { prisma } from '@/lib/prisma';
@@ -55,7 +54,6 @@ export default async function CareersPage({
 
   const c = await getCareersContent(locale);
   const t = await getTranslations('careersPage');
-  const jobApplyLink = 'https://www.104.com.tw/company/1a2x6bmkli#info06';
 
   return (
     <>
@@ -70,16 +68,6 @@ export default async function CareersPage({
                   {c.titleLine1}<br className="sm:hidden" />{c.titleLine2}
                 </h1>
                 <p className="text-ink-700 text-base sm:text-lg leading-relaxed">{c.description}</p>
-                <div className="mt-6">
-                  <a
-                    href={jobApplyLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-primary"
-                  >
-                    {t('joinDingli')}
-                  </a>
-                </div>
               </div>
               <div className="rounded-2xl overflow-hidden shadow-sm border border-line">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -107,64 +95,12 @@ export default async function CareersPage({
           </div>
 
           <h2 className="text-2xl sm:text-3xl font-black mb-6">{c.positionsTitle}</h2>
-          <div className="space-y-4 mb-16">
-            {c.positions.map((p, i) => (
-              <div
-                key={`${p.title}-${i}`}
-                className="bg-white rounded-xl border border-line p-6 sm:p-8 hover:shadow-md transition"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
-                  <div>
-                    <h3 className="text-xl font-extrabold mb-1">{p.title}</h3>
-                    <div className="flex flex-wrap gap-2">
-                      <span className="text-xs bg-brand-green-50 text-brand-green-900 px-2.5 py-1 rounded-full font-bold">
-                        {p.type}
-                      </span>
-                      <span className="text-xs bg-paper-2 text-ink-700 px-2.5 py-1 rounded-full font-bold">
-                        {p.region}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <p className="text-brand-orange-700 font-bold">{p.salary}</p>
-                    <a
-                      href={jobApplyLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-primary !h-9 !px-4 text-sm"
-                    >
-                      {t('joinDingli')}
-                    </a>
-                  </div>
-                </div>
-                <p className="text-ink-700 mb-3">{p.desc}</p>
-                <ul className="text-sm text-ink-700 space-y-1.5 list-none p-0 m-0">
-                  {p.requirements.map((r) => (
-                    <li key={r} className="flex items-start gap-2">
-                      <MaterialIcon
-                        name="check_circle"
-                        className="!text-base text-brand-green-700 mt-0.5 flex-shrink-0"
-                      />
-                      <span>{r}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-
-          <div className="bg-white border border-line rounded-xl p-10 text-center">
-            <h2 className="text-2xl font-black mb-2">{c.ctaTitle}</h2>
-            <p className="text-ink-500 mb-6">
-              {t('ctaSendResumeBefore')}
-              <a href={`mailto:${c.ctaEmail}`} className="text-brand-green-700 underline">
-                {c.ctaEmail}
-              </a>
-              {t('ctaSendResumeAfter')}
-            </p>
-            <Link href={c.contactCtaLink} className="btn btn-primary">
-              {c.contactCtaText}
-            </Link>
+          <div className="mb-16 rounded-xl border border-line bg-white p-8 text-center shadow-sm">
+            <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-brand-green-50">
+              <MaterialIcon name="work_off" className="!text-3xl text-brand-green-700" />
+            </div>
+            <h3 className="text-xl font-extrabold mb-2">{t('positionsClosedTitle')}</h3>
+            <p className="mx-auto max-w-xl text-ink-500">{t('positionsClosedDesc')}</p>
           </div>
         </div>
       </main>

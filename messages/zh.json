@@ -286,7 +286,9 @@
     "metaTitle": "人才招募",
     "ctaSendResumeBefore": "請將履歷寄至 ",
     "ctaSendResumeAfter": "，主旨註明「應徵職缺名稱」。",
-    "joinDingli": "加入鼎立"
+    "joinDingli": "加入鼎立",
+    "positionsClosedTitle": "目前沒有開放職缺",
+    "positionsClosedDesc": "鼎立人才招募職位暫時關閉。後續有新職缺時，會再於本頁更新。"
   },
   "termsPage": {
     "metaTitle": "服務條款",

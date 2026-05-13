@@ -286,7 +286,9 @@
     "metaTitle": "Careers",
     "ctaSendResumeBefore": "Send your resume to ",
     "ctaSendResumeAfter": " with the position name in the subject line.",
-    "joinDingli": "Join Dingli"
+    "joinDingli": "Join Dingli",
+    "positionsClosedTitle": "No openings right now",
+    "positionsClosedDesc": "Dingli careers are temporarily closed. New roles will be posted here when available."
   },
   "termsPage": {
     "metaTitle": "Terms of Service",

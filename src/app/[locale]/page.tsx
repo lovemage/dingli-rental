@@ -199,19 +199,26 @@ export default async function HomePage({
       <Header />
       <main>
         {/* HERO */}
-        <section className="relative pt-20 pb-24 bg-gradient-to-b from-paper to-paper-2">
-          <div className="container-page relative z-10">
-            <div className="grid md:grid-cols-[1.05fr_1fr] gap-14 items-center">
-              <div>
-                <span className="eyebrow"><span className="dot" />{hero.eyebrow}</span>
-                <h1 className="text-4xl md:text-5xl lg:text-[56px] font-black leading-tight my-5">
+        <section className="relative bg-paper-2">
+          <div className="relative h-[550px] overflow-hidden">
+            <HeroCarousel
+              slides={slides}
+              intervalSec={intervalSec}
+              showCaptions={false}
+              className="hero-carousel-full"
+            />
+            <div className="absolute inset-0 z-[1] bg-ink-900/20" />
+            <div className="container-page relative z-10 flex h-full items-center">
+              <div className="max-w-2xl pt-6">
+                <span className="eyebrow bg-paper/90"><span className="dot" />{hero.eyebrow}</span>
+                <h1 className="text-4xl md:text-5xl lg:text-[56px] font-black leading-tight my-5 text-paper drop-shadow-[0_2px_18px_rgba(26,36,33,0.35)]">
                   {hero.titleLine1}<br />
-                  <span className="text-brand-green-700 relative inline-block">
+                  <span className="text-brand-orange-300 relative inline-block">
                     {hero.titleLine2}
-                    <span className="absolute left-0 right-0 bottom-1 h-3.5 bg-brand-orange-300/55 -z-10 rounded" />
+                    <span className="absolute left-0 right-0 bottom-1 h-3.5 bg-brand-green-900/55 -z-10 rounded" />
                   </span>
                 </h1>
-                <p className="text-lg text-ink-700 max-w-xl mb-8 whitespace-pre-line">
+                <p className="text-lg text-paper/95 max-w-xl mb-8 whitespace-pre-line drop-shadow-[0_1px_12px_rgba(26,36,33,0.35)]">
                   {hero.description}
                 </p>
                 <HeroCtaPanel
@@ -221,11 +228,11 @@ export default async function HomePage({
                   quickLinks={heroQuickLinks}
                 />
               </div>
-
-              <HeroCarousel slides={slides} intervalSec={intervalSec} />
             </div>
+          </div>
 
-            <div className="mt-12 max-w-5xl mx-auto relative z-30">
+          <div className="container-page relative z-30 pb-16">
+            <div className="-mt-10 max-w-5xl mx-auto">
               <HeroSearch propertyTypes={taxonomies.propertyTypes} />
             </div>
           </div>
