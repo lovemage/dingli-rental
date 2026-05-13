@@ -54,6 +54,7 @@ export default async function CareersPage({
 
   const c = await getCareersContent(locale);
   const t = await getTranslations('careersPage');
+  const jobApplyLink = 'https://www.104.com.tw/company/1a2x6bmkli#info06';
 
   return (
     <>
@@ -100,7 +101,15 @@ export default async function CareersPage({
               <MaterialIcon name="work_off" className="!text-3xl text-brand-green-700" />
             </div>
             <h3 className="text-xl font-extrabold mb-2">{t('positionsClosedTitle')}</h3>
-            <p className="mx-auto max-w-xl text-ink-500">{t('positionsClosedDesc')}</p>
+            <p className="mx-auto max-w-xl text-ink-500 mb-6">{t('positionsClosedDesc')}</p>
+            <a
+              href={jobApplyLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-primary"
+            >
+              {t('goTo104')}
+            </a>
           </div>
         </div>
       </main>

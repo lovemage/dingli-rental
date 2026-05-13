@@ -287,8 +287,9 @@
     "ctaSendResumeBefore": "Send your resume to ",
     "ctaSendResumeAfter": " with the position name in the subject line.",
     "joinDingli": "Join Dingli",
-    "positionsClosedTitle": "No openings right now",
-    "positionsClosedDesc": "Dingli careers are temporarily closed. New roles will be posted here when available."
+    "positionsClosedTitle": "Please apply through our official 104 jobs page",
+    "positionsClosedDesc": "The latest openings and application process are managed on Dingli's official 104 jobs page.",
+    "goTo104": "Go to 104 jobs page"
   },
   "termsPage": {
     "metaTitle": "Terms of Service",
