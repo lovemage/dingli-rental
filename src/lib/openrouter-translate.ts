@@ -49,7 +49,8 @@ export async function translateJsonObject(
   if (!settings.openrouterApiKey) {
     throw new Error('OpenRouter API key 未設定，無法執行翻譯');
   }
-  const model = settings.customerServiceModel || settings.model || 'google/gemini-2.5-flash';
+  // 統一使用 AI 辨識（後台 AI 設定 → 主模型）同一個模型，集中管理、便於切換。
+  const model = settings.model || 'google/gemini-2.5-flash';
 
   const systemPrompt = `You are a professional translator for a Taiwanese real estate rental website (鼎立租售管理 / Dingli Rental).
 

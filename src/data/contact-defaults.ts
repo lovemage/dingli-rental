@@ -24,6 +24,14 @@ export type ContactCompanyInfo = {
   serviceArea: string;
 };
 
+// 社群連結（全站共用，目前顯示在 Footer 右下）。
+// 留空字串 → 前台自動隱藏該圖示。
+export type ContactSocial = {
+  instagram: string;
+  facebook: string;
+  whatsapp: string;
+};
+
 export type ContactContent = {
   // Hero
   eyebrow: string;
@@ -35,6 +43,8 @@ export type ContactContent = {
   // 公司資訊
   companyInfoTitle: string;
   companyInfo: ContactCompanyInfo;
+  // 社群連結（Footer 顯示用）
+  social: ContactSocial;
   // 需求表單區塊（前端表單元件的文案）
   formTitle: string;
   formSubmitText: string;
@@ -78,6 +88,12 @@ export const CONTACT_DEFAULTS: ContactContent = {
       email: 'tsao@dingli-rental.com',
     },
   ],
+
+  social: {
+    instagram: 'https://www.instagram.com/dingli_rental?igsh=OGVydDRrNzgxNjlp&utm_source=qr',
+    facebook: 'https://www.facebook.com/share/18b1r63P7F/?mibextid=wwXIfr',
+    whatsapp: '',
+  },
 
   companyInfoTitle: '公司資訊',
   companyInfo: {

@@ -6,6 +6,7 @@ import {
   type ContactAgent,
   type ContactContent,
   type ContactCompanyInfo,
+  type ContactSocial,
 } from '@/data/contact-defaults';
 
 export default function ContactPageForm() {
@@ -28,6 +29,7 @@ export default function ContactPageForm() {
               ? json.data.agents
               : CONTACT_DEFAULTS.agents,
             companyInfo: { ...CONTACT_DEFAULTS.companyInfo, ...(json.data.companyInfo || {}) },
+            social: { ...CONTACT_DEFAULTS.social, ...(json.data.social || {}) },
           });
         }
       } finally {
@@ -42,6 +44,10 @@ export default function ContactPageForm() {
 
   function setCompany<K extends keyof ContactCompanyInfo>(key: K, value: ContactCompanyInfo[K]) {
     setData((d) => ({ ...d, companyInfo: { ...d.companyInfo, [key]: value } }));
+  }
+
+  function setSocial<K extends keyof ContactSocial>(key: K, value: ContactSocial[K]) {
+    setData((d) => ({ ...d, social: { ...d.social, [key]: value } }));
   }
 
   // ===== Agents =====
@@ -325,6 +331,57 @@ export default function ContactPageForm() {
           <div className="sm:col-span-2">
             <label className="label-base">服務範圍</label>
             <input className="input-base" value={data.companyInfo.serviceArea} onChange={(e) => setCompany('serviceArea', e.target.value)} />
+          </div>
+        </div>
+      </div>
+
+      {/* === 社群連結 === */}
+      <div className="admin-card">
+        <div className="mb-4 pb-3 border-b border-line">
+          <h2 className="font-bold text-lg">社群連結</h2>
+          <p className="text-xs text-ink-500 mt-0.5">
+            顯示在頁尾右下角；任一欄位留空即不顯示該圖示。
+          </p>
+        </div>
+        <div className="grid sm:grid-cols-3 gap-3">
+          <div>
+            <label className="label-base flex items-center gap-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/social-icons/Instagram.svg" alt="" className="w-5 h-5" />
+              Instagram
+            </label>
+            <input
+              className="input-base"
+              value={data.social.instagram}
+              onChange={(e) => setSocial('instagram', e.target.value)}
+              placeholder="https://www.instagram.com/..."
+            />
+          </div>
+          <div>
+            <label className="label-base flex items-center gap-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/social-icons/Facebook.svg" alt="" className="w-5 h-5" />
+              Facebook
+            </label>
+            <input
+              className="input-base"
+              value={data.social.facebook}
+              onChange={(e) => setSocial('facebook', e.target.value)}
+              placeholder="https://www.facebook.com/..."
+            />
+          </div>
+          <div>
+            <label className="label-base flex items-center gap-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/social-icons/WhatsApp.svg" alt="" className="w-5 h-5" />
+              WhatsApp
+            </label>
+            <input
+              className="input-base"
+              value={data.social.whatsapp}
+              onChange={(e) => setSocial('whatsapp', e.target.value)}
+              placeholder="https://wa.me/886..."
+            />
           </div>
         </div>
       </div>

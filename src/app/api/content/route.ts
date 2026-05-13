@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentAdmin } from '@/lib/auth';
-import { invalidateCmsTranslations } from '@/lib/cms-translate';
+import { warmCmsTranslations } from '@/lib/cms-translate';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,11 +35,11 @@ export async function PUT(req: Request) {
     update: { data },
   });
 
-  // 內容變更後清掉該 section 的 EN/JA 翻譯 cache，下次訪客觸發重譯
-  invalidateCmsTranslations(section).catch(() => {});
-  if (section === 'about') {
-    invalidateCmsTranslations('home_testimonials').catch(() => {});
-  }
+  // 內容變更後立即觸發 EN/JA 翻譯並寫入 cache（fire-and-forget，不阻塞回應）。
+  // 翻譯完成前訪客若看 EN/JA，會先拿到舊翻譯（hash mismatch 也會自動觸發背景刷新）。
+  // 注意：home_testimonials cache 自 commit 3671fb1 起已不再被讀寫（testimonials 改用原文），
+  // 因此不需要做任何衍生 section 的 invalidate / warm。
+  void warmCmsTranslations(section, data);
 
   return NextResponse.json(saved);
 }

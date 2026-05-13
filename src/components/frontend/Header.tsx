@@ -1,136 +1,50 @@
-'use client';
+import { getLocale, getTranslations } from 'next-intl/server';
+import { prisma } from '@/lib/prisma';
+import { translateCmsSection } from '@/lib/cms-translate';
+import { HEADER_NAV_DEFAULTS, type HeaderNavContent } from '@/data/header-nav-defaults';
+import HeaderClient from './HeaderClient';
 
-import Link from 'next/link';
-import Image from 'next/image';
-import { useState } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
-import {
-  LanguageSwitcherDesktop,
-  LanguageSwitcherMobile,
-} from './LanguageSwitcher';
-
-function localePath(locale: string, path: string) {
-  if (locale === 'zh') return path;
-  return `/${locale}${path === '/' ? '' : path}`;
+// 讀取後台「頁首導覽」設定。
+// - 若 admin 從未儲存過 → DB row 為空 → fallback 至 messages/{locale}.json 的 header.* 既有翻譯，
+//   避免 day-1 部署時 EN/JA 看到中文 default。
+// - 若 admin 已儲存過 → 用 DB 中文版資料，再走 translateCmsSection 拿 EN/JA 翻譯快取
+//   （admin 儲存當下會由 /api/content PUT 觸發 warmCmsTranslations 預熱）。
+async function getHeaderNav(locale: string): Promise<HeaderNavContent> {
+  try {
+    const row = await prisma.siteContent.findUnique({
+      where: { section: 'header_nav' },
+    });
+    if (row?.data && typeof row.data === 'object') {
+      const merged: HeaderNavContent = {
+        ...HEADER_NAV_DEFAULTS,
+        ...((row.data as Partial<HeaderNavContent>) || {}),
+      };
+      if (locale === 'zh') return merged;
+      const translated = await translateCmsSection(
+        'header_nav',
+        merged as unknown as Record<string, unknown>,
+        locale
+      );
+      return { ...merged, ...(translated as Partial<HeaderNavContent>) };
+    }
+  } catch {
+    // ignore — fall through to i18n messages
+  }
+  try {
+    const t = await getTranslations({ locale, namespace: 'header' });
+    return {
+      properties: t('properties'),
+      services: t('services'),
+      careers: t('careers'),
+      contact: t('contact'),
+    };
+  } catch {
+    return HEADER_NAV_DEFAULTS;
+  }
 }
 
-export default function Header() {
-  const [open, setOpen] = useState(false);
-  const t = useTranslations('header');
-  const locale = useLocale();
-  const lp = (p: string) => localePath(locale, p);
-
-  return (
-    <header className="sticky top-0 z-50 bg-paper/90 backdrop-blur-md border-b border-line">
-      <div className="container-page">
-        <nav className="flex items-center justify-between h-[76px]">
-          <Link href={lp('/')} className="flex items-center gap-3" onClick={() => setOpen(false)}>
-            <Image
-              src="/LOGO_0.png"
-              alt="鼎立租售管理 Dingli Rental Service"
-              width={220}
-              height={44}
-              priority
-              className="h-11 w-auto"
-              style={{ width: 'auto' }}
-            />
-          </Link>
-
-          {/* desktop nav */}
-          <ul className="hidden md:flex items-center gap-8 list-none m-0 p-0">
-            <li>
-              <Link href={lp('/properties')} className="font-medium text-ink-700 hover:text-brand-green-700 transition">
-                {t('properties')}
-              </Link>
-            </li>
-            <li>
-              <Link href={lp('/services')} className="font-medium text-ink-700 hover:text-brand-green-700 transition">
-                {t('services')}
-              </Link>
-            </li>
-            <li>
-              <Link href={lp('/careers')} className="font-medium text-ink-700 hover:text-brand-green-700 transition">
-                {t('careers')}
-              </Link>
-            </li>
-            <li>
-              <Link href={lp('/contact')} className="font-medium text-ink-700 hover:text-brand-green-700 transition">
-                {t('contact')}
-              </Link>
-            </li>
-          </ul>
-
-          <div className="hidden md:flex items-center gap-3">
-            <LanguageSwitcherDesktop />
-            <Link href={lp('/contact')} className="btn btn-primary text-sm py-2.5 px-5">
-              {t('consultCta')} <span aria-hidden>→</span>
-            </Link>
-          </div>
-
-          <button
-            type="button"
-            className="md:hidden text-2xl text-brand-green-900"
-            aria-label={open ? t('closeMenu') : t('openMenu')}
-            onClick={() => setOpen((v) => !v)}
-          >
-            {open ? '✕' : '☰'}
-          </button>
-        </nav>
-
-        {/* mobile menu */}
-        {open && (
-          <div className="md:hidden pb-4">
-            <ul className="flex flex-col gap-3 list-none m-0 p-0">
-              <li>
-                <Link
-                  href={lp('/properties')}
-                  className="block py-2 font-medium text-ink-700"
-                  onClick={() => setOpen(false)}
-                >
-                  {t('properties')}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href={lp('/services')}
-                  className="block py-2 font-medium text-ink-700"
-                  onClick={() => setOpen(false)}
-                >
-                  {t('services')}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href={lp('/careers')}
-                  className="block py-2 font-medium text-ink-700"
-                  onClick={() => setOpen(false)}
-                >
-                  {t('careers')}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href={lp('/contact')}
-                  className="block py-2 font-medium text-ink-700"
-                  onClick={() => setOpen(false)}
-                >
-                  {t('contact')}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href={lp('/contact')}
-                  className="btn btn-primary text-sm py-2.5 px-5 self-start mt-2"
-                  onClick={() => setOpen(false)}
-                >
-                  {t('consultCta')} →
-                </Link>
-              </li>
-            </ul>
-            <LanguageSwitcherMobile onPick={() => setOpen(false)} />
-          </div>
-        )}
-      </div>
-    </header>
-  );
+export default async function Header() {
+  const locale = await getLocale();
+  const nav = await getHeaderNav(locale);
+  return <HeaderClient locale={locale} nav={nav} />;
 }

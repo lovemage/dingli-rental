@@ -175,22 +175,29 @@ export default async function PropertiesPage({
     <>
       <Header />
       <main>
-        <section className="bg-white border-b border-line">
-          <div className="container-page py-10 sm:py-14">
-            <div className="grid lg:grid-cols-[1.1fr_1.4fr] gap-8 lg:gap-14 items-center">
-              <div>
-                <span className="eyebrow"><span className="dot" />{t('pageEyebrow')}</span>
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black mt-3 mb-3 leading-tight">
-                  {t('pageTitleLine1')}<br className="sm:hidden" />
-                  {t('pageTitleLine2')}
+        {/* HERO — 樣式對齊首頁：full-bleed 主圖、固定 550px 高、20% 遮罩、白色文字 */}
+        <section className="relative bg-paper-2">
+          <div className="relative h-[550px] overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={heroImg}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 z-[1] bg-ink-900/20" />
+            <div className="container-page relative z-10 flex h-full items-center">
+              <div className="max-w-2xl pt-6">
+                <span className="eyebrow bg-paper/90"><span className="dot" />{t('pageEyebrow')}</span>
+                <h1 className="text-4xl md:text-5xl lg:text-[56px] font-black leading-tight my-5 text-paper drop-shadow-[0_2px_18px_rgba(26,36,33,0.35)]">
+                  {t('pageTitleLine1')}<br />
+                  <span className="text-brand-orange-300 relative inline-block">
+                    {t('pageTitleLine2')}
+                    <span className="absolute left-0 right-0 bottom-1 h-3.5 bg-brand-green-900/55 -z-10 rounded" />
+                  </span>
                 </h1>
-                <p className="text-ink-700 text-base sm:text-lg leading-relaxed">
+                <p className="text-lg text-paper/95 max-w-xl whitespace-pre-line drop-shadow-[0_1px_12px_rgba(26,36,33,0.35)]">
                   {t('pageSubtitle')}
                 </p>
-              </div>
-              <div className="rounded-2xl overflow-hidden shadow-sm border border-line">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={heroImg} alt="" className="w-full h-auto object-cover aspect-[16/9]" />
               </div>
             </div>
           </div>
