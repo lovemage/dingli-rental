@@ -1,13 +1,45 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
+import { isPropertyCode, normalizePropertyCode } from '@/lib/property-code';
 
 export const dynamic = 'force-dynamic';
 
-export default async function AdminPropertiesList() {
+type SearchParams = { q?: string };
+
+export default async function AdminPropertiesList({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const sp = await searchParams;
+  const q = (sp.q || '').trim();
+
+  // 編號精準查找：admin 直接跳該物件編輯頁
+  if (q && isPropertyCode(q)) {
+    const hit = await prisma.property
+      .findUnique({ where: { code: normalizePropertyCode(q) }, select: { id: true } })
+      .catch(() => null);
+    if (hit) redirect(`/admin/properties/${hit.id}/edit`);
+  }
+
+  // 一般 keyword：搜 title / community / district / 編號（部分相符也接受）
+  const where = q
+    ? {
+        OR: [
+          { title: { contains: q, mode: 'insensitive' as const } },
+          { community: { contains: q, mode: 'insensitive' as const } },
+          { district: { contains: q, mode: 'insensitive' as const } },
+          { code: { contains: q.toUpperCase(), mode: 'insensitive' as const } },
+        ],
+      }
+    : {};
+
   let items: any[] = [];
   let loadError = '';
   try {
     items = await prisma.property.findMany({
+      where,
       include: {
         images: { orderBy: { order: 'asc' }, take: 1 },
       },
@@ -56,6 +88,16 @@ export default async function AdminPropertiesList() {
           {loadError && <p className="text-red-600 text-xs mt-1">{loadError}</p>}
         </div>
         <div className="flex items-start gap-3 flex-wrap">
+          <form action="/admin/properties" method="get" className="flex items-center gap-1">
+            <input
+              type="text"
+              name="q"
+              defaultValue={q}
+              placeholder="編號 / 標題 / 區域"
+              className="px-3 py-2 text-sm rounded-lg border border-line focus:outline-none focus:border-brand-green-500 w-48"
+            />
+            <button type="submit" className="btn btn-secondary text-sm">搜尋</button>
+          </form>
           <Link href="/admin/properties/new" className="btn btn-primary">+ 新增物件</Link>
         </div>
       </div>
@@ -83,6 +125,9 @@ export default async function AdminPropertiesList() {
                   )}
                 </div>
                 <div className="p-4">
+                  {p.code && (
+                    <span className="text-[10px] font-mono font-bold tracking-wider text-ink-400 mb-1 block">#{p.code}</span>
+                  )}
                   <div className="flex items-center justify-between mb-1">
                     <span
                       className={`text-xs font-bold px-2 py-0.5 rounded-full ${

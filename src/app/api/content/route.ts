@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentAdmin } from '@/lib/auth';
 import { warmCmsTranslations } from '@/lib/cms-translate';
@@ -35,11 +35,16 @@ export async function PUT(req: Request) {
     update: { data },
   });
 
-  // 內容變更後立即觸發 EN/JA 翻譯並寫入 cache（fire-and-forget，不阻塞回應）。
-  // 翻譯完成前訪客若看 EN/JA，會先拿到舊翻譯（hash mismatch 也會自動觸發背景刷新）。
-  // 注意：home_testimonials cache 自 commit 3671fb1 起已不再被讀寫（testimonials 改用原文），
+  // 內容變更後立即觸發 EN/JA 翻譯並寫入 cache，不阻塞回應。
+  // 使用 Next.js 官方 `after()` 而非裸 `void`：
+  // - 自託管 Node：行為等同 fire-and-forget 但 runtime 保證 promise 不被 GC。
+  // - Vercel / 其他 serverless：runtime 會延長 function 生命直到 callback 結束，避免回應後被 kill。
+  // 訪客在 warm 完成前看到的 EN/JA：translateCmsSection 會回傳舊翻譯（若 cache 存在）或中文 fallback，
+  // 並且自己也會在 cache miss / hash mismatch 時補觸發背景刷新，提供 retry 路徑。
+  //
+  // 註：home_testimonials cache 自 commit 3671fb1 起已不再被讀寫（testimonials 改用原文），
   // 因此不需要做任何衍生 section 的 invalidate / warm。
-  void warmCmsTranslations(section, data);
+  after(() => warmCmsTranslations(section, data));
 
   return NextResponse.json(saved);
 }

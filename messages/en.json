@@ -22,8 +22,8 @@
     "tagline": "Dingli Rental Service — a professional leasing brand rooted in Greater Taipei, Keelung, Taoyuan, and Hsinchu, guiding you home with honesty, transparency, and care.",
     "categoriesHeading": "Property Categories",
     "categoryWholeFloor": "Whole-Floor Residence",
-    "categoryStudio": "Private Studio",
-    "categorySharedSuite": "Shared Suite",
+    "categoryStudio": "Studio",
+    "categoryShop": "Shop",
     "categoryAll": "All Listings",
     "aboutHeading": "About Dingli",
     "linkServices": "Services",
@@ -106,7 +106,7 @@
     "addressHidden": "(Address protected)"
   },
   "propertyFilters": {
-    "searchPlaceholder": "District, MRT line, community, or keyword",
+    "searchPlaceholder": "Property code, district, community, or keyword",
     "searchButton": "Search",
     "aiButton": "Dingli AI",
     "totalCount": "{count} listings",
@@ -162,10 +162,7 @@
   "regions": {
     "taipei": "Taipei",
     "new_taipei": "New Taipei",
-    "keelung": "Keelung",
-    "taoyuan": "Taoyuan",
-    "hsinchu_city": "Hsinchu City",
-    "hsinchu_county": "Hsinchu County"
+    "taoyuan": "Taoyuan"
   },
   "heroSearch": {
     "regionLabel": "Region",
@@ -192,7 +189,14 @@
     "serviceAreaLabel": "Service area: ",
     "formNameLabel": "Name *",
     "formPhoneLabel": "Phone *",
-    "formEmailLabel": "Email",
+    "formUserRoleLabel": "I am a *",
+    "formUserRoleRenter": "Renter",
+    "formUserRoleLandlord": "Landlord",
+    "formMessengerLabel": "Messenger",
+    "formMessengerLine": "LINE ID",
+    "formMessengerWhatsApp": "WhatsApp",
+    "formMessengerWeChat": "WeChat",
+    "formMessengerHandlePlaceholder": "Enter your ID or number",
     "formRegionLabel": "Preferred region",
     "formPropertyTypeLabel": "Property type",
     "formBudgetLabel": "Budget (per month)",

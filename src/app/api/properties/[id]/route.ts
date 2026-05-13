@@ -30,7 +30,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
   try {
     const body = await req.json();
-    const { images = [], ...data } = body;
+    // 編號 (code) 建立後 immutable，從 update payload 移除避免 admin 表單誤覆寫
+    const { images = [], code: _droppedCode, ...data } = body;
+    void _droppedCode;
     const rawMedia = Array.isArray(images) ? images : [];
     const orderedMedia = normalizePropertyMediaOrder(rawMedia);
     if (rawMedia.length > 0 && orderedMedia.length === 0) {

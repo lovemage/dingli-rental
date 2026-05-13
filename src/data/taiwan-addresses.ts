@@ -1,4 +1,4 @@
-// 北北基桃竹 行政區資料（縣市 → 鄉鎮市區）
+// 北北桃 行政區資料（縣市 → 鄉鎮市區）
 // 鼎立租售管理服務範圍
 
 export const CITY_DISTRICTS: Record<string, string[]> = {
@@ -13,24 +13,16 @@ export const CITY_DISTRICTS: Record<string, string[]> = {
     '石碇區', '坪林區', '三芝區', '石門區', '八里區', '平溪區',
     '雙溪區', '貢寮區', '金山區', '萬里區', '烏來區',
   ],
-  '基隆市': [
-    '仁愛區', '信義區', '中正區', '中山區', '安樂區', '暖暖區', '七堵區',
-  ],
   '桃園市': [
     '桃園區', '中壢區', '平鎮區', '八德區', '楊梅區', '蘆竹區',
     '大溪區', '龍潭區', '龜山區', '大園區', '觀音區', '新屋區', '復興區',
-  ],
-  '新竹市': ['東區', '北區', '香山區'],
-  '新竹縣': [
-    '竹北市', '竹東鎮', '新埔鎮', '關西鎮', '湖口鄉', '新豐鄉',
-    '芎林鄉', '橫山鄉', '北埔鄉', '寶山鄉', '峨眉鄉', '尖石鄉', '五峰鄉',
   ],
 };
 
 export const CITIES = Object.keys(CITY_DISTRICTS);
 
 // 大分類
-export const REGIONS = ['台北市', '新北市', '基隆市', '桃園市', '新竹市', '新竹縣'] as const;
+export const REGIONS = ['台北市', '新北市', '桃園市'] as const;
 
 /**
  * 共用的縣市選項（i18n 友善版）。
@@ -44,20 +36,28 @@ export const REGIONS = ['台北市', '新北市', '基隆市', '桃園市', '新
 export const REGION_OPTIONS: { value: string; labelKey: string }[] = [
   { value: '台北市', labelKey: 'taipei' },
   { value: '新北市', labelKey: 'new_taipei' },
-  { value: '基隆市', labelKey: 'keelung' },
   { value: '桃園市', labelKey: 'taoyuan' },
-  { value: '新竹市', labelKey: 'hsinchu_city' },
-  { value: '新竹縣', labelKey: 'hsinchu_county' },
 ];
 
-// 中分類
+// 中分類（admin 可在 /admin/taxonomy 增刪；下方 TYPE_MID_LETTERS 是編號字母對應）
 export const PROPERTY_TYPES = [
-  '整層住家', '獨立套房', '分租套房', '雅房', '車位', '其他',
+  '套房', '整層住家', '別墅', '店面', '辦公室', '其他',
 ] as const;
 
-// 小分類
+// 中分類 → 物件編號字母前綴
+// admin 之後在 taxonomy 加新類型時若沒在這 mapping 裡，會 fallback 為 'X'
+export const TYPE_MID_LETTERS: Record<string, string> = {
+  '套房': 'T',
+  '整層住家': 'W',
+  '別墅': 'H',
+  '店面': 'S',
+  '辦公室': 'O',
+  '其他': 'X',
+};
+
+// 小分類（建物結構；別墅已移至中分類）
 export const BUILDING_TYPES = [
-  '公寓', '別墅', '透天厝', '電梯大樓',
+  '公寓', '透天厝', '電梯大樓',
 ] as const;
 
 // 設備

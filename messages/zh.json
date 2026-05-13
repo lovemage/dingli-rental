@@ -22,8 +22,8 @@
     "tagline": "鼎立租售管理 Dingli Rental Service — 深耕北北基桃竹的專業租賃品牌，以誠信、透明、貼心為核心，陪您找到真正想回去的家。",
     "categoriesHeading": "物件分類",
     "categoryWholeFloor": "整層住家",
-    "categoryStudio": "獨立套房",
-    "categorySharedSuite": "分租套房",
+    "categoryStudio": "套房",
+    "categoryShop": "店面",
     "categoryAll": "所有物件",
     "aboutHeading": "關於鼎立",
     "linkServices": "服務特色",
@@ -106,7 +106,7 @@
     "addressHidden": "(地址保護中)"
   },
   "propertyFilters": {
-    "searchPlaceholder": "輸入區域、捷運、社區或關鍵字",
+    "searchPlaceholder": "輸入編號、區域、社區或關鍵字",
     "searchButton": "搜尋",
     "aiButton": "鼎立AI",
     "totalCount": "共 {count} 筆物件",
@@ -162,10 +162,7 @@
   "regions": {
     "taipei": "台北市",
     "new_taipei": "新北市",
-    "keelung": "基隆市",
-    "taoyuan": "桃園市",
-    "hsinchu_city": "新竹市",
-    "hsinchu_county": "新竹縣"
+    "taoyuan": "桃園市"
   },
   "heroSearch": {
     "regionLabel": "縣市",
@@ -192,7 +189,14 @@
     "serviceAreaLabel": "服務範圍：",
     "formNameLabel": "姓名 *",
     "formPhoneLabel": "聯絡電話 *",
-    "formEmailLabel": "Email",
+    "formUserRoleLabel": "我是 *",
+    "formUserRoleRenter": "承租方",
+    "formUserRoleLandlord": "出租方",
+    "formMessengerLabel": "通訊軟體",
+    "formMessengerLine": "LINE ID",
+    "formMessengerWhatsApp": "WhatsApp",
+    "formMessengerWeChat": "WeChat",
+    "formMessengerHandlePlaceholder": "請填寫 ID 或號碼",
     "formRegionLabel": "希望地區",
     "formPropertyTypeLabel": "物件類型",
     "formBudgetLabel": "預算（每月）",

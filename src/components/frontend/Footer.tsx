@@ -31,12 +31,29 @@ const SOCIAL_META: Array<{
   { key: 'whatsapp', label: 'WhatsApp', icon: '/social-icons/WhatsApp.svg' },
 ];
 
+// 只放行 http(s) 絕對網址，過濾掉 admin 打錯 (facebook.com/... 沒前綴)、
+// 也擋掉 javascript: / data: 等危險 scheme。回傳 null → 該 icon 不渲染。
+function safeSocialUrl(raw: string | undefined): string | null {
+  const trimmed = (raw || '').trim();
+  if (!trimmed) return null;
+  if (!/^https?:\/\//i.test(trimmed)) return null;
+  try {
+    const u = new URL(trimmed);
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+    return u.toString();
+  } catch {
+    return null;
+  }
+}
+
 export default async function Footer() {
   const t = await getTranslations('footer');
   const locale = await getLocale();
   const lp = (p: string) => localePath(locale, p);
   const social = await getSocialLinks();
-  const socialItems = SOCIAL_META.filter(({ key }) => (social[key] || '').trim().length > 0);
+  const socialItems = SOCIAL_META
+    .map((m) => ({ ...m, url: safeSocialUrl(social[m.key]) }))
+    .filter((m): m is typeof m & { url: string } => m.url !== null);
 
   return (
     <footer className="bg-ink-900 text-white/75 pt-16 pb-8">
@@ -62,13 +79,13 @@ export default async function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href={lp('/properties?type=獨立套房')} className="hover:text-brand-orange-300">
+                <Link href={lp('/properties?type=套房')} className="hover:text-brand-orange-300">
                   {t('categoryStudio')}
                 </Link>
               </li>
               <li>
-                <Link href={lp('/properties?type=分租套房')} className="hover:text-brand-orange-300">
-                  {t('categorySharedSuite')}
+                <Link href={lp('/properties?type=店面')} className="hover:text-brand-orange-300">
+                  {t('categoryShop')}
                 </Link>
               </li>
               <li>
@@ -128,10 +145,10 @@ export default async function Footer() {
           <div className="flex flex-wrap items-center gap-4">
             {socialItems.length > 0 && (
               <span className="flex items-center gap-2.5">
-                {socialItems.map(({ key, label, icon }) => (
+                {socialItems.map(({ key, label, icon, url }) => (
                   <a
                     key={key}
-                    href={social[key]}
+                    href={url}
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={label}

@@ -143,6 +143,9 @@ export default async function PropertyDetailPage({
                   )}
                 </div>
 
+                {p.code && (
+                  <span className="text-[11px] font-mono font-bold tracking-wider text-ink-400 mb-1 block">#{p.code}</span>
+                )}
                 <h1 className="text-2xl sm:text-3xl font-black mb-2">{p.title}</h1>
                 <p className="text-ink-500 mb-6">📍 {addressDisplay}</p>
 

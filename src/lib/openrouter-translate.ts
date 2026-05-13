@@ -69,18 +69,20 @@ CRITICAL RULES:
 10. **Region names**: For English: "台北市"→"Taipei City", "新北市"→"New Taipei City", "基隆市"→"Keelung City", "桃園市"→"Taoyuan City", "新竹市"→"Hsinchu City", "新竹縣"→"Hsinchu County". For Japanese: keep as-is (台北市 etc.).
 11. **District names**: For English use Hanyu Pinyin + " District" (e.g., 中山區→"Zhongshan District"). For Japanese: keep kanji.
 12. **Property type / building type / equipment / furniture / tenant types**: Translate naturally.
+   - 套房 (en: "Studio"; ja: "ワンルーム")
    - 整層住家 (en: "Whole-Floor Residence"; ja: "一棟住宅")
-   - 獨立套房 (en: "Private Studio"; ja: "独立スタジオ")
-   - 分租套房 (en: "Shared Suite"; ja: "シェアスイート")
-   - 雅房 (en: "Single Room"; ja: "個室")
+   - 別墅 (en: "Villa"; ja: "別荘")
+   - 店面 (en: "Shop"; ja: "店舗")
+   - 辦公室 (en: "Office"; ja: "オフィス")
+   - 其他 (en: "Other"; ja: "その他")
    - 公寓 (en: "Apartment"; ja: "アパート")
    - 電梯大樓 (en: "Elevator Building"; ja: "エレベーターマンション")
    - 透天厝 (en: "Townhouse"; ja: "戸建て")
-   - 別墅 (en: "Villa"; ja: "別荘")
    - 出租中 (en: "Available"; ja: "募集中")
    - 已出租 (en: "Rented"; ja: "成約済")
    - 售出 (en: "Sold"; ja: "売却済")
    - 結束 (en: "Closed"; ja: "終了")
+   - Legacy values still in DB: 獨立套房 / 分租套房 / 雅房 / 車位 → translate using their literal meaning if encountered.
 13. **Currency**: NT$ stays as NT$. Numbers stay numeric.
 14. **Tone**: Friendly, professional real-estate marketing voice.
 ${opts.extraInstructions ? `\n15. ${opts.extraInstructions}` : ''}

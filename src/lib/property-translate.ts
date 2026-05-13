@@ -208,6 +208,7 @@ export function getLocalizedPropertyCards(
 
     return {
       id: p.id,
+      code: p.code ?? null,
       title: tr?.title || p.title,
       region: tr?.region || p.region,
       district: tr?.district || p.district,

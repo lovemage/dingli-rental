@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { getTranslations, getLocale, setRequestLocale } from 'next-intl/server';
 import Header from '@/components/frontend/Header';
 import Footer from '@/components/frontend/Footer';
@@ -6,6 +7,7 @@ import PropertyCard from '@/components/frontend/PropertyCard';
 import PropertyFilters from '@/components/frontend/PropertyFilters';
 import { prisma } from '@/lib/prisma';
 import { getLocalizedPropertyCards } from '@/lib/property-translate';
+import { isPropertyCode, normalizePropertyCode } from '@/lib/property-code';
 import type { Prisma } from '@/generated/prisma/client';
 
 export const dynamic = 'force-dynamic';
@@ -161,6 +163,20 @@ export default async function PropertiesPage({
   setRequestLocale(locale);
 
   const sp = await searchParams;
+
+  // 編號精準查找：若 q 形如 [L][YY][MMDD][NNN]（9 碼），直接跳該物件詳細頁。
+  // 找不到就 fall through 走一般 keyword 搜尋（讓使用者看到「無結果」而非 404）。
+  const rawQ = (sp.q || '').trim();
+  if (rawQ && isPropertyCode(rawQ)) {
+    const hit = await prisma.property
+      .findUnique({ where: { code: normalizePropertyCode(rawQ) }, select: { id: true } })
+      .catch(() => null);
+    if (hit) {
+      const prefix = locale === 'zh' ? '' : `/${locale}`;
+      redirect(`${prefix}/properties/${hit.id}`);
+    }
+  }
+
   const { items, total, page, pageSize } = await search(sp, locale);
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 

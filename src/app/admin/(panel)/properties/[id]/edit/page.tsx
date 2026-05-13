@@ -37,7 +37,14 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black mb-1">編輯物件</h1>
-          <p className="text-ink-500 text-sm">物件 ID: {id}</p>
+          <p className="text-ink-500 text-sm">
+            物件 ID: {id}
+            {property.code && (
+              <>
+                {' '}· 編號: <span className="font-mono font-bold text-ink-700">#{property.code}</span>
+              </>
+            )}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Link

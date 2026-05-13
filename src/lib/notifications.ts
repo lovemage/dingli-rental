@@ -87,11 +87,23 @@ export async function sendTelegram(opts: {
   }
 }
 
+const USER_ROLE_LABEL_TG: Record<string, string> = {
+  renter: '承租方',
+  landlord: '出租方',
+};
+const MESSENGER_LABEL_TG: Record<string, string> = {
+  line: 'LINE ID',
+  whatsapp: 'WhatsApp',
+  wechat: 'WeChat',
+};
+
 /** 客戶詢問通知 — 不擋主流程，失敗只 log */
 export async function notifyNewInquiry(inquiry: {
   id: number;
   name: string;
   phone: string;
+  userRole: string | null;
+  messengerType: string | null;
   email: string | null;
   region: string | null;
   propertyType: string | null;
@@ -106,9 +118,17 @@ export async function notifyNewInquiry(inquiry: {
       '🔔 <b>新客戶詢問</b>',
       '',
       `<b>姓名：</b>${tgEscape(inquiry.name)}`,
-      `<b>電話：</b>${tgEscape(inquiry.phone)}`,
     ];
-    if (inquiry.email) lines.push(`<b>Email：</b>${tgEscape(inquiry.email)}`);
+    if (inquiry.userRole && USER_ROLE_LABEL_TG[inquiry.userRole]) {
+      lines.push(`<b>身份：</b>${USER_ROLE_LABEL_TG[inquiry.userRole]}`);
+    }
+    lines.push(`<b>電話：</b>${tgEscape(inquiry.phone)}`);
+    if (inquiry.email) {
+      const label = inquiry.messengerType
+        ? MESSENGER_LABEL_TG[inquiry.messengerType] || inquiry.messengerType
+        : 'Email';
+      lines.push(`<b>${label}：</b>${tgEscape(inquiry.email)}`);
+    }
     if (inquiry.region) lines.push(`<b>地區：</b>${tgEscape(inquiry.region)}`);
     if (inquiry.propertyType) lines.push(`<b>類型：</b>${tgEscape(inquiry.propertyType)}`);
     if (inquiry.budget && inquiry.budget > 0) {

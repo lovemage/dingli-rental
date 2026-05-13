@@ -7,7 +7,9 @@ type Inquiry = {
   id: number;
   name: string;
   phone: string;
-  email: string | null;
+  userRole: string | null;
+  messengerType: string | null;
+  email: string | null; // 新版表單為 messenger handle；舊版表單為傳統 email
   region: string | null;
   propertyType: string | null;
   budget: number | null;
@@ -17,6 +19,30 @@ type Inquiry = {
   createdAt: string;
   updatedAt: string;
 };
+
+const USER_ROLE_LABEL: Record<string, string> = {
+  renter: '承租方',
+  landlord: '出租方',
+};
+
+const MESSENGER_LABEL: Record<string, string> = {
+  line: 'LINE ID',
+  whatsapp: 'WhatsApp',
+  wechat: 'WeChat',
+};
+
+function contactRow(it: Inquiry): { label: string; value: React.ReactNode } {
+  if (!it.email) return { label: '聯絡方式', value: '—' };
+  if (it.messengerType) {
+    const label = MESSENGER_LABEL[it.messengerType] || it.messengerType;
+    return { label, value: <span className="break-all">{it.email}</span> };
+  }
+  // 舊資料：messengerType 為 null → email 欄是傳統 email
+  return {
+    label: 'Email',
+    value: <a href={`mailto:${it.email}`} className="text-brand-green-700 hover:underline break-all">{it.email}</a>,
+  };
+}
 
 type Counts = { all: number; new: number; contacted: number; closed: number };
 
@@ -181,6 +207,11 @@ export default function InquiriesManager() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-extrabold text-ink-900">{it.name}</span>
+                      {it.userRole && USER_ROLE_LABEL[it.userRole] && (
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${it.userRole === 'landlord' ? 'bg-brand-orange-100 text-brand-orange-700' : 'bg-brand-green-100 text-brand-green-700'}`}>
+                          {USER_ROLE_LABEL[it.userRole]}
+                        </span>
+                      )}
                       <span className="text-sm text-ink-700">{it.phone}</span>
                       {it.region && <span className="text-xs text-ink-500">· {it.region}</span>}
                       {it.propertyType && <span className="text-xs text-ink-500">· {it.propertyType}</span>}
@@ -203,12 +234,11 @@ export default function InquiriesManager() {
                   <div className="px-5 py-4 border-t border-line bg-paper-2/40 space-y-4">
                     <div className="grid sm:grid-cols-2 gap-3 text-sm">
                       <Field label="姓名" value={it.name} />
+                      <Field label="身份" value={(it.userRole && USER_ROLE_LABEL[it.userRole]) || '—'} />
                       <Field label="電話" value={
                         <a href={`tel:${it.phone.replace(/[^\d+]/g, '')}`} className="text-brand-green-700 hover:underline">{it.phone}</a>
                       } />
-                      <Field label="Email" value={
-                        it.email ? <a href={`mailto:${it.email}`} className="text-brand-green-700 hover:underline break-all">{it.email}</a> : '—'
-                      } />
+                      {(() => { const c = contactRow(it); return <Field label={c.label} value={c.value} />; })()}
                       <Field label="送出時間" value={fmt(it.createdAt)} />
                       <Field label="希望地區" value={it.region || '不限'} />
                       <Field label="物件類型" value={it.propertyType || '不限'} />

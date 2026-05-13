@@ -33,7 +33,9 @@ export default function ContactForm({
     const payload = {
       name: String(fd.get('name') || ''),
       phone: String(fd.get('phone') || ''),
-      email: String(fd.get('email') || ''),
+      userRole: String(fd.get('userRole') || ''),
+      messengerType: String(fd.get('messengerType') || ''),
+      messengerHandle: String(fd.get('messengerHandle') || ''),
       region: String(fd.get('region') || ''),
       propertyType: String(fd.get('propertyType') || ''),
       budget: String(fd.get('budget') || ''),
@@ -72,6 +74,19 @@ export default function ContactForm({
     <form className="bg-white rounded-xl border border-line p-6 sm:p-8 shadow-sm" onSubmit={onSubmit}>
       <h2 className="text-xl font-black mb-5">{title}</h2>
       <div className="grid sm:grid-cols-2 gap-4">
+        <div className="sm:col-span-2">
+          <label className="label-base">{t('formUserRoleLabel')}</label>
+          <div className="flex gap-3 mt-1">
+            <label className="flex-1 flex items-center gap-2 px-4 py-2.5 border border-line rounded-lg cursor-pointer hover:border-brand-green-500 has-[:checked]:border-brand-green-700 has-[:checked]:bg-brand-green-50 transition">
+              <input type="radio" name="userRole" value="renter" required className="accent-brand-green-700" />
+              <span className="font-medium">{t('formUserRoleRenter')}</span>
+            </label>
+            <label className="flex-1 flex items-center gap-2 px-4 py-2.5 border border-line rounded-lg cursor-pointer hover:border-brand-green-500 has-[:checked]:border-brand-green-700 has-[:checked]:bg-brand-green-50 transition">
+              <input type="radio" name="userRole" value="landlord" className="accent-brand-green-700" />
+              <span className="font-medium">{t('formUserRoleLandlord')}</span>
+            </label>
+          </div>
+        </div>
         <div>
           <label className="label-base">{t('formNameLabel')}</label>
           <input name="name" required maxLength={50} className="input-base" />
@@ -80,9 +95,21 @@ export default function ContactForm({
           <label className="label-base">{t('formPhoneLabel')}</label>
           <input name="phone" required type="tel" maxLength={30} className="input-base" />
         </div>
-        <div>
-          <label className="label-base">{t('formEmailLabel')}</label>
-          <input name="email" type="email" className="input-base" />
+        <div className="sm:col-span-2">
+          <label className="label-base">{t('formMessengerLabel')}</label>
+          <div className="grid grid-cols-[140px_1fr] gap-2">
+            <select name="messengerType" defaultValue="line" className="input-base">
+              <option value="line">{t('formMessengerLine')}</option>
+              <option value="whatsapp">{t('formMessengerWhatsApp')}</option>
+              <option value="wechat">{t('formMessengerWeChat')}</option>
+            </select>
+            <input
+              name="messengerHandle"
+              maxLength={80}
+              className="input-base"
+              placeholder={t('formMessengerHandlePlaceholder')}
+            />
+          </div>
         </div>
         <div>
           <label className="label-base">{t('formRegionLabel')}</label>
@@ -97,11 +124,12 @@ export default function ContactForm({
           <label className="label-base">{t('formPropertyTypeLabel')}</label>
           <select name="propertyType" className="input-base" defaultValue="不限">
             <option value="不限">{t('formAny')}</option>
+            <option value="套房">套房 / Studio</option>
             <option value="整層住家">整層住家 / Whole-Floor</option>
-            <option value="獨立套房">獨立套房 / Studio</option>
-            <option value="分租套房">分租套房 / Shared Suite</option>
-            <option value="雅房">雅房 / Single Room</option>
-            <option value="車位">車位 / Parking</option>
+            <option value="別墅">別墅 / Villa</option>
+            <option value="店面">店面 / Shop</option>
+            <option value="辦公室">辦公室 / Office</option>
+            <option value="其他">其他 / Other</option>
           </select>
         </div>
         <div>

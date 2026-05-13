@@ -55,10 +55,13 @@ model PropertyTranslation {
 model Property {
   id              Int      @id @default(autoincrement())
 
+  // 物件編號（[L][YY][MMDD][NNN]，9 碼，建立時自動產生並保證 unique）
+  code            String?  @unique
+
   // 三層分類
-  region          String   // 大：台北市/新北市/基隆市/桃園市/新竹市/新竹縣
-  typeMid         String   // 中：整層住家/獨立套房/分租套房/雅房/車位/其他
-  buildingType    String?  // 小：公寓/別墅/透天厝/電梯大樓
+  region          String   // 大：台北市/新北市/桃園市
+  typeMid         String   // 中：套房/整層住家/別墅/店面/辦公室/其他（admin 可在 taxonomy 加新類型）
+  buildingType    String?  // 小：公寓/透天厝/電梯大樓（admin 可在 taxonomy 加新類型）
 
   // 廣告類型描述（如：整層住家-透天厝）
   adType          String?
@@ -185,18 +188,23 @@ model HeroSettings {
 
 // 聯絡表單詢問紀錄（前台 /contact 送出後存入此表，後台 /admin/inquiries 處理）
 model ContactInquiry {
-  id           Int      @id @default(autoincrement())
-  name         String
-  phone        String
-  email        String?
-  region       String?
-  propertyType String?
-  budget       Int?
-  message      String?  @db.Text
-  status       String   @default("new") // new / contacted / closed
-  notes        String?  @db.Text        // 業務內部備註
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            Int      @id @default(autoincrement())
+  name          String
+  phone         String
+  // userRole：'renter'（承租方）/ 'landlord'（出租方）；舊資料為 null
+  userRole      String?
+  // messengerType：'line' / 'whatsapp' / 'wechat'；舊資料為 null（此時 email 欄為傳統 email）。
+  // 新版表單不再收 email；email 欄沿用作為「通訊軟體 ID / 號碼」儲存欄位以避免 rename 對舊資料的破壞。
+  messengerType String?
+  email         String?
+  region        String?
+  propertyType  String?
+  budget        Int?
+  message       String?  @db.Text
+  status        String   @default("new") // new / contacted / closed
+  notes         String?  @db.Text        // 業務內部備註
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([status])
   @@index([createdAt])

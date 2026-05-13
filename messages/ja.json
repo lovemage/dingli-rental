@@ -21,9 +21,9 @@
   "footer": {
     "tagline": "鼎立レンタル Dingli Rental Service — 北北基桃竹エリアに根ざしたプロのレンタル仲介。誠実・透明・心配りを大切に、本当に帰りたくなる「家」探しをお手伝いします。",
     "categoriesHeading": "物件カテゴリ",
-    "categoryWholeFloor": "一棟まるごと住居",
-    "categoryStudio": "独立スタジオ",
-    "categorySharedSuite": "シェアスイート",
+    "categoryWholeFloor": "一棟住宅",
+    "categoryStudio": "ワンルーム",
+    "categoryShop": "店舗",
     "categoryAll": "すべての物件",
     "aboutHeading": "鼎立について",
     "linkServices": "サービス特長",
@@ -106,7 +106,7 @@
     "addressHidden": "(住所非公開)"
   },
   "propertyFilters": {
-    "searchPlaceholder": "エリア・駅・物件名・キーワード",
+    "searchPlaceholder": "物件番号・エリア・物件名・キーワード",
     "searchButton": "検索",
     "aiButton": "鼎立AI",
     "totalCount": "{count}件の物件",
@@ -162,10 +162,7 @@
   "regions": {
     "taipei": "台北市",
     "new_taipei": "新北市",
-    "keelung": "基隆市",
-    "taoyuan": "桃園市",
-    "hsinchu_city": "新竹市",
-    "hsinchu_county": "新竹県"
+    "taoyuan": "桃園市"
   },
   "heroSearch": {
     "regionLabel": "エリア",
@@ -192,7 +189,14 @@
     "serviceAreaLabel": "対応エリア：",
     "formNameLabel": "お名前 *",
     "formPhoneLabel": "電話番号 *",
-    "formEmailLabel": "Email",
+    "formUserRoleLabel": "ご利用区分 *",
+    "formUserRoleRenter": "賃借人",
+    "formUserRoleLandlord": "賃貸人",
+    "formMessengerLabel": "メッセンジャー",
+    "formMessengerLine": "LINE ID",
+    "formMessengerWhatsApp": "WhatsApp",
+    "formMessengerWeChat": "WeChat",
+    "formMessengerHandlePlaceholder": "ID または番号を入力",
     "formRegionLabel": "ご希望エリア",
     "formPropertyTypeLabel": "物件タイプ",
     "formBudgetLabel": "ご予算（月額）",

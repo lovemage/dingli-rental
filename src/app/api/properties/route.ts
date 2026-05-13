@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { getCurrentAdmin } from '@/lib/auth';
 import { translateProperty } from '@/lib/property-translate';
 import { isVideoUrl, normalizePropertyMediaOrder } from '@/lib/property-media';
+import { createPropertyWithCode } from '@/lib/property-code';
 
 export const dynamic = 'force-dynamic';
 
@@ -75,25 +76,33 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: '影片不可作為封面，請至少上傳 1 張圖片作為封面' }, { status: 400 });
     }
 
-    const created = await prisma.property.create({
-      data: {
-        ...data,
-        rent: Number(data.rent || 0),
-        rooms: Number(data.rooms || 0),
-        livingRooms: Number(data.livingRooms || 0),
-        bathrooms: Number(data.bathrooms || 0),
-        balconies: Number(data.balconies || 0),
-        usableArea: Number(data.usableArea || 0),
-        registeredArea: data.registeredArea ? Number(data.registeredArea) : null,
-        managementFee: data.managementFee ? Number(data.managementFee) : null,
-        buildingAge: data.buildingAge ? Number(data.buildingAge) : null,
-        moveInDate: data.moveInDate ? new Date(data.moveInDate) : null,
-        images: {
-          create: orderedMedia.map((url: string, idx: number) => ({ url, order: idx })),
-        },
-      },
-      include: { images: true },
-    });
+    // 編號產生 + create 包成 atomic retry：撞 P2002 自動換 code 重 insert，
+    // 消除「check-then-create race」造成的 500。
+    const created = await createPropertyWithCode(
+      String(data.typeMid || ''),
+      new Date(),
+      (code) =>
+        prisma.property.create({
+          data: {
+            ...data,
+            code,
+            rent: Number(data.rent || 0),
+            rooms: Number(data.rooms || 0),
+            livingRooms: Number(data.livingRooms || 0),
+            bathrooms: Number(data.bathrooms || 0),
+            balconies: Number(data.balconies || 0),
+            usableArea: Number(data.usableArea || 0),
+            registeredArea: data.registeredArea ? Number(data.registeredArea) : null,
+            managementFee: data.managementFee ? Number(data.managementFee) : null,
+            buildingAge: data.buildingAge ? Number(data.buildingAge) : null,
+            moveInDate: data.moveInDate ? new Date(data.moveInDate) : null,
+            images: {
+              create: orderedMedia.map((url: string, idx: number) => ({ url, order: idx })),
+            },
+          },
+          include: { images: true },
+        })
+    );
 
     // 在 response 後執行翻譯，避免 serverless request 結束就中斷
     after(async () => {

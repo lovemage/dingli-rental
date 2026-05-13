@@ -7,7 +7,7 @@ import AiChatWidget from '@/components/frontend/AiChatWidget';
 import MaterialIcon from '@/components/MaterialIcon';
 import { REGION_OPTIONS } from '@/data/taiwan-addresses';
 
-const DEFAULT_TYPE_OPTIONS = ['整層住家', '獨立套房', '分租套房', '雅房', '其他'];
+const DEFAULT_TYPE_OPTIONS = ['套房', '整層住家', '別墅', '店面', '辦公室', '其他'];
 
 type Props = {
   propertyTypes?: string[];
