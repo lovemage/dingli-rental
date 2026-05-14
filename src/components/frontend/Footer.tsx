@@ -115,6 +115,24 @@ export default async function Footer() {
                 </Link>
               </li>
             </ul>
+            {socialItems.length > 0 && (
+              <div className="flex items-center gap-3 mt-4">
+                {socialItems.map(({ key, label, icon, url }) => (
+                  <a
+                    key={key}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={label}
+                    title={label}
+                    className="inline-flex items-center justify-center hover:scale-110 transition"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={icon} alt="" className="w-9 h-9" />
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
           <div>
             <h5 className="text-white font-bold text-base mb-4">{t('contactInfoHeading')}</h5>
@@ -143,34 +161,14 @@ export default async function Footer() {
 
         <div className="border-t border-white/10 pt-6 flex flex-wrap items-center justify-between gap-3 text-xs text-white/50">
           <span>{t('copyright')}</span>
-          <div className="flex flex-wrap items-center gap-4">
-            {socialItems.length > 0 && (
-              <span className="flex items-center gap-2.5">
-                {socialItems.map(({ key, label, icon, url }) => (
-                  <a
-                    key={key}
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={label}
-                    title={label}
-                    className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-white/95 hover:bg-white hover:scale-110 transition"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={icon} alt="" className="w-4 h-4" />
-                  </a>
-                ))}
-              </span>
-            )}
-            <span className="flex gap-4">
-              <Link href={lp('/privacy')} className="hover:text-brand-orange-300">
-                {t('privacy')}
-              </Link>
-              <Link href={lp('/terms')} className="hover:text-brand-orange-300">
-                {t('terms')}
-              </Link>
-            </span>
-          </div>
+          <span className="flex gap-4">
+            <Link href={lp('/privacy')} className="hover:text-brand-orange-300">
+              {t('privacy')}
+            </Link>
+            <Link href={lp('/terms')} className="hover:text-brand-orange-300">
+              {t('terms')}
+            </Link>
+          </span>
         </div>
       </div>
     </footer>
