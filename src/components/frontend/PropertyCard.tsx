@@ -115,19 +115,21 @@ export default function PropertyCard({ property: p, maxTags = 3 }: Props) {
           <div className="w-full h-full grid place-items-center text-ink-300 text-sm">—</div>
         )}
 
-        <span className={`absolute top-3 left-3 ${statusClassName} text-xs font-bold px-3 py-1 rounded-full shadow-sm`}>
-          {t(statusLabelKey)}
-        </span>
-
-        {p.featured && (
-          <span className="absolute top-3 left-[84px] bg-brand-orange-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
-            ★ {t('featured')}
+        <div className="absolute top-3 left-3 right-3 flex items-start justify-between gap-2 pointer-events-none">
+          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+            <span className={`${statusClassName} text-xs font-bold px-3 py-1 rounded-full shadow-sm whitespace-nowrap`}>
+              {t(statusLabelKey)}
+            </span>
+            {p.featured && (
+              <span className="bg-brand-orange-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm whitespace-nowrap">
+                ★ {t('featured')}
+              </span>
+            )}
+          </div>
+          <span className="bg-white/95 text-ink-700 text-xs font-medium px-2.5 py-1 rounded-full shadow-sm whitespace-nowrap shrink-0">
+            {p.typeMid}
           </span>
-        )}
-
-        <span className="absolute top-3 right-3 bg-white/95 text-ink-700 text-xs font-medium px-2.5 py-1 rounded-full shadow-sm">
-          {p.typeMid}
-        </span>
+        </div>
       </div>
 
       <div className="p-5 flex flex-col flex-1">

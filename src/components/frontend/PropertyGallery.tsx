@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { isVideoUrl } from '@/lib/property-media';
 
 type GalleryImage = {
@@ -18,11 +18,46 @@ export default function PropertyGallery({
   noImageText: string;
 }) {
   const [selectedImageId, setSelectedImageId] = useState<number | null>(images[0]?.id ?? null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
-  const selectedImage = useMemo(
-    () => images.find((image) => image.id === selectedImageId) ?? images[0] ?? null,
-    [images, selectedImageId]
-  );
+  const selectedIndex = useMemo(() => {
+    const idx = images.findIndex((image) => image.id === selectedImageId);
+    return idx >= 0 ? idx : 0;
+  }, [images, selectedImageId]);
+
+  const selectedImage = images[selectedIndex] ?? null;
+
+  const closeLightbox = useCallback(() => setLightboxOpen(false), []);
+
+  const showPrev = useCallback(() => {
+    if (images.length === 0) return;
+    const next = (selectedIndex - 1 + images.length) % images.length;
+    setSelectedImageId(images[next].id);
+  }, [images, selectedIndex]);
+
+  const showNext = useCallback(() => {
+    if (images.length === 0) return;
+    const next = (selectedIndex + 1) % images.length;
+    setSelectedImageId(images[next].id);
+  }, [images, selectedIndex]);
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeLightbox();
+      else if (e.key === 'ArrowLeft') showPrev();
+      else if (e.key === 'ArrowRight') showNext();
+    };
+    window.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [lightboxOpen, closeLightbox, showPrev, showNext]);
+
+  const canZoom = selectedImage && !isVideoUrl(selectedImage.url);
 
   return (
     <>
@@ -38,8 +73,15 @@ export default function PropertyGallery({
                 preload="metadata"
               />
             ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={selectedImage.url} alt={title} className="w-full h-full object-cover" />
+              <button
+                type="button"
+                onClick={() => setLightboxOpen(true)}
+                className="block w-full h-full cursor-zoom-in"
+                aria-label="放大圖片"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={selectedImage.url} alt={title} className="w-full h-full object-cover" />
+              </button>
             )
           ) : (
             <div className="w-full h-full grid place-items-center text-ink-300">{noImageText}</div>
@@ -70,6 +112,59 @@ export default function PropertyGallery({
             </button>
           ))}
           </div>
+        </div>
+      )}
+
+      {lightboxOpen && canZoom && selectedImage && (
+        <div
+          className="fixed inset-0 z-[1000] bg-black/90 flex items-center justify-center p-4 sm:p-8"
+          onClick={closeLightbox}
+          role="dialog"
+          aria-modal="true"
+        >
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); closeLightbox(); }}
+            className="absolute top-4 right-4 text-white/90 hover:text-white bg-black/40 hover:bg-black/60 rounded-full w-10 h-10 grid place-items-center text-2xl leading-none"
+            aria-label="關閉"
+          >
+            ×
+          </button>
+
+          {images.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); showPrev(); }}
+                className="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 text-white/90 hover:text-white bg-black/40 hover:bg-black/60 rounded-full w-11 h-11 grid place-items-center text-2xl leading-none"
+                aria-label="上一張"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); showNext(); }}
+                className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 text-white/90 hover:text-white bg-black/40 hover:bg-black/60 rounded-full w-11 h-11 grid place-items-center text-2xl leading-none"
+                aria-label="下一張"
+              >
+                ›
+              </button>
+            </>
+          )}
+
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={selectedImage.url}
+            alt={title}
+            className="max-w-full max-h-full object-contain select-none"
+            onClick={(e) => e.stopPropagation()}
+          />
+
+          {images.length > 1 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/80 text-sm bg-black/40 px-3 py-1 rounded-full">
+              {selectedIndex + 1} / {images.length}
+            </div>
+          )}
         </div>
       )}
     </>
