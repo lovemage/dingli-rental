@@ -21,10 +21,25 @@ export async function generateMetadata({
 async function getCareersContent(locale: string): Promise<CareersContent> {
   try {
     const row = await prisma.siteContent.findUnique({ where: { section: 'careers' } });
-    const data = (row?.data as Partial<CareersContent>) || {};
+    const raw = (row?.data as Record<string, unknown>) || {};
+
+    // Legacy 偵測：舊版（commit c0d7921 之前）只有 hero + benefits/positions/ctaEmail 等
+    // 欄位，沒有任何新版 5 段式欄位。若偵測到，僅保留 hero 5 個欄位，其餘一律走新 defaults，
+    // 避免出現「舊 ctaTitle/ctaDesc + 新 ctaButtonText/ctaButtonUrl」的混搭破版。
+    const isLegacy = !('philosophyEyebrow' in raw);
+    const data: Partial<CareersContent> = isLegacy
+      ? {
+          eyebrow: typeof raw.eyebrow === 'string' ? raw.eyebrow : undefined,
+          titleLine1: typeof raw.titleLine1 === 'string' ? raw.titleLine1 : undefined,
+          titleLine2: typeof raw.titleLine2 === 'string' ? raw.titleLine2 : undefined,
+          description: typeof raw.description === 'string' ? raw.description : undefined,
+          heroImageUrl: typeof raw.heroImageUrl === 'string' ? raw.heroImageUrl : undefined,
+        }
+      : (raw as Partial<CareersContent>);
+
     const merged: CareersContent = {
       ...CAREERS_DEFAULTS,
-      ...data,
+      ...Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined)),
       valuePillars: Array.isArray(data.valuePillars) && data.valuePillars.length
         ? data.valuePillars
         : CAREERS_DEFAULTS.valuePillars,
@@ -162,8 +177,7 @@ export default async function CareersPage({
                 <p className="text-xs font-bold tracking-[0.2em] text-brand-orange-300 mb-2">{c.coreValuesEyebrow}</p>
                 <h3 className="text-2xl sm:text-3xl font-black">{c.coreValuesTitle}</h3>
               </div>
-              <div className={`grid gap-3 sm:gap-6 grid-cols-${Math.min(Math.max(c.valuePillars.length, 1), 4)}`}
-                   style={{ gridTemplateColumns: `repeat(${Math.max(c.valuePillars.length, 1)}, minmax(0, 1fr))` }}>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6">
                 {c.valuePillars.map((v, i) => (
                   <div key={`${v.label}-${i}`} className="flex flex-col items-center text-center">
                     <span className="inline-flex w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/15 items-center justify-center mb-2">
@@ -285,10 +299,7 @@ export default async function CareersPage({
                 <span className="text-brand-green-700">{c.tier1TitleLine2}</span>
               </h2>
               <p className="text-ink-700 leading-relaxed mb-6 whitespace-pre-line">{c.tier1Desc}</p>
-              <div
-                className="grid gap-3"
-                style={{ gridTemplateColumns: `repeat(${Math.max(c.tier1Categories.length, 1)}, minmax(0, 1fr))` }}
-              >
+              <div className="grid grid-cols-3 gap-3">
                 {c.tier1Categories.map((it, i) => (
                   <div key={`${i}-${it.label}`} className="rounded-xl bg-white border border-line p-4 text-center">
                     <MaterialIcon name={it.icon} className="!text-2xl text-brand-green-700 mb-1" />
@@ -312,10 +323,7 @@ export default async function CareersPage({
             <p className="text-ink-700 leading-relaxed whitespace-pre-line">{c.wlbIntro}</p>
           </div>
 
-          <div
-            className="grid gap-5"
-            style={{ gridTemplateColumns: `repeat(${Math.min(Math.max(c.wlbHighlights.length, 1), 3)}, minmax(0, 1fr))` }}
-          >
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             {c.wlbHighlights.map((it, i) => (
               <div
                 key={`${i}-${it.title}`}

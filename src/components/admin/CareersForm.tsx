@@ -28,25 +28,39 @@ export default function CareersForm() {
         const res = await fetch('/api/content?section=careers', { cache: 'no-store' });
         const json = await res.json();
         if (json?.data && typeof json.data === 'object') {
-          setData((prev) => ({
+          // 與 page.tsx 同步的 legacy 偵測：舊版 row 沒有任何新版欄位（philosophyEyebrow），
+          // 此時只保留 hero 5 個欄位、其他全部用 new defaults，避免管理員看到混搭舊／新資料。
+          const incoming = json.data as Record<string, unknown>;
+          const isLegacy = !('philosophyEyebrow' in incoming);
+          const carryOver: Partial<CareersContent> = isLegacy
+            ? {
+                eyebrow: typeof incoming.eyebrow === 'string' ? incoming.eyebrow : undefined,
+                titleLine1: typeof incoming.titleLine1 === 'string' ? incoming.titleLine1 : undefined,
+                titleLine2: typeof incoming.titleLine2 === 'string' ? incoming.titleLine2 : undefined,
+                description: typeof incoming.description === 'string' ? incoming.description : undefined,
+                heroImageUrl: typeof incoming.heroImageUrl === 'string' ? incoming.heroImageUrl : undefined,
+              }
+            : (incoming as Partial<CareersContent>);
+
+          setData({
             ...CAREERS_DEFAULTS,
-            ...json.data,
-            valuePillars: Array.isArray(json.data.valuePillars) && json.data.valuePillars.length
-              ? json.data.valuePillars
+            ...Object.fromEntries(Object.entries(carryOver).filter(([, v]) => v !== undefined)),
+            valuePillars: Array.isArray(carryOver.valuePillars) && carryOver.valuePillars.length
+              ? carryOver.valuePillars
               : CAREERS_DEFAULTS.valuePillars,
-            trainingPoints: Array.isArray(json.data.trainingPoints) && json.data.trainingPoints.length
-              ? json.data.trainingPoints
+            trainingPoints: Array.isArray(carryOver.trainingPoints) && carryOver.trainingPoints.length
+              ? carryOver.trainingPoints
               : CAREERS_DEFAULTS.trainingPoints,
-            incomeStats: Array.isArray(json.data.incomeStats) && json.data.incomeStats.length
-              ? json.data.incomeStats
+            incomeStats: Array.isArray(carryOver.incomeStats) && carryOver.incomeStats.length
+              ? carryOver.incomeStats
               : CAREERS_DEFAULTS.incomeStats,
-            tier1Categories: Array.isArray(json.data.tier1Categories) && json.data.tier1Categories.length
-              ? json.data.tier1Categories
+            tier1Categories: Array.isArray(carryOver.tier1Categories) && carryOver.tier1Categories.length
+              ? carryOver.tier1Categories
               : CAREERS_DEFAULTS.tier1Categories,
-            wlbHighlights: Array.isArray(json.data.wlbHighlights) && json.data.wlbHighlights.length
-              ? json.data.wlbHighlights
+            wlbHighlights: Array.isArray(carryOver.wlbHighlights) && carryOver.wlbHighlights.length
+              ? carryOver.wlbHighlights
               : CAREERS_DEFAULTS.wlbHighlights,
-          }));
+          });
         }
       } finally {
         setLoading(false);
