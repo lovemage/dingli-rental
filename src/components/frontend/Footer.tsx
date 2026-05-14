@@ -63,8 +63,9 @@ export default async function Footer() {
             <Image
               src="/LOGO_0.png"
               alt="鼎立租售管理"
-              width={200}
-              height={40}
+              width={422}
+              height={48}
+              unoptimized
               className="h-12 w-auto mb-4"
               style={{ width: 'auto' }}
             />

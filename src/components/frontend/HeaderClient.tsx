@@ -34,9 +34,10 @@ export default function HeaderClient({ locale, nav }: Props) {
             <Image
               src="/LOGO_0.png"
               alt="鼎立租售管理 Dingli Rental Service"
-              width={220}
+              width={387}
               height={44}
               priority
+              unoptimized
               className="h-11 w-auto"
               style={{ width: 'auto' }}
             />

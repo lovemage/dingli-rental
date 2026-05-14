@@ -134,7 +134,7 @@ export default function PropertyCard({ property: p, maxTags = 3 }: Props) {
 
       <div className="p-5 flex flex-col flex-1">
         {p.code && (
-          <span className="text-[10px] font-mono font-bold tracking-wider text-ink-400 mb-1">#{p.code}</span>
+          <span className="text-[10px] font-mono font-bold tracking-wider text-ink-400 mb-1">編號 {p.code}</span>
         )}
         <h3 className="text-xl sm:text-2xl font-black text-brand-green-900 mb-1 tracking-tight whitespace-nowrap">
           {t('currencyPrefix')} {p.rent.toLocaleString()}
