@@ -65,14 +65,14 @@ export const CATEGORIES_DEFAULTS: CategoriesContent = {
       title: '辦公空間',
       desc: '獨立辦公、共享工位、整層出租，靈活規模選擇。',
       imageUrl: '/images/office.webp',
-      href: '/properties?type=其他',
+      href: '/properties?type=辦公室',
     },
     {
       tag: 'SHOP',
       title: '店面商用',
       desc: '一樓店面、二樓商用，黃金地段助您事業起飛。',
       imageUrl: '/images/shop.webp',
-      href: '/properties?type=其他',
+      href: '/properties?type=店面',
     },
   ],
 };

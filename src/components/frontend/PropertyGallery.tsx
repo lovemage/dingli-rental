@@ -111,7 +111,7 @@ export default function PropertyGallery({
           </div>
 
           {images.length > 1 && (
-            <div className="hidden lg:flex flex-col gap-2 h-full min-h-0 overflow-y-auto scrollbar-hidden pr-1">
+            <div className="hidden lg:flex flex-col gap-2 overflow-y-auto scrollbar-hidden max-h-[620px] pr-1">
               {images.map((image) => (
                 <button
                   key={`side-${image.id}`}

@@ -40,6 +40,15 @@ function localizeHref(href: string, locale: string): string {
   return `/${locale}${stripped === '/' ? '' : stripped}`;
 }
 
+function normalizeCategoryHref(item: { tag?: string; title?: string; href?: string }): string {
+  const tag = (item.tag || '').trim().toUpperCase();
+  const title = (item.title || '').trim();
+  if (tag === 'OFFICE' || title.includes('辦公')) return '/properties?type=辦公室';
+  if (tag === 'SHOP' || title.includes('店面')) return '/properties?type=店面';
+  if (tag === 'RESIDENTIAL' || title.includes('住宅')) return '/properties?type=整層住家';
+  return item.href || '/properties';
+}
+
 const FALLBACK_SLIDES: HeroSlideType[] = [
   { id: 1, imageUrl: '/images/hero.webp', title: '溫馨明亮的家', subtitle: '精選北北基桃竹優質物件' },
   { id: 2, imageUrl: '/images/residential.webp', title: '日系臥室套房', subtitle: '通勤便利・採光絕佳' },
@@ -268,7 +277,7 @@ export default async function HomePage({
               {categories.items.map((cat, i) => (
                 <CatCard
                   key={`${cat.tag}-${i}`}
-                  href={localizeHref(cat.href, currentLocale)}
+                  href={localizeHref(normalizeCategoryHref(cat), currentLocale)}
                   img={cat.imageUrl}
                   tag={cat.tag}
                   title={cat.title}
