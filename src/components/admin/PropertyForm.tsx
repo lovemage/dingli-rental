@@ -14,6 +14,7 @@ import {
   DEPOSIT_OPTIONS,
   RENT_INCLUDES_OPTIONS,
   MIN_LEASE_OPTIONS,
+  PARKING_OPTIONS,
   DIRECTION_OPTIONS,
   FLOOR_TYPE_OPTIONS,
   FEATURE_TAGS,
@@ -41,10 +42,10 @@ export type PropertyFormValue = {
   floorSub?: string;
   totalFloor?: string;
   community?: string;
-  rooms: number;
-  livingRooms: number;
-  bathrooms: number;
-  balconies: number;
+  rooms: number | '';
+  livingRooms: number | '';
+  bathrooms: number | '';
+  balconies: number | '';
   openLayout: boolean;
   buildingAge?: number | '';
   ageUnknown: boolean;
@@ -65,6 +66,8 @@ export type PropertyFormValue = {
   minLease: string;
   moveInDate?: string;
   anytimeMoveIn: boolean;
+  hasParking: boolean;
+  parkingType?: string;
   title: string;
   featureTags: string[];
   description: string;
@@ -80,13 +83,14 @@ const DEFAULTS: PropertyFormValue = {
   hideAddress: false,
   floorType: '出租單層', floor: '', floorSub: '', totalFloor: '',
   community: '',
-  rooms: 1, livingRooms: 1, bathrooms: 1, balconies: 1, openLayout: false,
+  rooms: '', livingRooms: '', bathrooms: '', balconies: '', openLayout: false,
   buildingAge: '', ageUnknown: false, direction: '',
   usableArea: '', registeredArea: '',
   equipment: [], furniture: [], hasElevator: false,
   tenantTypes: [], cookingAllowed: true, petsAllowed: false,
   rent: '', deposit: '面議', rentIncludes: [], managementFee: '', noManagementFee: false,
   minLease: '一年', moveInDate: '', anytimeMoveIn: false,
+  hasParking: false, parkingType: '',
   title: '', featureTags: [], description: '',
   status: 'active', listingStatus: 'active', featured: false,
   images: [],
@@ -288,8 +292,12 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
   }
 
   function buildPayload() {
+    const parkingType = v.hasParking ? (v.parkingType || '') : '';
+    const { hasParking, ...rest } = v;
+    void hasParking;
     return {
-      ...v,
+      ...rest,
+      parkingType: parkingType || null,
       region: v.city, // 大分類 = 縣市
       rent: Number(v.rent),
       rooms: Number(v.rooms),
@@ -347,6 +355,9 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
     }
     if (!v.rent || Number(v.rent) <= 0) {
       setErr('請填寫租金'); return;
+    }
+    if (!v.noManagementFee && (v.managementFee === '' || Number(v.managementFee) < 0)) {
+      setErr('請填寫管理費，或勾選「無」'); return;
     }
     if (v.images.length > 0 && !v.images.some((u) => !isVideoUrl(u))) {
       setErr('請至少保留 1 張圖片作為封面，影片不可單獨上架'); return;
@@ -602,7 +613,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
                   className="input-base !w-full"
                   placeholder={req ? '必填' : '選填'}
                   value={(v as any)[k as string] ?? ''}
-                  onChange={(e) => update(k as any, e.target.value === '' ? 0 : Number(e.target.value))}
+                  onChange={(e) => update(k as any, e.target.value === '' ? '' : Number(e.target.value))}
                 />
                 <span className="text-sm font-bold">{suffix as string}</span>
               </div>
@@ -739,7 +750,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
           </div>
         </Field>
 
-        <Field label="管理費">
+        <Field label="管理費 *" required>
           <div className="flex items-center gap-2">
             <input type="number" min={0} className="input-base !w-36" placeholder="元/月" value={v.managementFee ?? ''} disabled={v.noManagementFee} onChange={(e) => update('managementFee', e.target.value === '' ? '' : Number(e.target.value))} />
             <span className="text-sm">元/月</span>
@@ -767,6 +778,35 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
             </div>
           </Field>
         </div>
+
+        <Field label="車位">
+          <div className="space-y-2">
+            <label className="inline-flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={v.hasParking}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  update('hasParking', checked);
+                  if (!checked) update('parkingType', '');
+                }}
+              />
+              有車位
+            </label>
+            {v.hasParking && (
+              <select
+                className="input-base max-w-sm"
+                value={v.parkingType || ''}
+                onChange={(e) => update('parkingType', e.target.value)}
+              >
+                <option value="">請選擇車位類型</option>
+                {PARKING_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            )}
+          </div>
+        </Field>
       </Card>
 
       {/* === 特色描述 === */}

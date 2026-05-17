@@ -43,6 +43,7 @@ model PropertyTranslation {
   deposit      String?  // 例：Two months / 二ヶ月分
   minLease     String?  // 例：1 year / 1年
   direction    String?  // 例：South-facing / 南向
+  parkingType  String?  // 例：Flat parking (included)
   sourceHash   String   // 來源中文內容的 hash，內容變更後重譯
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -124,6 +125,7 @@ model Property {
   minLease        String   @default("一年") // 一年/半年/不限
   moveInDate      DateTime?
   anytimeMoveIn   Boolean  @default(false)
+  parkingType     String?  // 車位：平面式,已含租金內 / 平面式,費用另計 / 機械式,已含租金內 / 機械式,費用另計
 
   // 特色描述
   title           String   // 廣告標題 6-30 字

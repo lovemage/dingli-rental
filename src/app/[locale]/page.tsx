@@ -4,7 +4,7 @@ import Header from '@/components/frontend/Header';
 import Footer from '@/components/frontend/Footer';
 import TrackingBeacon from '@/components/frontend/TrackingBeacon';
 import HeroCarousel, { HeroSlide as HeroSlideType } from '@/components/frontend/HeroCarousel';
-import HeroSearch from '@/components/frontend/HeroSearch';
+import PropertyFilters from '@/components/frontend/PropertyFilters';
 import HeroCtaPanel from '@/components/frontend/HeroCtaPanel';
 import PropertyCard, { type PropertyCardData } from '@/components/frontend/PropertyCard';
 import MaterialIcon from '@/components/MaterialIcon';
@@ -102,6 +102,14 @@ async function getFeaturedProperties(locale: string): Promise<PropertyCardData[]
   }
 }
 
+async function getActivePropertyCount(): Promise<number> {
+  try {
+    return await prisma.property.count({ where: { status: 'active' } });
+  } catch {
+    return 0;
+  }
+}
+
 async function getHomepageContent(locale: string) {
   try {
     const items = await prisma.siteContent.findMany({
@@ -185,15 +193,19 @@ export default async function HomePage({
   const currentLocale = await getLocale();
   const lp = (p: string) => (currentLocale === 'zh' ? p : `/${currentLocale}${p}`);
 
-  const { slides, intervalSec } = await getHero();
-  const testimonials = await getTestimonials(locale);
-  const featured = await getFeaturedProperties(locale);
-  const { hero, categories, services } = await getHomepageContent(locale);
-  const taxonomies = await getTaxonomies();
-  const heroQuickLinks = categories.items.slice(0, 3).map((item) => ({
-    label: item.title,
-    href: localizeHref(item.href, currentLocale),
-  }));
+  const [{ slides, intervalSec }, testimonials, featured, { hero, categories, services }, taxonomies, propertyTotal] = await Promise.all([
+    getHero(),
+    getTestimonials(locale),
+    getFeaturedProperties(locale),
+    getHomepageContent(locale),
+    getTaxonomies(),
+    getActivePropertyCount(),
+  ]);
+  const heroQuickLinks = [
+    { label: '住家', href: localizeHref('/properties?type=整層住家', currentLocale) },
+    { label: '辦公室', href: localizeHref('/properties?type=辦公室', currentLocale) },
+    { label: '店面', href: localizeHref('/properties?type=店面', currentLocale) },
+  ];
 
   return (
     <>
@@ -244,7 +256,7 @@ export default async function HomePage({
 
           <div className="container-page relative z-30 pb-16">
             <div className="-mt-10 max-w-5xl mx-auto">
-              <HeroSearch propertyTypes={taxonomies.propertyTypes} />
+              <PropertyFilters total={propertyTotal} taxonomies={taxonomies} />
             </div>
           </div>
         </section>

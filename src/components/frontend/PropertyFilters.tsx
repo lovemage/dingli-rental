@@ -102,7 +102,7 @@ function agePresetIndex(min: string, max: string): number {
 }
 
 type FiltersProps = {
-  total: number;
+  total?: number;
   taxonomies?: Partial<Taxonomies>;
 };
 
@@ -285,7 +285,6 @@ export default function PropertyFilters({ total, taxonomies }: FiltersProps) {
           value={v.rooms}
           options={ROOMS_PRESETS.map((p) => ({ label: t(p.labelKey), value: p.value }))}
           onChange={(val) => pushFilters({ rooms: val })}
-          formatActive={(opt) => opt.label}
         />
 
         <ChipPreset
@@ -327,7 +326,7 @@ export default function PropertyFilters({ total, taxonomies }: FiltersProps) {
 
       <div className="flex flex-wrap items-center justify-between gap-2 mt-3">
         <p className="text-sm text-ink-500">
-          {t('totalCount', { count: total })}
+          {typeof total === 'number' ? t('totalCount', { count: total }) : '\u00A0'}
         </p>
         <label className="flex items-center gap-2 text-sm">
           <span className="text-ink-500">{t('sortLabel')}</span>
@@ -413,19 +412,13 @@ function ChipSelect({
   value,
   options,
   onChange,
-  formatActive,
 }: {
   label: string;
   value: string;
   options: Option[];
   onChange: (v: string) => void;
-  formatActive?: (opt: Option) => string;
 }) {
   const active = !!value;
-  const current = options.find((o) => o.value === value);
-  const display = active && current
-    ? (formatActive ? formatActive(current) : current.label)
-    : label;
 
   return (
     <div className="relative inline-block">
@@ -440,11 +433,6 @@ function ChipSelect({
         ))}
       </select>
       <span className={`pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs ${active ? 'text-white' : 'text-ink-500'}`}>▾</span>
-      {active && (
-        <span className="pointer-events-none absolute left-0 right-0 top-0 bottom-0 flex items-center justify-center px-3 text-sm font-medium text-white">
-          {display}
-        </span>
-      )}
     </div>
   );
 }

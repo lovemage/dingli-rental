@@ -85,6 +85,14 @@ export const RENT_INCLUDES_OPTIONS = [
 // 最短租期
 export const MIN_LEASE_OPTIONS = ['一年', '半年', '三個月', '不限'] as const;
 
+// 車位
+export const PARKING_OPTIONS = [
+  '平面式,已含租金內',
+  '平面式,費用另計',
+  '機械式,已含租金內',
+  '機械式,費用另計',
+] as const;
+
 // 朝向
 export const DIRECTION_OPTIONS = [
   '朝北', '朝南', '朝東', '朝西',

@@ -43,6 +43,7 @@ export type PropertyCardData = {
   street?: string | null;
   community?: string | null;
   typeMid: string;
+  buildingType?: string | null;
   rooms: number;
   bathrooms: number;
   livingRooms?: number;
@@ -81,6 +82,7 @@ export default function PropertyCard({ property: p, maxTags = 3 }: Props) {
     else if (p.street) locParts.push(p.street);
   }
   const locationLine = locParts.filter(Boolean).join('・');
+  const categoryTags = [p.typeMid, p.buildingType].filter(Boolean) as string[];
 
   const policyAndCustom = classifyFeatureTags(p.featureTags);
   const derived = getDerivedTags(p);
@@ -143,10 +145,19 @@ export default function PropertyCard({ property: p, maxTags = 3 }: Props) {
         <h4 className="text-base font-bold mb-1.5 line-clamp-1 group-hover:text-brand-green-700 transition">
           {p.title}
         </h4>
-        <p className="text-sm text-ink-500 mb-3 flex items-center gap-1 line-clamp-1">
+        <p className="text-sm text-ink-500 mb-2 flex items-center gap-1 line-clamp-1">
           <span>📍</span>
           <span className="truncate">{locationLine}</span>
         </p>
+        {categoryTags.length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {categoryTags.map((tag) => (
+              <span key={tag} className="text-[11px] font-medium px-2 py-0.5 rounded-full border bg-paper text-ink-700 border-line">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
 
         {allTags.length > 0 && (
           <TagPills tags={allTags} className="mb-4" />

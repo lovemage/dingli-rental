@@ -24,6 +24,7 @@ type PropertySourceFields = {
   deposit: string;
   minLease: string;
   direction: string | null;
+  parkingType: string | null;
 };
 
 export const PROPERTY_SOURCE_SELECT = {
@@ -43,6 +44,7 @@ export const PROPERTY_SOURCE_SELECT = {
   deposit: true,
   minLease: true,
   direction: true,
+  parkingType: true,
 } satisfies Prisma.PropertySelect;
 
 function arr(v: unknown): string[] {
@@ -67,6 +69,7 @@ export function computePropertySourceHash(p: PropertySourceFields): string {
     deposit: p.deposit,
     minLease: p.minLease,
     direction: p.direction ?? '',
+    parkingType: p.parkingType ?? '',
   });
   return crypto.createHash('sha256').update(payload).digest('hex');
 }
@@ -88,6 +91,7 @@ type RawTranslated = {
   deposit?: unknown;
   minLease?: unknown;
   direction?: unknown;
+  parkingType?: unknown;
 };
 
 function pickString(v: unknown, fallback?: string): string | null {
@@ -139,6 +143,7 @@ export async function translateProperty(
         deposit: property.deposit,
         minLease: property.minLease,
         direction: property.direction ?? '',
+        parkingType: property.parkingType ?? '',
       };
       const out = (await translateJsonObject(payload, locale)) as RawTranslated;
       const dataPatch = {
@@ -158,6 +163,7 @@ export async function translateProperty(
         deposit: pickString(out.deposit, property.deposit),
         minLease: pickString(out.minLease, property.minLease),
         direction: pickString(out.direction, property.direction ?? ''),
+        parkingType: pickString(out.parkingType, property.parkingType ?? ''),
         sourceHash,
       };
       await prisma.propertyTranslation.upsert({
@@ -215,6 +221,7 @@ export function getLocalizedPropertyCards(
       street: tr?.street ?? p.street,
       community: tr?.community ?? p.community,
       typeMid: tr?.typeMid || p.typeMid,
+      buildingType: tr?.buildingType ?? p.buildingType,
       rooms: p.rooms,
       bathrooms: p.bathrooms,
       livingRooms: p.livingRooms,
@@ -260,6 +267,7 @@ export function localizePropertyForDetail(p: any, locale: string) {
     deposit: tr?.deposit || p.deposit,
     minLease: tr?.minLease || p.minLease,
     direction: tr?.direction ?? p.direction,
+    parkingType: tr?.parkingType ?? p.parkingType,
     featureTags:
       tr && Array.isArray(tr.featureTags) ? (tr.featureTags as string[]) : (p.featureTags as string[]),
     equipment:

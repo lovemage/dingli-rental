@@ -93,12 +93,15 @@ export default async function PropertyDetailPage({
       ? t('ageYears', { count: raw.buildingAge })
       : t('dash');
 
-  const floorStr = raw.floor
-    ? t('floorValue', {
-        floor: raw.floor,
-        total: raw.totalFloor ? `/${raw.totalFloor}` : '',
-      })
-    : t('dash');
+  const floorStr =
+    raw.floorType === '全棟出租' && raw.totalFloor
+      ? t('wholeBuildingFloorValue', { totalFloor: raw.totalFloor })
+      : raw.floor
+        ? t('floorValue', {
+            floor: raw.floor,
+            total: raw.totalFloor ? `/${raw.totalFloor}` : '',
+          })
+        : t('dash');
 
   const layoutStr = t('layoutValue', {
     rooms: raw.rooms,
@@ -172,6 +175,7 @@ export default async function PropertyDetailPage({
                   <Info label={t('buildingAge')} value={ageStr} />
                   <Info label={t('direction')} value={p.direction || t('dash')} />
                   <Info label={t('community')} value={p.community || t('dash')} />
+                  <Info label={t('parking')} value={p.parkingType || t('parkingNone')} />
                   <Info
                     label={t('elevator')}
                     value={raw.hasElevator ? t('elevatorYes') : t('elevatorNo')}

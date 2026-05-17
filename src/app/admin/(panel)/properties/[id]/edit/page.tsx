@@ -23,6 +23,7 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
 
   const initial: any = {
     ...property,
+    hasParking: !!property.parkingType,
     images: property.images.map((i) => i.url),
     moveInDate: property.moveInDate ? property.moveInDate.toISOString().slice(0, 10) : '',
     equipment: (property.equipment as string[]) || [],

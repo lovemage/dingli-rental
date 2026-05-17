@@ -28,14 +28,14 @@ export default function HeroCtaPanel({
       <div className="flex flex-wrap gap-3">
         <button
           type="button"
-          className="btn btn-primary"
+          className="btn btn-primary whitespace-nowrap"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
           aria-controls="hero-quick-links"
         >
           {primaryText}
         </button>
-        <Link href={secondaryHref} className="btn btn-secondary">
+        <Link href={secondaryHref} className="btn btn-secondary whitespace-nowrap">
           {secondaryText}
         </Link>
       </div>
@@ -43,7 +43,7 @@ export default function HeroCtaPanel({
       {expanded && quickLinks.length > 0 && (
         <div id="hero-quick-links" className="mt-4 flex flex-wrap gap-3">
           {quickLinks.map((item) => (
-            <Link key={`${item.label}-${item.href}`} href={item.href} className="btn btn-secondary">
+            <Link key={`${item.label}-${item.href}`} href={item.href} className="btn btn-secondary whitespace-nowrap">
               {item.label}
             </Link>
           ))}
