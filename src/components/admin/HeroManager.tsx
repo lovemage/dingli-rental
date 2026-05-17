@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type Slide = { id?: number; imageUrl: string; title?: string; subtitle?: string; ctaText?: string; ctaLink?: string; active?: boolean };
 const FALLBACK_SLIDES: Slide[] = [
@@ -16,6 +16,8 @@ export default function HeroManager() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState('');
+  const replaceInputRef = useRef<HTMLInputElement | null>(null);
+  const [replaceIndex, setReplaceIndex] = useState<number | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -47,19 +49,9 @@ export default function HeroManager() {
     }
   }
 
-  async function addSlide(files: FileList | null) {
-    if (!files || files.length === 0) return;
-    if (slides.length >= 3) {
-      setMsg('最多 3 張輪播圖');
-      return;
-    }
-    setMsg('');
-    try {
-      const url = await uploadFile(files[0]);
-      setSlides((s) => [...s, { imageUrl: url, active: true }]);
-    } catch (e: any) {
-      setMsg(e?.message || '上傳失敗');
-    }
+  function promptReplaceSlide(index: number) {
+    setReplaceIndex(index);
+    replaceInputRef.current?.click();
   }
 
   function update(i: number, patch: Partial<Slide>) {
@@ -98,6 +90,37 @@ export default function HeroManager() {
       setMsg(e?.message || '儲存失敗');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function addSlide(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    if (slides.length >= 3) {
+      setMsg('最多 3 張輪播圖');
+      return;
+    }
+    setMsg('');
+    try {
+      const url = await uploadFile(files[0]);
+      setSlides((s) => [...s, { imageUrl: url, active: true }]);
+      setMsg('圖片已更新，請點擊下方「儲存設定」寫入資料庫');
+    } catch (e: any) {
+      setMsg(e?.message || '上傳失敗');
+    }
+  }
+
+  async function replaceSlideImage(files: FileList | null) {
+    if (replaceIndex == null || !files || files.length === 0) return;
+    setMsg('');
+    try {
+      const url = await uploadFile(files[0]);
+      setSlides((current) => current.map((slide, idx) => (idx === replaceIndex ? { ...slide, imageUrl: url } : slide)));
+      setMsg('圖片已更新，請點擊下方「儲存設定」寫入資料庫');
+    } catch (e: any) {
+      setMsg(e?.message || '上傳失敗');
+    } finally {
+      setReplaceIndex(null);
+      if (replaceInputRef.current) replaceInputRef.current.value = '';
     }
   }
 
@@ -147,6 +170,15 @@ export default function HeroManager() {
                     <input type="checkbox" checked={s.active ?? true} onChange={(e) => update(i, { active: e.target.checked })} />
                     啟用此圖
                   </label>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => promptReplaceSlide(i)}
+                      className={`text-sm border border-line rounded-lg px-3 py-1.5 hover:border-brand-green-500 ${uploading && replaceIndex === i ? 'opacity-60 pointer-events-none' : ''}`}
+                    >
+                      {uploading && replaceIndex === i ? '上傳中...' : '更換圖片'}
+                    </button>
+                  </div>
                 </div>
                 <div className="flex sm:flex-col gap-2 justify-end">
                   <button onClick={() => move(i, -1)} disabled={i === 0} className="text-sm border border-line rounded-lg px-3 py-1.5 disabled:opacity-30 hover:border-brand-green-500">↑</button>
@@ -157,6 +189,16 @@ export default function HeroManager() {
             ))}
           </div>
         )}
+        <input
+          ref={replaceInputRef}
+          type="file"
+          accept="image/*"
+          hidden
+          onChange={(e) => {
+            replaceSlideImage(e.target.files);
+            e.target.value = '';
+          }}
+        />
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-white border-t border-line px-4 py-3 z-20">

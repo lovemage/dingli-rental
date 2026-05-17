@@ -44,6 +44,7 @@ export default function CategoriesForm() {
       const url = data.files?.[0]?.url;
       if (!url) throw new Error('上傳失敗');
       update(i, { imageUrl: url });
+      setMsg('圖片已更新，請點擊右上角「儲存」寫入資料庫');
     } catch (e: any) {
       setMsg(e?.message || '上傳失敗');
     } finally {
