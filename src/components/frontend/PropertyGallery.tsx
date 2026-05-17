@@ -62,8 +62,8 @@ export default function PropertyGallery({
   return (
     <>
       <div className="bg-paper-2 p-2 sm:p-3">
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_220px] gap-2 sm:gap-3 items-stretch">
-          <div className="relative aspect-[16/10] overflow-hidden rounded-lg">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_220px] gap-2 sm:gap-3 items-stretch isolate">
+          <div className="relative z-0 min-w-0 aspect-[16/10] overflow-hidden rounded-lg">
             {selectedImage ? (
               isVideoUrl(selectedImage.url) ? (
                 <video
@@ -111,7 +111,7 @@ export default function PropertyGallery({
           </div>
 
           {images.length > 1 && (
-            <div className="hidden lg:flex flex-col gap-2 overflow-y-auto scrollbar-hidden max-h-[620px] pr-1">
+            <div className="hidden lg:flex relative z-10 flex-col gap-2 overflow-y-auto scrollbar-hidden max-h-[620px] pr-1">
               {images.map((image) => (
                 <button
                   key={`side-${image.id}`}
