@@ -26,6 +26,6 @@ export const ANNOUNCEMENT_EFFECT_OPTIONS: { value: AnnouncementEffect; label: st
 
 export const ANNOUNCEMENT_DEFAULTS: AnnouncementSettings = {
   enabled: true,
-  text: '歡迎光臨鼎立租售管理 ｜ 深耕北北基桃竹｜真實物件嚴選｜中英日多語服務｜業務專員當日內回覆',
+  text: '歡迎光臨鼎立租售管理 ｜ 深耕雙北桃園｜真實物件嚴選｜中英日多語服務｜業務專員當日內回覆',
   effect: 'marquee',
 };

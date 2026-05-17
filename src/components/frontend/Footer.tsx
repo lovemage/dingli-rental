@@ -3,6 +3,9 @@ import Image from 'next/image';
 import { getTranslations, getLocale } from 'next-intl/server';
 import { prisma } from '@/lib/prisma';
 import { CONTACT_DEFAULTS, type ContactContent, type ContactSocial } from '@/data/contact-defaults';
+import { getTaxonomies } from '@/lib/taxonomies';
+
+const FOOTER_PROPERTY_TYPES_LIMIT = 6;
 
 function localePath(locale: string, path: string) {
   if (locale === 'zh') return path;
@@ -54,6 +57,8 @@ export default async function Footer() {
   const socialItems = SOCIAL_META
     .map((m) => ({ ...m, url: safeSocialUrl(social[m.key]) }))
     .filter((m): m is typeof m & { url: string } => m.url !== null);
+  const taxonomies = await getTaxonomies();
+  const propertyTypes = taxonomies.propertyTypes.slice(0, FOOTER_PROPERTY_TYPES_LIMIT);
 
   return (
     <footer className="bg-ink-900 text-white/75 pt-16 pb-8">
@@ -73,21 +78,16 @@ export default async function Footer() {
           <div>
             <h5 className="text-white font-bold text-base mb-4">{t('categoriesHeading')}</h5>
             <ul className="space-y-2 text-sm text-white/65 list-none p-0 m-0">
-              <li>
-                <Link href={lp('/properties?type=整層住家')} className="hover:text-brand-orange-300">
-                  {t('categoryWholeFloor')}
-                </Link>
-              </li>
-              <li>
-                <Link href={lp('/properties?type=套房')} className="hover:text-brand-orange-300">
-                  {t('categoryStudio')}
-                </Link>
-              </li>
-              <li>
-                <Link href={lp('/properties?type=店面')} className="hover:text-brand-orange-300">
-                  {t('categoryShop')}
-                </Link>
-              </li>
+              {propertyTypes.map((type) => (
+                <li key={type}>
+                  <Link
+                    href={lp(`/properties?type=${encodeURIComponent(type)}`)}
+                    className="hover:text-brand-orange-300"
+                  >
+                    {type}
+                  </Link>
+                </li>
+              ))}
               <li>
                 <Link href={lp('/properties')} className="hover:text-brand-orange-300">
                   {t('categoryAll')}

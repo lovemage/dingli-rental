@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 
 type Slide = { id?: number; imageUrl: string; title?: string; subtitle?: string; ctaText?: string; ctaLink?: string; active?: boolean };
 const FALLBACK_SLIDES: Slide[] = [
-  { imageUrl: '/images/hero.webp', title: '溫馨明亮的家', subtitle: '精選北北基桃竹優質物件', active: true },
+  { imageUrl: '/images/hero.webp', title: '溫馨明亮的家', subtitle: '精選雙北桃園優質物件', active: true },
   { imageUrl: '/images/residential.webp', title: '日系臥室套房', subtitle: '通勤便利・採光絕佳', active: true },
   { imageUrl: '/images/property2.webp', title: '挑高夾層住宅', subtitle: '雙北優質好屋', active: true },
 ];

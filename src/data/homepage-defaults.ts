@@ -40,11 +40,11 @@ export type ServicesContent = {
 };
 
 export const HERO_DEFAULTS: HeroContent = {
-  eyebrow: 'Dingli Rental Service · 北北基桃竹真人租屋',
+  eyebrow: 'Dingli Rental Service · 雙北桃園真人租屋',
   titleLine1: '找到一個家，',
   titleLine2: '不只是找一間房',
   description:
-    '鼎立租售管理 是深耕北北基桃竹的專業租賃品牌，由真人業務全程陪伴，從帶看、議價到簽約入住，協助您找到真正想回去的家。',
+    '鼎立租售管理 是深耕雙北桃園的專業租賃品牌，由真人業務全程陪伴，從帶看、議價到簽約入住，協助您找到真正想回去的家。',
   primaryCtaText: '看可租物件 →',
   primaryCtaLink: '/properties',
   secondaryCtaText: '聯絡業務專員',

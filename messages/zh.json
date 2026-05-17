@@ -2,8 +2,8 @@
   "metadata": {
     "siteName": "鼎立租售管理",
     "defaultTitle": "鼎立租售管理 ｜ 為您找到最理想的家",
-    "titleTemplate": "{title} ｜ 鼎立租售管理",
-    "description": "鼎立租售管理 Dingli Rental Service — 深耕北北基桃竹的專業租賃品牌，提供住宅、辦公、店面租售服務。中英日多語溝通、專人陪同帶看、透明合約收費。"
+    "titleTemplate": "%s ｜ 鼎立租售管理",
+    "description": "鼎立租售管理 Dingli Rental Service — 深耕雙北桃園的專業租賃品牌，提供住宅、辦公、店面租售服務。中英日多語溝通、專人陪同帶看、透明合約收費。"
   },
   "header": {
     "properties": "物件分類",
@@ -49,7 +49,7 @@
     "whyTitleLine2": "值得被認真對待",
     "whySubtitle": "我們不只是把鑰匙交給您 — 從帶看、議價、簽約到入住後續，鼎立的真人業務全程把關，讓您每一個決定都安心。",
     "why01Title": "10 年以上在地經驗",
-    "why01Desc": "熟悉雙北、桃園、新竹各大商圈行情，價格不被吃豆腐。",
+    "why01Desc": "熟悉雙北、桃園各大商圈行情，價格不被吃豆腐。",
     "why02Title": "真人專員一對一",
     "why02Desc": "從帶看到簽約由同一位業務全程跟進，不會被踢來踢去。",
     "why03Title": "嚴選真實物件",

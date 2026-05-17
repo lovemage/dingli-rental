@@ -2,8 +2,8 @@
   "metadata": {
     "siteName": "Dingli Rental",
     "defaultTitle": "Dingli Rental | Find Your Ideal Home",
-    "titleTemplate": "{title} | Dingli Rental",
-    "description": "Dingli Rental Service — Taiwan's trusted residential, office, and storefront leasing brand serving Greater Taipei, Keelung, Taoyuan, and Hsinchu. Multilingual support, professional viewings, transparent contracts."
+    "titleTemplate": "%s | Dingli Rental",
+    "description": "Dingli Rental Service — Taiwan's trusted residential, office, and storefront leasing brand serving Taipei, New Taipei, and Taoyuan. Multilingual support, professional viewings, transparent contracts."
   },
   "header": {
     "properties": "Properties",
@@ -49,7 +49,7 @@
     "whyTitleLine2": "deserves real care",
     "whySubtitle": "We don't just hand you the keys — from viewings and negotiations to lease signing and post-move support, Dingli's human consultants stay with you every step.",
     "why01Title": "10+ years of local expertise",
-    "why01Desc": "Familiar with every business district across Taipei, New Taipei, Taoyuan, and Hsinchu — no overpaying.",
+    "why01Desc": "Familiar with every business district across Taipei, New Taipei, and Taoyuan — no overpaying.",
     "why02Title": "Dedicated 1-on-1 consultant",
     "why02Desc": "Same consultant from viewing to signing — no being passed around.",
     "why03Title": "Verified real listings",
@@ -82,7 +82,7 @@
     "pageEyebrow": "PROPERTIES",
     "pageTitleLine1": "A home where",
     "pageTitleLine2": "your family belongs",
-    "pageSubtitle": "Hand-picked listings across Greater Taipei, Keelung, Taoyuan, and Hsinchu — every unit personally verified by our consultants.",
+    "pageSubtitle": "Hand-picked listings across Taipei, New Taipei, and Taoyuan — every unit personally verified by our consultants.",
     "noResultsTitle": "No properties match these filters",
     "noResultsHint": "Try adjusting your filters, or talk to a consultant: ",
     "noResultsContactLink": "Contact us"

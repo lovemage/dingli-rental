@@ -2,8 +2,8 @@
   "metadata": {
     "siteName": "鼎立レンタル",
     "defaultTitle": "鼎立レンタル｜理想のお部屋探しを",
-    "titleTemplate": "{title}｜鼎立レンタル",
-    "description": "鼎立レンタル Dingli Rental Service — 北北基桃竹エリアに根ざしたプロのレンタル仲介。住宅・オフィス・店舗の賃貸を多言語でサポートし、丁寧な内見と透明な契約をお約束します。"
+    "titleTemplate": "%s｜鼎立レンタル",
+    "description": "鼎立レンタル Dingli Rental Service — 台北・新北・桃園エリアに根ざしたプロのレンタル仲介。住宅・オフィス・店舗の賃貸を多言語でサポートし、丁寧な内見と透明な契約をお約束します。"
   },
   "header": {
     "properties": "物件カテゴリ",
@@ -49,7 +49,7 @@
     "whyTitleLine2": "もっと丁寧であるべき",
     "whySubtitle": "鍵を渡して終わりではありません。内見・条件交渉・契約・入居後のサポートまで、鼎立の担当者が一貫してサポートし、安心してご決断いただけます。",
     "why01Title": "10年以上の地域実績",
-    "why01Desc": "台北・新北・桃園・新竹の主要エリア相場を熟知。納得の条件で契約。",
+    "why01Desc": "台北・新北・桃園の主要エリア相場を熟知。納得の条件で契約。",
     "why02Title": "専属担当者がマンツーマン対応",
     "why02Desc": "内見から契約まで同じ担当者が一貫対応。たらい回しはありません。",
     "why03Title": "厳選された実在物件",
@@ -82,7 +82,7 @@
     "pageEyebrow": "PROPERTIES",
     "pageTitleLine1": "ご家族で安心して",
     "pageTitleLine2": "暮らせる住まいを",
-    "pageSubtitle": "北北基桃竹エリアで厳選した実在物件のみ。担当者が一件ずつ現地確認しています。",
+    "pageSubtitle": "台北・新北・桃園エリアで厳選した実在物件のみ。担当者が一件ずつ現地確認しています。",
     "noResultsTitle": "条件に合う物件はありません",
     "noResultsHint": "条件を見直すか、担当者へお問い合わせください：",
     "noResultsContactLink": "お問い合わせ"

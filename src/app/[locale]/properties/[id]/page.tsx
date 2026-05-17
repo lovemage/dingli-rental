@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
@@ -8,8 +9,106 @@ import PropertyGallery from '@/components/frontend/PropertyGallery';
 import { prisma } from '@/lib/prisma';
 import { localizePropertyForDetail } from '@/lib/property-translate';
 import { FLOATING_CTA_DEFAULTS, type FloatingCtaContent } from '@/data/floating-cta-defaults';
+import { routing } from '@/i18n/routing';
 
 export const dynamic = 'force-dynamic';
+
+const SITE_URL = (
+  process.env.NEXT_PUBLIC_SITE_URL || 'https://dingli-rental.com'
+).replace(/\/$/, '');
+
+function detailPath(locale: string, id: number): string {
+  return locale === routing.defaultLocale
+    ? `/properties/${id}`
+    : `/${locale}/properties/${id}`;
+}
+
+function buildAutoDescription(p: {
+  region: string;
+  district: string;
+  typeMid: string;
+  rent: number;
+  usableArea: number;
+  rooms: number;
+}): string {
+  const rentStr = `NT$${p.rent.toLocaleString('en-US')}/月`;
+  const layout = p.rooms > 0 ? `${p.rooms}房 ` : '';
+  return `${p.region}・${p.district}｜${p.typeMid}｜${layout}${p.usableArea}坪｜${rentStr}。鼎立租售管理精選物件，專人陪同帶看、透明合約收費。`;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string; locale: string }>;
+}): Promise<Metadata> {
+  const { id: rawId, locale } = await params;
+  const id = Number(rawId);
+  if (!id) return {};
+
+  const localeCandidates = locale === 'ja' ? ['ja', 'jp'] : [locale];
+
+  const raw = await prisma.property
+    .findUnique({
+      where: { id },
+      include: {
+        images: { orderBy: { order: 'asc' }, take: 1 },
+        translations:
+          locale === 'zh'
+            ? false
+            : { where: { locale: { in: localeCandidates } } },
+      },
+    })
+    .catch(() => null);
+
+  if (!raw || raw.status !== 'active') return {};
+
+  const p = localizePropertyForDetail(raw, locale);
+  const rentStr = `NT$${raw.rent.toLocaleString('en-US')}/月`;
+  const title = `${p.title}｜${rentStr}`;
+  const description = (p.description?.trim() || buildAutoDescription({
+    region: p.region,
+    district: p.district,
+    typeMid: p.typeMid,
+    rent: raw.rent,
+    usableArea: raw.usableArea,
+    rooms: raw.rooms,
+  })).slice(0, 160);
+
+  const canonicalPath = detailPath(locale, id);
+  const canonical = `${SITE_URL}${canonicalPath}`;
+  const languages = Object.fromEntries(
+    routing.locales.map((l) => [l, `${SITE_URL}${detailPath(l, id)}`]),
+  );
+  const ogLocale =
+    locale === 'en' ? 'en_US' : locale === 'ja' ? 'ja_JP' : 'zh_TW';
+  const firstImage = raw.images[0]?.url;
+
+  const fullTitle = `${title} ｜ 鼎立租售管理`;
+
+  return {
+    title: { absolute: fullTitle },
+    description,
+    alternates: {
+      canonical,
+      languages,
+    },
+    openGraph: {
+      type: 'website',
+      url: canonical,
+      title: fullTitle,
+      description,
+      siteName: '鼎立租售管理',
+      locale: ogLocale,
+      images: firstImage ? [{ url: firstImage, alt: p.title }] : undefined,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: fullTitle,
+      description,
+      images: firstImage ? [firstImage] : undefined,
+    },
+  };
+}
 
 function localePath(locale: string, path: string) {
   if (locale === 'zh') return path;

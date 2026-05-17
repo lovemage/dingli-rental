@@ -13,11 +13,16 @@ export const metadata: Metadata = {
     template: '%s ｜ 鼎立租售管理',
   },
   description:
-    '鼎立租售管理 Dingli Rental Service — 深耕北北基桃竹的專業租賃品牌，提供住宅、辦公、店面租售服務。中英日多語溝通、專人陪同帶看、透明合約收費。',
+    '鼎立租售管理 Dingli Rental Service — 深耕雙北桃園的專業租賃品牌，提供住宅、辦公、店面租售服務。中英日多語溝通、專人陪同帶看、透明合約收費。',
   openGraph: {
     type: 'website',
     locale: 'zh_TW',
     siteName: '鼎立租售管理',
+  },
+  icons: {
+    icon: [{ url: '/images/favicon.png', type: 'image/png' }],
+    shortcut: '/images/favicon.png',
+    apple: '/images/favicon.png',
   },
 };
 

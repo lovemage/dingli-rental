@@ -102,7 +102,7 @@ export const CONTACT_DEFAULTS: ContactContent = {
     address: '新北市新莊區西盛街199號2樓',
     customerEmail: 'service@dingli-rental.com',
     serviceHours: '週一至週日 09:00 - 21:00',
-    serviceArea: '北北基桃竹',
+    serviceArea: '雙北桃園',
   },
 
   formTitle: '填寫需求表',

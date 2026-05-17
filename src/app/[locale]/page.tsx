@@ -50,7 +50,7 @@ function normalizeCategoryHref(item: { tag?: string; title?: string; href?: stri
 }
 
 const FALLBACK_SLIDES: HeroSlideType[] = [
-  { id: 1, imageUrl: '/images/hero.webp', title: '溫馨明亮的家', subtitle: '精選北北基桃竹優質物件' },
+  { id: 1, imageUrl: '/images/hero.webp', title: '溫馨明亮的家', subtitle: '精選雙北桃園優質物件' },
   { id: 2, imageUrl: '/images/residential.webp', title: '日系臥室套房', subtitle: '通勤便利・採光絕佳' },
   { id: 3, imageUrl: '/images/property2.webp', title: '挑高夾層住宅', subtitle: '雙北優質好屋' },
 ];
@@ -210,11 +210,10 @@ export default async function HomePage({
     getTaxonomies(),
     getActivePropertyCount(),
   ]);
-  const heroQuickLinks = [
-    { label: '住家', href: localizeHref('/properties?type=整層住家', currentLocale) },
-    { label: '辦公室', href: localizeHref('/properties?type=辦公室', currentLocale) },
-    { label: '店面', href: localizeHref('/properties?type=店面', currentLocale) },
-  ];
+  const heroQuickLinks = taxonomies.propertyTypes.slice(0, 4).map((type) => ({
+    label: type,
+    href: localizeHref(`/properties?type=${encodeURIComponent(type)}`, currentLocale),
+  }));
 
   return (
     <>
@@ -316,14 +315,19 @@ export default async function HomePage({
         <section className="py-24 bg-paper-2">
           <div className="container-page">
             <SectionHead eyebrow={services.eyebrow} title={services.title} sub={services.sub} />
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-8 max-w-5xl mx-auto">
               {services.items.map((s, i) => (
-                <FeatCard key={`${s.title}-${i}`} icon={s.icon} title={s.title} desc={s.desc} />
+                <FeatRow key={`${s.title}-${i}`} icon={s.icon} title={s.title} desc={s.desc} />
               ))}
             </div>
             {services.ctaText && services.ctaLink && (
-              <div className="text-center mt-10">
-                <Link href={localizeHref(services.ctaLink, currentLocale)} className="btn btn-primary">{services.ctaText}</Link>
+              <div className="text-center mt-12">
+                <Link
+                  href={localizeHref(services.ctaLink, currentLocale)}
+                  className="inline-flex items-center gap-1 font-bold text-brand-green-700 hover:text-brand-green-900 transition"
+                >
+                  {services.ctaText} →
+                </Link>
               </div>
             )}
           </div>
@@ -336,7 +340,6 @@ export default async function HomePage({
               <div className="relative rounded-2xl overflow-hidden shadow-lg aspect-[5/4]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/images/property2.webp" alt="" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-tr from-ink-900/30 via-transparent to-transparent" />
               </div>
               <div>
                 <span className="eyebrow">
@@ -348,12 +351,12 @@ export default async function HomePage({
                   <span className="text-brand-green-700">{t('whyTitleLine2')}</span>
                 </h2>
                 <p className="text-ink-500 mb-8">{t('whySubtitle')}</p>
-                <div className="grid sm:grid-cols-2 gap-5">
-                  <WhyCard num="01" title={t('why01Title')} desc={t('why01Desc')} />
-                  <WhyCard num="02" title={t('why02Title')} desc={t('why02Desc')} />
-                  <WhyCard num="03" title={t('why03Title')} desc={t('why03Desc')} />
-                  <WhyCard num="04" title={t('why04Title')} desc={t('why04Desc')} />
-                </div>
+                <ul className="divide-y divide-line/70">
+                  <WhyRow num="01" title={t('why01Title')} desc={t('why01Desc')} />
+                  <WhyRow num="02" title={t('why02Title')} desc={t('why02Desc')} />
+                  <WhyRow num="03" title={t('why03Title')} desc={t('why03Desc')} />
+                  <WhyRow num="04" title={t('why04Title')} desc={t('why04Desc')} />
+                </ul>
               </div>
             </div>
           </div>
@@ -479,24 +482,30 @@ function TestimonialCard({ item, idx }: { item: Testimonial; idx: number }) {
   );
 }
 
-function WhyCard({ num, title, desc }: { num: string; title: string; desc: string }) {
+function WhyRow({ num, title, desc }: { num: string; title: string; desc: string }) {
   return (
-    <div className="bg-white rounded-xl border border-line p-5 hover:border-brand-green-500 hover:shadow-md transition">
-      <div className="text-3xl font-black text-brand-orange-500 mb-2 leading-none">{num}</div>
-      <h3 className="font-extrabold text-lg mb-1.5">{title}</h3>
-      <p className="text-sm text-ink-500 leading-relaxed">{desc}</p>
-    </div>
+    <li className="flex items-baseline gap-5 py-5 first:pt-0 last:pb-0">
+      <span className="text-2xl font-black text-brand-orange-500 leading-none tabular-nums shrink-0 w-10">
+        {num}
+      </span>
+      <div className="min-w-0 flex-1">
+        <h3 className="font-extrabold text-lg mb-1 text-ink-900">{title}</h3>
+        <p className="text-sm text-ink-700 leading-relaxed">{desc}</p>
+      </div>
+    </li>
   );
 }
 
-function FeatCard({ icon, title, desc }: { icon: string; title: string; desc: string }) {
+function FeatRow({ icon, title, desc }: { icon: string; title: string; desc: string }) {
   return (
-    <div className="bg-white border border-line rounded-xl p-7 hover:shadow-md hover:-translate-y-1 hover:border-brand-green-500 transition">
-      <div className="w-14 h-14 rounded-2xl bg-brand-green-50 text-brand-green-700 grid place-items-center mb-4">
-        <MaterialIcon name={icon} className="!text-3xl" />
+    <div className="flex items-start gap-4">
+      <div className="w-12 h-12 shrink-0 rounded-xl bg-brand-green-50 text-brand-green-700 grid place-items-center">
+        <MaterialIcon name={icon} className="!text-2xl" />
       </div>
-      <h3 className="font-extrabold text-lg mb-2">{title}</h3>
-      <p className="text-sm text-ink-500 leading-relaxed">{desc}</p>
+      <div className="min-w-0 pt-0.5">
+        <h3 className="font-extrabold text-lg mb-1.5 text-ink-900">{title}</h3>
+        <p className="text-sm text-ink-700 leading-relaxed">{desc}</p>
+      </div>
     </div>
   );
 }
