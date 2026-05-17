@@ -88,7 +88,7 @@ const DEFAULTS: PropertyFormValue = {
   usableArea: '', registeredArea: '',
   equipment: [], furniture: [], hasElevator: false,
   tenantTypes: [], cookingAllowed: true, petsAllowed: false,
-  rent: '', deposit: '面議', rentIncludes: [], managementFee: '', noManagementFee: false,
+  rent: '', deposit: '兩個月', rentIncludes: [], managementFee: '', noManagementFee: false,
   minLease: '一年', moveInDate: '', anytimeMoveIn: false,
   hasParking: false, parkingType: '',
   title: '', featureTags: [], description: '',

@@ -74,8 +74,8 @@ export const FURNITURE_OPTIONS = [
 // 身份
 export const TENANT_TYPES = ['學生', '上班族', '家庭'] as const;
 
-// 押金
-export const DEPOSIT_OPTIONS = ['面議', '一個月', '兩個月', '三個月'] as const;
+// 押金（固定）
+export const DEPOSIT_OPTIONS = ['兩個月'] as const;
 
 // 租金包含
 export const RENT_INCLUDES_OPTIONS = [

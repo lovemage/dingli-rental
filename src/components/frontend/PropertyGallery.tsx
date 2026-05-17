@@ -61,56 +61,103 @@ export default function PropertyGallery({
 
   return (
     <>
-      <div className="bg-paper-2">
-        <div className="aspect-[16/10] overflow-hidden">
-          {selectedImage ? (
-            isVideoUrl(selectedImage.url) ? (
-              <video
-                src={selectedImage.url}
-                className="w-full h-full object-cover bg-black"
-                controls
-                playsInline
-                preload="metadata"
-              />
+      <div className="bg-paper-2 p-2 sm:p-3">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_130px] gap-2 sm:gap-3">
+          <div className="relative aspect-[16/10] overflow-hidden rounded-lg">
+            {selectedImage ? (
+              isVideoUrl(selectedImage.url) ? (
+                <video
+                  src={selectedImage.url}
+                  className="w-full h-full object-cover bg-black"
+                  controls
+                  playsInline
+                  preload="metadata"
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setLightboxOpen(true)}
+                  className="block w-full h-full cursor-zoom-in"
+                  aria-label="放大圖片"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={selectedImage.url} alt={title} className="w-full h-full object-cover" />
+                </button>
+              )
             ) : (
-              <button
-                type="button"
-                onClick={() => setLightboxOpen(true)}
-                className="block w-full h-full cursor-zoom-in"
-                aria-label="放大圖片"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={selectedImage.url} alt={title} className="w-full h-full object-cover" />
-              </button>
-            )
-          ) : (
-            <div className="w-full h-full grid place-items-center text-ink-300">{noImageText}</div>
+              <div className="w-full h-full grid place-items-center text-ink-300">{noImageText}</div>
+            )}
+
+            {images.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={showPrev}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/65 rounded-full w-10 h-10 grid place-items-center text-2xl leading-none"
+                  aria-label="上一張"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  onClick={showNext}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/65 rounded-full w-10 h-10 grid place-items-center text-2xl leading-none"
+                  aria-label="下一張"
+                >
+                  ›
+                </button>
+              </>
+            )}
+          </div>
+
+          {images.length > 1 && (
+            <div className="hidden lg:flex flex-col gap-2 overflow-y-auto max-h-[540px] pr-1">
+              {images.map((image) => (
+                <button
+                  key={`side-${image.id}`}
+                  type="button"
+                  onClick={() => setSelectedImageId(image.id)}
+                  className={`overflow-hidden shrink-0 rounded-md border ${selectedImage?.id === image.id ? 'ring-2 ring-brand-green-600 border-brand-green-600' : 'border-line'}`}
+                  aria-label="Select property image"
+                >
+                  {isVideoUrl(image.url) ? (
+                    <div className="relative w-full aspect-square bg-black">
+                      <video src={image.url} className="w-full h-full object-cover opacity-80" muted playsInline preload="metadata" />
+                      <span className="absolute inset-0 grid place-items-center text-white text-xs font-bold">VIDEO</span>
+                    </div>
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={image.url} alt="" className="w-full aspect-square object-cover" />
+                  )}
+                </button>
+              ))}
+            </div>
           )}
         </div>
       </div>
 
       {images.length > 1 && (
-        <div className="bg-paper-2 p-2 overflow-x-auto">
+        <div className="bg-paper-2 px-2 pb-2 sm:px-3 sm:pb-3 overflow-x-auto">
           <div className="flex gap-2 w-max">
-          {images.map((image) => (
-            <button
-              key={image.id}
-              type="button"
-              onClick={() => setSelectedImageId(image.id)}
-              className={`overflow-hidden shrink-0 rounded ${selectedImage?.id === image.id ? 'ring-2 ring-brand-green-600' : ''}`}
-              aria-label="Select property image"
-            >
-              {isVideoUrl(image.url) ? (
-                <div className="relative w-24 h-24 sm:w-28 sm:h-28 bg-black">
-                  <video src={image.url} className="w-full h-full object-cover opacity-80" muted playsInline preload="metadata" />
-                  <span className="absolute inset-0 grid place-items-center text-white text-xs font-bold">VIDEO</span>
-                </div>
-              ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={image.url} alt="" className="w-24 h-24 sm:w-28 sm:h-28 object-cover" />
-              )}
-            </button>
-          ))}
+            {images.map((image) => (
+              <button
+                key={image.id}
+                type="button"
+                onClick={() => setSelectedImageId(image.id)}
+                className={`overflow-hidden shrink-0 rounded-md border ${selectedImage?.id === image.id ? 'ring-2 ring-brand-green-600 border-brand-green-600' : 'border-line'}`}
+                aria-label="Select property image"
+              >
+                {isVideoUrl(image.url) ? (
+                  <div className="relative w-24 h-24 sm:w-28 sm:h-28 bg-black">
+                    <video src={image.url} className="w-full h-full object-cover opacity-80" muted playsInline preload="metadata" />
+                    <span className="absolute inset-0 grid place-items-center text-white text-xs font-bold">VIDEO</span>
+                  </div>
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={image.url} alt="" className="w-24 h-24 sm:w-28 sm:h-28 object-cover" />
+                )}
+              </button>
+            ))}
           </div>
         </div>
       )}
