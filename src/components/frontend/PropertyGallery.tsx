@@ -62,7 +62,7 @@ export default function PropertyGallery({
   return (
     <>
       <div className="bg-paper-2 p-2 sm:p-3">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_130px] gap-2 sm:gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_160px] gap-2 sm:gap-3">
           <div className="relative aspect-[16/10] overflow-hidden rounded-lg">
             {selectedImage ? (
               isVideoUrl(selectedImage.url) ? (
@@ -121,13 +121,13 @@ export default function PropertyGallery({
                   aria-label="Select property image"
                 >
                   {isVideoUrl(image.url) ? (
-                    <div className="relative w-full aspect-square bg-black">
+                    <div className="relative w-full aspect-[4/3] bg-black">
                       <video src={image.url} className="w-full h-full object-cover opacity-80" muted playsInline preload="metadata" />
                       <span className="absolute inset-0 grid place-items-center text-white text-xs font-bold">VIDEO</span>
                     </div>
                   ) : (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={image.url} alt="" className="w-full aspect-square object-cover" />
+                    <img src={image.url} alt="" className="w-full aspect-[4/3] object-cover" />
                   )}
                 </button>
               ))}
@@ -137,7 +137,7 @@ export default function PropertyGallery({
       </div>
 
       {images.length > 1 && (
-        <div className="bg-paper-2 px-2 pb-2 sm:px-3 sm:pb-3 overflow-x-auto">
+        <div className="lg:hidden bg-paper-2 px-2 pb-2 sm:px-3 sm:pb-3 overflow-x-auto">
           <div className="flex gap-2 w-max">
             {images.map((image) => (
               <button
@@ -148,13 +148,13 @@ export default function PropertyGallery({
                 aria-label="Select property image"
               >
                 {isVideoUrl(image.url) ? (
-                  <div className="relative w-24 h-24 sm:w-28 sm:h-28 bg-black">
+                  <div className="relative w-24 sm:w-28 aspect-[4/3] bg-black">
                     <video src={image.url} className="w-full h-full object-cover opacity-80" muted playsInline preload="metadata" />
                     <span className="absolute inset-0 grid place-items-center text-white text-xs font-bold">VIDEO</span>
                   </div>
                 ) : (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={image.url} alt="" className="w-24 h-24 sm:w-28 sm:h-28 object-cover" />
+                  <img src={image.url} alt="" className="w-24 sm:w-28 aspect-[4/3] object-cover" />
                 )}
               </button>
             ))}
