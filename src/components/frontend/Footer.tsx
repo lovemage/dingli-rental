@@ -63,11 +63,10 @@ export default async function Footer() {
             <Image
               src="/LOGO_0.png"
               alt="鼎立租售管理"
-              width={422}
-              height={48}
+              width={387}
+              height={44}
               unoptimized
-              className="h-12 w-auto mb-4"
-              style={{ width: 'auto' }}
+              className="w-full max-w-[260px] h-auto object-contain mb-4"
             />
             <p className="text-sm text-white/60 max-w-xs leading-relaxed">{t('tagline')}</p>
           </div>
