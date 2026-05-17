@@ -2,6 +2,11 @@ import type { MetadataRoute } from 'next';
 import { prisma } from '@/lib/prisma';
 import { routing } from '@/i18n/routing';
 
+// Render at request time so the property list reflects current DB state;
+// without this, Vercel builds the sitemap statically and gets an empty list.
+export const dynamic = 'force-dynamic';
+export const revalidate = 3600;
+
 const SITE_URL = (
   process.env.NEXT_PUBLIC_SITE_URL || 'https://dingli-rental.com'
 ).replace(/\/$/, '');
