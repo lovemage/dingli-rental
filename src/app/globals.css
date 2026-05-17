@@ -29,6 +29,15 @@ body {
   line-height: 1.7;
 }
 
+.scrollbar-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
+
 a { color: inherit; }
 
 .material-symbols-rounded {
