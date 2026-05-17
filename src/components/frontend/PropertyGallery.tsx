@@ -63,7 +63,7 @@ export default function PropertyGallery({
     <>
       <div className="bg-paper-2 p-2 sm:p-3">
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_220px] gap-2 sm:gap-3 items-stretch isolate">
-          <div className="relative z-0 min-w-0 aspect-[16/10] overflow-hidden rounded-lg">
+          <div className="relative z-0 min-w-0 aspect-[4/3] overflow-hidden rounded-lg">
             {selectedImage ? (
               isVideoUrl(selectedImage.url) ? (
                 <video
@@ -93,44 +93,50 @@ export default function PropertyGallery({
                 <button
                   type="button"
                   onClick={showPrev}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/65 rounded-full w-10 h-10 grid place-items-center text-2xl leading-none"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/65 rounded-full w-10 h-10 grid place-items-center leading-none"
                   aria-label="上一張"
                 >
-                  ‹
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M20 15h-8v3.586a1 1 0 0 1-1.707.707l-6.586-6.586a1 1 0 0 1 0-1.414l6.586-6.586A1 1 0 0 1 12 5.414V9h8a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1" />
+                  </svg>
                 </button>
                 <button
                   type="button"
                   onClick={showNext}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/65 rounded-full w-10 h-10 grid place-items-center text-2xl leading-none"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/65 rounded-full w-10 h-10 grid place-items-center leading-none"
                   aria-label="下一張"
                 >
-                  ›
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M4 9h8V5.414a1 1 0 0 1 1.707-.707l6.586 6.586a1 1 0 0 1 0 1.414l-6.586 6.586A1 1 0 0 1 12 18.586V15H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1" />
+                  </svg>
                 </button>
               </>
             )}
           </div>
 
           {images.length > 1 && (
-            <div className="hidden lg:flex relative z-10 flex-col gap-2 overflow-y-auto scrollbar-hidden max-h-[620px] pr-1">
-              {images.map((image) => (
-                <button
-                  key={`side-${image.id}`}
-                  type="button"
-                  onClick={() => setSelectedImageId(image.id)}
-                  className={`overflow-hidden shrink-0 rounded-md border ${selectedImage?.id === image.id ? 'ring-2 ring-brand-green-600 border-brand-green-600' : 'border-line'}`}
-                  aria-label="Select property image"
-                >
-                  {isVideoUrl(image.url) ? (
-                    <div className="relative w-full aspect-[4/3] bg-black">
-                      <video src={image.url} className="w-full h-full object-cover opacity-80" muted playsInline preload="metadata" />
-                      <span className="absolute inset-0 grid place-items-center text-white text-xs font-bold">VIDEO</span>
-                    </div>
-                  ) : (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={image.url} alt="" className="w-full aspect-[4/3] object-cover" />
-                  )}
-                </button>
-              ))}
+            <div className="hidden lg:block relative min-h-0">
+              <div className="absolute inset-0 flex flex-col gap-2 overflow-y-auto scrollbar-hidden pr-1">
+                {images.map((image) => (
+                  <button
+                    key={`side-${image.id}`}
+                    type="button"
+                    onClick={() => setSelectedImageId(image.id)}
+                    className={`overflow-hidden shrink-0 rounded-md border ${selectedImage?.id === image.id ? 'ring-2 ring-brand-green-600 border-brand-green-600' : 'border-line'}`}
+                    aria-label="Select property image"
+                  >
+                    {isVideoUrl(image.url) ? (
+                      <div className="relative w-full aspect-[4/3] bg-black">
+                        <video src={image.url} className="w-full h-full object-cover opacity-80" muted playsInline preload="metadata" />
+                        <span className="absolute inset-0 grid place-items-center text-white text-xs font-bold">VIDEO</span>
+                      </div>
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={image.url} alt="" className="w-full aspect-[4/3] object-cover" />
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -183,18 +189,22 @@ export default function PropertyGallery({
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); showPrev(); }}
-                className="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 text-white/90 hover:text-white bg-black/40 hover:bg-black/60 rounded-full w-11 h-11 grid place-items-center text-2xl leading-none"
+                className="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 text-white/90 hover:text-white bg-black/40 hover:bg-black/60 rounded-full w-11 h-11 grid place-items-center leading-none"
                 aria-label="上一張"
               >
-                ‹
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M20 15h-8v3.586a1 1 0 0 1-1.707.707l-6.586-6.586a1 1 0 0 1 0-1.414l6.586-6.586A1 1 0 0 1 12 5.414V9h8a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1" />
+                </svg>
               </button>
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); showNext(); }}
-                className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 text-white/90 hover:text-white bg-black/40 hover:bg-black/60 rounded-full w-11 h-11 grid place-items-center text-2xl leading-none"
+                className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 text-white/90 hover:text-white bg-black/40 hover:bg-black/60 rounded-full w-11 h-11 grid place-items-center leading-none"
                 aria-label="下一張"
               >
-                ›
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M4 9h8V5.414a1 1 0 0 1 1.707-.707l6.586 6.586a1 1 0 0 1 0 1.414l-6.586 6.586A1 1 0 0 1 12 18.586V15H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1" />
+                </svg>
               </button>
             </>
           )}
