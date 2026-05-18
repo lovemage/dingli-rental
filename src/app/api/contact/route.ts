@@ -104,8 +104,8 @@ export async function POST(req: Request) {
     if (!name || name.length > 50) {
       return NextResponse.json({ error: '請填寫姓名（50 字以內）' }, { status: 400 });
     }
-    if (!phone || phone.length > 30) {
-      return NextResponse.json({ error: '請填寫聯絡電話' }, { status: 400 });
+    if (!/^09\d{8}$/.test(phone)) {
+      return NextResponse.json({ error: '請填寫 09 開頭的 10 碼手機號碼' }, { status: 400 });
     }
     if (!VALID_USER_ROLES.has(userRoleRaw)) {
       return NextResponse.json({ error: '請選擇承租方或出租方' }, { status: 400 });

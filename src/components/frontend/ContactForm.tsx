@@ -99,7 +99,17 @@ export default function ContactForm({
         </div>
         <div>
           <label className="label-base">{t('formPhoneLabel')}</label>
-          <input name="phone" required type="tel" maxLength={30} className="input-base" />
+          <input
+            name="phone"
+            required
+            type="tel"
+            inputMode="numeric"
+            maxLength={10}
+            pattern="09[0-9]{8}"
+            placeholder="09xxxxxxxx"
+            title="請輸入 09 開頭的 10 碼手機號碼"
+            className="input-base"
+          />
         </div>
         <div className="sm:col-span-2">
           <label className="label-base">{t('formMessengerLabel')}</label>
