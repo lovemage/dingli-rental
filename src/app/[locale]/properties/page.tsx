@@ -104,6 +104,7 @@ async function search(params: SearchParams, locale: string) {
 
   if (params.q) {
     const sourceOr: Prisma.PropertyWhereInput[] = [
+      { code: { contains: params.q, mode: 'insensitive' } },
       { title: { contains: params.q, mode: 'insensitive' } },
       { description: { contains: params.q, mode: 'insensitive' } },
       { community: { contains: params.q, mode: 'insensitive' } },

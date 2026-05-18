@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import MaterialIcon from '@/components/MaterialIcon';
 import {
   classifyFeatureTags,
   getDerivedTags,
@@ -75,6 +77,7 @@ function localePath(locale: string, path: string) {
 export default function PropertyCard({ property: p, maxTags = 3 }: Props) {
   const t = useTranslations('propertyCard');
   const locale = useLocale();
+  const [copied, setCopied] = useState(false);
 
   const locParts = [p.region, p.district];
   if (!p.hideAddress) {
@@ -99,6 +102,19 @@ export default function PropertyCard({ property: p, maxTags = 3 }: Props) {
     : statusKey === 'closed' ? 'statusClosed'
     : 'statusActive';
   const statusClassName = LISTING_STATUS_CLASS[statusKey] ?? LISTING_STATUS_CLASS.active;
+
+  async function copyCode(e: React.MouseEvent<HTMLButtonElement>) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!p.code) return;
+    try {
+      await navigator.clipboard.writeText(p.code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    } catch {
+      setCopied(false);
+    }
+  }
 
   return (
     <Link
@@ -136,7 +152,18 @@ export default function PropertyCard({ property: p, maxTags = 3 }: Props) {
 
       <div className="p-5 flex flex-col flex-1">
         {p.code && (
-          <span className="text-[10px] font-mono font-bold tracking-wider text-ink-400 mb-1">編號 {p.code}</span>
+          <div className="mb-1 flex items-center gap-1.5">
+            <span className="text-[10px] font-mono font-bold tracking-wider text-ink-400">編號 {p.code}</span>
+            <button
+              type="button"
+              onClick={copyCode}
+              className="inline-flex items-center justify-center rounded-full border border-line bg-white text-ink-500 hover:text-brand-green-700 hover:border-brand-green-500 w-5 h-5 transition"
+              aria-label="複製物件編號"
+              title="複製物件編號"
+            >
+              <MaterialIcon name={copied ? 'check' : 'content_copy'} className="!text-xs" />
+            </button>
+          </div>
         )}
         <h3 className="text-xl sm:text-2xl font-black text-brand-green-900 mb-1 tracking-tight whitespace-nowrap">
           {t('currencyPrefix')} {p.rent.toLocaleString()}
