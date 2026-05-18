@@ -25,20 +25,22 @@ export default function HeroCtaPanel({
 
   return (
     <div className="mb-10">
-      <div className="flex flex-wrap gap-3">
-        <button
-          type="button"
-          className="btn btn-primary whitespace-nowrap"
-          onClick={() => setExpanded((v) => !v)}
-          aria-expanded={expanded}
-          aria-controls="hero-quick-links"
-        >
-          {primaryText}
-        </button>
-        <Link href={secondaryHref} className="btn btn-secondary whitespace-nowrap">
-          {secondaryText}
-        </Link>
-      </div>
+      {!expanded && (
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            className="btn btn-primary whitespace-nowrap"
+            onClick={() => setExpanded(true)}
+            aria-expanded={expanded}
+            aria-controls="hero-quick-links"
+          >
+            {primaryText}
+          </button>
+          <Link href={secondaryHref} className="btn btn-secondary whitespace-nowrap">
+            {secondaryText}
+          </Link>
+        </div>
+      )}
 
       {expanded && quickLinks.length > 0 && (
         <div id="hero-quick-links" className="mt-4 flex flex-wrap gap-3">

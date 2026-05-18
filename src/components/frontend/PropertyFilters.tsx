@@ -13,6 +13,7 @@ import {
 } from '@/data/taiwan-addresses';
 import type { Taxonomies } from '@/lib/taxonomies-shared';
 import AiChatWidget from '@/components/frontend/AiChatWidget';
+import MaterialIcon from '@/components/MaterialIcon';
 
 const RENT_PRESETS: { labelKey: string; min?: string; max?: string }[] = [
   { labelKey: 'noLimit' },
@@ -236,9 +237,15 @@ export default function PropertyFilters({ total, taxonomies }: FiltersProps) {
               type="text"
               defaultValue={v.q}
               placeholder={t('searchPlaceholder')}
-              className="w-full pl-9 pr-3 py-2 text-sm rounded-full border border-line bg-white focus:outline-none focus:border-brand-green-500 focus:ring-2 focus:ring-brand-green-500/20"
+              className="w-full pl-3 pr-10 py-2 text-sm rounded-full border border-line bg-white focus:outline-none focus:border-brand-green-500 focus:ring-2 focus:ring-brand-green-500/20"
             />
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500">🔍</span>
+            <button
+              type="submit"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-500 hover:text-brand-green-700 transition"
+              aria-label={t('searchAria')}
+            >
+              <MaterialIcon name="search" className="!text-base" />
+            </button>
           </div>
         </form>
 

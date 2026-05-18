@@ -34,6 +34,12 @@ const SOCIAL_META: Array<{
   { key: 'whatsapp', label: 'WhatsApp', icon: '/social-icons/WhatsApp.svg' },
 ];
 
+const OFFICIAL_LINE_LINK = {
+  label: 'LINE',
+  icon: '/social-icons/LINE.svg',
+  url: 'https://line.me/R/ti/p/@526ddrhk',
+};
+
 // 只放行 http(s) 絕對網址，過濾掉 admin 打錯 (facebook.com/... 沒前綴)、
 // 也擋掉 javascript: / data: 等危險 scheme。回傳 null → 該 icon 不渲染。
 function safeSocialUrl(raw: string | undefined): string | null {
@@ -114,24 +120,33 @@ export default async function Footer() {
                 </Link>
               </li>
             </ul>
-            {socialItems.length > 0 && (
-              <div className="flex items-center gap-3 mt-4">
-                {socialItems.map(({ key, label, icon, url }) => (
-                  <a
-                    key={key}
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={label}
-                    title={label}
-                    className="inline-flex items-center justify-center hover:scale-110 transition"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={icon} alt="" className="w-9 h-9" />
-                  </a>
-                ))}
-              </div>
-            )}
+            <div className="flex items-center gap-3 mt-4">
+              {socialItems.map(({ key, label, icon, url }) => (
+                <a
+                  key={key}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={label}
+                  title={label}
+                  className="inline-flex items-center justify-center hover:scale-110 transition"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={icon} alt="" className="w-9 h-9" />
+                </a>
+              ))}
+              <a
+                href={OFFICIAL_LINE_LINK.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={OFFICIAL_LINE_LINK.label}
+                title={OFFICIAL_LINE_LINK.label}
+                className="inline-flex items-center justify-center hover:scale-110 transition"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={OFFICIAL_LINE_LINK.icon} alt="" className="w-9 h-9" />
+              </a>
+            </div>
           </div>
           <div>
             <h5 className="text-white font-bold text-base mb-4">{t('contactInfoHeading')}</h5>
