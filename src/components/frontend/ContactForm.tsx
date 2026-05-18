@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { REGION_OPTIONS } from '@/data/taiwan-addresses';
+import { CITY_DISTRICTS, REGION_OPTIONS } from '@/data/taiwan-addresses';
 
 type Props = {
   title?: string;
@@ -22,6 +22,10 @@ export default function ContactForm({
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [selectedRegion, setSelectedRegion] = useState('不限');
+  const [selectedDistrict, setSelectedDistrict] = useState('');
+
+  const districtOptions = CITY_DISTRICTS[selectedRegion] || [];
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -30,13 +34,15 @@ export default function ContactForm({
     setError('');
 
     const fd = new FormData(e.currentTarget);
+    const region = String(fd.get('region') || '');
+    const district = String(fd.get('district') || '');
     const payload = {
       name: String(fd.get('name') || ''),
       phone: String(fd.get('phone') || ''),
       userRole: String(fd.get('userRole') || ''),
       messengerType: String(fd.get('messengerType') || ''),
       messengerHandle: String(fd.get('messengerHandle') || ''),
-      region: String(fd.get('region') || ''),
+      region: region && district ? `${region}${district}` : region,
       propertyType: String(fd.get('propertyType') || ''),
       budget: String(fd.get('budget') || ''),
       message: String(fd.get('message') || ''),
@@ -113,10 +119,33 @@ export default function ContactForm({
         </div>
         <div>
           <label className="label-base">{t('formRegionLabel')}</label>
-          <select name="region" className="input-base" defaultValue="不限">
+          <select
+            name="region"
+            className="input-base"
+            value={selectedRegion}
+            onChange={(e) => {
+              setSelectedRegion(e.target.value);
+              setSelectedDistrict('');
+            }}
+          >
             <option value="不限">{t('formAny')}</option>
             {REGION_OPTIONS.map((r) => (
               <option key={r.value} value={r.value}>{tRegions(r.labelKey)}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="label-base">{t('formDistrictLabel')}</label>
+          <select
+            name="district"
+            className="input-base"
+            value={selectedDistrict}
+            onChange={(e) => setSelectedDistrict(e.target.value)}
+            disabled={!districtOptions.length}
+          >
+            <option value="">{t('formAny')}</option>
+            {districtOptions.map((district) => (
+              <option key={district} value={district}>{district}</option>
             ))}
           </select>
         </div>

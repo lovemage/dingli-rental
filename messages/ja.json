@@ -204,6 +204,7 @@
     "formMessengerWeChat": "WeChat",
     "formMessengerHandlePlaceholder": "ID または番号を入力",
     "formRegionLabel": "ご希望エリア",
+    "formDistrictLabel": "ご希望の区",
     "formPropertyTypeLabel": "物件タイプ",
     "formBudgetLabel": "ご予算（月額）",
     "formMessageLabel": "ご要望",

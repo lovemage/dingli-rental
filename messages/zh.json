@@ -204,6 +204,7 @@
     "formMessengerWeChat": "WeChat",
     "formMessengerHandlePlaceholder": "請填寫 ID 或號碼",
     "formRegionLabel": "希望地區",
+    "formDistrictLabel": "希望區域",
     "formPropertyTypeLabel": "物件類型",
     "formBudgetLabel": "預算（每月）",
     "formMessageLabel": "需求描述",

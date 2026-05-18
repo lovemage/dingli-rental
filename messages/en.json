@@ -204,6 +204,7 @@
     "formMessengerWeChat": "WeChat",
     "formMessengerHandlePlaceholder": "Enter your ID or number",
     "formRegionLabel": "Preferred region",
+    "formDistrictLabel": "Preferred district",
     "formPropertyTypeLabel": "Property type",
     "formBudgetLabel": "Budget (per month)",
     "formMessageLabel": "Requirements",
