@@ -15,6 +15,8 @@ import type { Taxonomies } from '@/lib/taxonomies-shared';
 import AiChatWidget from '@/components/frontend/AiChatWidget';
 import MaterialIcon from '@/components/MaterialIcon';
 
+export type MobilePropertyViewMode = 'single' | 'double';
+
 const RENT_PRESETS: { labelKey: string; min?: string; max?: string }[] = [
   { labelKey: 'noLimit' },
   { labelKey: 'rent_le_10k', max: '10000' },
@@ -105,9 +107,16 @@ function agePresetIndex(min: string, max: string): number {
 type FiltersProps = {
   total?: number;
   taxonomies?: Partial<Taxonomies>;
+  mobileViewMode?: MobilePropertyViewMode;
+  onMobileViewModeChange?: (mode: MobilePropertyViewMode) => void;
 };
 
-export default function PropertyFilters({ total, taxonomies }: FiltersProps) {
+export default function PropertyFilters({
+  total,
+  taxonomies,
+  mobileViewMode,
+  onMobileViewModeChange,
+}: FiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const t = useTranslations('propertyFilters');
@@ -332,9 +341,37 @@ export default function PropertyFilters({ total, taxonomies }: FiltersProps) {
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2 mt-3">
-        <p className="text-sm text-ink-500">
-          {typeof total === 'number' ? t('totalCount', { count: total }) : '\u00A0'}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-ink-500">
+            {typeof total === 'number' ? t('totalCount', { count: total }) : '\u00A0'}
+          </p>
+          {mobileViewMode && onMobileViewModeChange && (
+            <div
+              className="sm:hidden inline-flex rounded-full border border-line bg-white p-0.5 shadow-sm"
+              role="group"
+              aria-label={t('mobileViewToggleLabel')}
+            >
+              <button
+                type="button"
+                onClick={() => onMobileViewModeChange('single')}
+                className={`grid h-7 w-8 place-items-center rounded-full transition ${mobileViewMode === 'single' ? 'bg-brand-green-700 text-white' : 'text-ink-500 hover:text-brand-green-700'}`}
+                aria-label={t('singleColumnLabel')}
+                aria-pressed={mobileViewMode === 'single'}
+              >
+                <MaterialIcon name="view_agenda" className="!text-base" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onMobileViewModeChange('double')}
+                className={`grid h-7 w-8 place-items-center rounded-full transition ${mobileViewMode === 'double' ? 'bg-brand-green-700 text-white' : 'text-ink-500 hover:text-brand-green-700'}`}
+                aria-label={t('doubleColumnLabel')}
+                aria-pressed={mobileViewMode === 'double'}
+              >
+                <MaterialIcon name="grid_view" className="!text-base" />
+              </button>
+            </div>
+          )}
+        </div>
         <label className="flex items-center gap-2 text-sm">
           <span className="text-ink-500">{t('sortLabel')}</span>
           <select

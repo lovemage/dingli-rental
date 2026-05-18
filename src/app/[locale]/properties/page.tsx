@@ -3,8 +3,8 @@ import { redirect } from 'next/navigation';
 import { getTranslations, getLocale, setRequestLocale } from 'next-intl/server';
 import Header from '@/components/frontend/Header';
 import Footer from '@/components/frontend/Footer';
-import PropertyCard from '@/components/frontend/PropertyCard';
 import PropertyFilters from '@/components/frontend/PropertyFilters';
+import PropertyResults from '@/components/frontend/PropertyResults';
 import { prisma } from '@/lib/prisma';
 import { getLocalizedPropertyCards } from '@/lib/property-translate';
 import { isPropertyCode, normalizePropertyCode } from '@/lib/property-code';
@@ -236,24 +236,21 @@ export default async function PropertiesPage({
 
         <section className="pb-16">
           <div className="container-page">
-            <PropertyFilters total={total} taxonomies={taxonomies} />
-
             {cards.length === 0 ? (
-              <div className="bg-paper-2 rounded-xl border border-line p-12 text-center text-ink-500 mt-8">
-                <p className="text-lg mb-2">{t('noResultsTitle')}</p>
-                <p className="text-sm">
-                  {t('noResultsHint')}
-                  <Link href={lp('/contact')} className="text-brand-green-700 underline">
-                    {t('noResultsContactLink')}
-                  </Link>
-                </p>
-              </div>
+              <>
+                <PropertyFilters total={total} taxonomies={taxonomies} />
+                <div className="bg-paper-2 rounded-xl border border-line p-12 text-center text-ink-500 mt-8">
+                  <p className="text-lg mb-2">{t('noResultsTitle')}</p>
+                  <p className="text-sm">
+                    {t('noResultsHint')}
+                    <Link href={lp('/contact')} className="text-brand-green-700 underline">
+                      {t('noResultsContactLink')}
+                    </Link>
+                  </p>
+                </div>
+              </>
             ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5 lg:gap-7 mt-8">
-                {cards.map((p) => (
-                  <PropertyCard key={p.id} property={p} />
-                ))}
-              </div>
+              <PropertyResults cards={cards} total={total} taxonomies={taxonomies} />
             )}
 
             {totalPages > 1 && (

@@ -49,6 +49,48 @@ function normalizeCategoryHref(item: { tag?: string; title?: string; href?: stri
   return item.href || '/properties';
 }
 
+const HOMEPAGE_HERO_BY_LOCALE: Record<string, Partial<HeroContent>> = {
+  en: {
+    eyebrow: 'Dingli · Taipei | New Taipei | Taoyuan',
+    titleLine1: 'Find a home,',
+    titleLine2: 'not just a rental',
+    description: 'Verified listings with local consultants from viewing to move-in.',
+    primaryCtaText: 'Browse listings',
+    secondaryCtaText: 'Contact us',
+  },
+  ja: {
+    eyebrow: 'Dingli · 台北 | 新北 | 桃園',
+    titleLine1: '部屋探しを、',
+    titleLine2: 'もっと安心に',
+    description: '内見から入居まで、現地スタッフが丁寧にサポートします。',
+    primaryCtaText: '物件を見る',
+    secondaryCtaText: '相談する',
+  },
+};
+
+const PROPERTY_TYPE_LABELS: Record<string, Record<string, string>> = {
+  en: {
+    套房: 'Studio',
+    整層住家: 'Whole-floor home',
+    別墅: 'Villa',
+    店面: 'Storefront',
+    辦公室: 'Office',
+    其他: 'Other',
+  },
+  ja: {
+    套房: 'ワンルーム',
+    整層住家: '住居フロア',
+    別墅: 'ヴィラ',
+    店面: '店舗',
+    辦公室: 'オフィス',
+    其他: 'その他',
+  },
+};
+
+function localizePropertyType(type: string, locale: string): string {
+  return PROPERTY_TYPE_LABELS[locale]?.[type] || type;
+}
+
 const FALLBACK_SLIDES: HeroSlideType[] = [
   { id: 1, imageUrl: '/images/hero.webp', title: '溫馨明亮的家', subtitle: '精選雙北桃園優質物件' },
   { id: 2, imageUrl: '/images/residential.webp', title: '日系臥室套房', subtitle: '通勤便利・採光絕佳' },
@@ -135,7 +177,11 @@ async function getHomepageContent(locale: string) {
       translateCmsSection('homepage_services', servicesRaw, locale),
     ]);
 
-    const hero: HeroContent = { ...HERO_DEFAULTS, ...(heroT as Partial<HeroContent>) };
+    const hero: HeroContent = {
+      ...HERO_DEFAULTS,
+      ...(heroT as Partial<HeroContent>),
+      ...(HOMEPAGE_HERO_BY_LOCALE[locale] || {}),
+    };
     const cRaw = categoriesT as { items?: unknown };
     const categories: CategoriesContent = {
       items: Array.isArray(cRaw?.items) && cRaw.items.length
@@ -211,7 +257,7 @@ export default async function HomePage({
     getActivePropertyCount(),
   ]);
   const heroQuickLinks = taxonomies.propertyTypes.slice(0, 4).map((type) => ({
-    label: type,
+    label: localizePropertyType(type, currentLocale),
     href: localizeHref(`/properties?type=${encodeURIComponent(type)}`, currentLocale),
   }));
 
@@ -231,7 +277,7 @@ export default async function HomePage({
             />
             <div className="absolute inset-0 z-[1] bg-ink-900/20" />
             <div className="container-page relative z-10 flex h-full items-center">
-              {/* 中文版用 max-w-2xl 維持原排版；EN/JA 譯文較長改 max-w-3xl + 略小字級，避免一句被切成 4–5 行 */}
+              {/* EN/JA 使用策展短文案與略小字級，避免 hero CTA 被長譯文擠出畫面。 */}
               <div className={`pt-6 ${currentLocale === 'zh' ? 'max-w-2xl' : 'max-w-3xl'}`}>
                 <span className="eyebrow bg-paper/90"><span className="dot" />{hero.eyebrow}</span>
                 <h1
@@ -241,7 +287,7 @@ export default async function HomePage({
                       : 'text-3xl md:text-4xl lg:text-5xl font-black leading-tight my-5 text-paper drop-shadow-[0_2px_18px_rgba(26,36,33,0.35)]'
                   }
                 >
-                  {/* zh 強制兩行（短句設計）；EN/JA 譯文較長，讓 line1 與 line2 之間以空格相接、自然 wrap */}
+                  {/* zh 強制兩行；EN/JA 以自然換行維持按鈕可見。 */}
                   {hero.titleLine1}
                   {currentLocale === 'zh' ? <br /> : ' '}
                   <span className="text-brand-orange-300 relative inline-block">
@@ -297,7 +343,7 @@ export default async function HomePage({
                 title={t('featuredTitle')}
                 sub={t('featuredSub')}
               />
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5 lg:gap-7">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5 lg:gap-7">
                 {featured.map((p) => (
                   <PropertyCard key={p.id} property={p} />
                 ))}
