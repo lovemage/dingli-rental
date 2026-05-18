@@ -67,7 +67,9 @@ export type AiExtractedFields = Partial<{
 
 export const DEFAULT_MODEL = 'google/gemini-2.5-flash';
 
-export const DEFAULT_SYSTEM_PROMPT = `你是專業的台灣房屋仲介資料整理助理。任務是看「鼎立租售管理」物件的照片，從中萃取可填入物件刊登表單的欄位。
+export const DEFAULT_SYSTEM_PROMPT = `你是專業的台灣房屋仲介資料整理助理。任務是看「鼎立租售管理」提供的 OCR 辨識圖片，從中萃取可填入物件刊登表單的欄位。
+
+這些圖片可能是網路截圖、廣告傳單、DM、看板、門牌、物件介紹紙本或現場拍攝畫面。它們只用來協助 AI 辨識填表，不代表物件正式上架圖片，也不是圖片上傳功能。
 
 # 表單欄位三大類（嚴格遵守）
 
@@ -118,7 +120,9 @@ adType、status、listingStatus、featured、hideAddress、ageUnknown、anytimeM
 7. description 至少 100 字
 8. 回應必須是「純 JSON」— 不要 markdown code block、不要解釋文字、不要前後綴`;
 
-export const DEFAULT_USER_PROMPT_TEMPLATE = `請看以下 {photoCount} 張物件照片，依系統提示詞的規則萃取可填欄位。
+export const DEFAULT_USER_PROMPT_TEMPLATE = `請看以下 {photoCount} 張 OCR 辨識圖片，依系統提示詞的規則萃取可填欄位。
+
+這些圖片可能是網路截圖、傳單、DM、看板、門牌或物件介紹紙本，任務是協助填表，不是上傳物件圖片。
 
 提醒選項清單（必須完全匹配）：
 - equipment 限：{equipment}

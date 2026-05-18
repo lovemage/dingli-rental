@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getCurrentAdmin } from '@/lib/auth';
 import { extractFromPhotos } from '@/lib/ai-extract';
 
+const OCR_MAX_PHOTOS = 3;
+
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const maxDuration = 60; // vision 推論可能 5-30s，給寬鬆 timeout
@@ -18,9 +20,9 @@ export async function POST(req: Request) {
     if (!imageUrls.length) {
       return NextResponse.json({ error: '請至少提供一張照片網址' }, { status: 400 });
     }
-    if (imageUrls.length > 10) {
+    if (imageUrls.length > OCR_MAX_PHOTOS) {
       // 控制成本與 timeout
-      return NextResponse.json({ error: 'AI 辨識最多支援 10 張照片，請挑選代表性的照片' }, { status: 400 });
+      return NextResponse.json({ error: `AI 辨識最多支援 ${OCR_MAX_PHOTOS} 張圖片，請挑選代表性的截圖或傳單` }, { status: 400 });
     }
 
     const fields = await extractFromPhotos(imageUrls);

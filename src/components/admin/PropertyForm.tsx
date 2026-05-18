@@ -24,6 +24,8 @@ import type { Taxonomies } from '@/lib/taxonomies-shared';
 import { LISTING_STATUS_OPTIONS } from '@/components/frontend/PropertyCard';
 import { isVideoUrl, normalizePropertyMediaOrder } from '@/lib/property-media';
 
+const OCR_MAX_PHOTOS = 3;
+
 export type PropertyFormValue = {
   region: string;
   typeMid: string;
@@ -232,6 +234,10 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
 
   async function aiUpload(files: FileList | null) {
     if (!files?.length) return;
+    if (aiPhotos.length + files.length > OCR_MAX_PHOTOS) {
+      setAiMsg(`OCR 辨識圖片最多可上傳 ${OCR_MAX_PHOTOS} 張，請先移除多餘圖片後再新增`);
+      return;
+    }
     setAiUploading(true); setAiMsg('');
     try {
       const fd = new FormData();
@@ -240,11 +246,8 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || '上傳失敗');
       const newUrls = (data.files as any[]).map((f) => f.url);
-      const merged = [...aiPhotos, ...newUrls].slice(0, 10);
+      const merged = [...aiPhotos, ...newUrls].slice(0, OCR_MAX_PHOTOS);
       setAiPhotos(merged);
-      // 同時加進物件圖庫（避免重複）
-      const dedup = Array.from(new Set([...v.images, ...newUrls])).slice(0, 20);
-      update('images', dedup);
     } catch (e: any) {
       setAiMsg(e?.message || '上傳失敗');
     } finally {
@@ -380,7 +383,9 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
               <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-brand-orange-100 text-brand-orange-700">BETA</span>
             </h2>
             <p className="text-xs text-ink-500 mt-1 leading-relaxed">
-              上傳 1-10 張物件照片，自動辨識並填入欄位：
+              可上傳最多 {OCR_MAX_PHOTOS} 張 OCR 辨識圖片（例如網路截圖、廣告傳單、看板、門牌或物件介紹紙本），AI 會自動辨識並填入欄位。
+              這裡的圖片僅供 OCR 辨識協助上架，<span className="font-bold text-ink-700">不等於下方「物件圖片」上傳，也不會自動加入物件圖庫。</span>
+              <br />
               <span className="font-bold">A 類（看得到就填）</span>
               格局／設備／家具／建物類型／特色／標題／描述；
               <span className="font-bold">B 類（OCR 文字才填）</span>
@@ -392,7 +397,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
         <div className="grid sm:grid-cols-[1fr_auto] gap-3 items-start">
           <label className={`btn btn-secondary text-sm cursor-pointer ${aiUploading ? 'opacity-60 pointer-events-none' : ''}`}>
             <MaterialIcon name="add_photo_alternate" className="!text-base mr-1" />
-            {aiUploading ? '上傳中...' : '選擇照片'}
+            {aiUploading ? '上傳中...' : '選擇 OCR 圖片'}
             <input type="file" multiple accept="image/*" hidden
               onChange={(e) => { aiUpload(e.target.files); e.target.value = ''; }} />
           </label>
