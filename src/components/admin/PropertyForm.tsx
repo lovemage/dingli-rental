@@ -374,27 +374,34 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
       {err && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{err}</div>}
 
       {/* === OCR 上架系統 === */}
-      <div className="admin-card border-2 border-dashed border-brand-orange-300 bg-brand-orange-50/40">
-        <div className="flex items-start justify-between gap-4 mb-3">
+      <details className="admin-card border-2 border-dashed border-brand-orange-300 bg-brand-orange-50/40 group">
+        <summary className="flex cursor-pointer list-none items-start justify-between gap-4 [&::-webkit-details-marker]:hidden">
           <div>
             <h2 className="font-extrabold text-lg flex items-center gap-2">
               <MaterialIcon name="photo_camera" className="!text-2xl text-brand-orange-700" />
               OCR 上架系統
               <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-brand-orange-100 text-brand-orange-700">BETA</span>
             </h2>
-            <p className="text-xs text-ink-500 mt-1 leading-relaxed">
-              可上傳最多 {OCR_MAX_PHOTOS} 張 OCR 辨識圖片（例如網路截圖、廣告傳單、看板、門牌或物件介紹紙本），AI 會自動辨識並填入欄位。
-              這裡的圖片僅供 OCR 辨識協助上架，<span className="font-bold text-ink-700">不等於下方「物件圖片」上傳，也不會自動加入物件圖庫。</span>
-              <br />
-              <span className="font-bold">A 類（看得到就填）</span>
-              格局／設備／家具／建物類型／特色／標題／描述；
-              <span className="font-bold">B 類（OCR 文字才填）</span>
-              照片中若有廣告單／看板／門牌／物件介紹紙本，會 OCR 出地址、樓層、坪數、屋齡、租金、押金、租期等資訊。
-            </p>
+            <p className="text-xs text-ink-500 mt-1 leading-relaxed">需要 AI 從截圖、傳單或門牌辨識欄位時再展開使用。</p>
           </div>
-        </div>
+          <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-brand-orange-300 bg-white px-3 py-1 text-xs font-bold text-brand-orange-700 transition group-open:bg-brand-orange-500 group-open:text-white">
+            <MaterialIcon name="expand_more" className="!text-base transition-transform group-open:rotate-180" />
+            展開
+          </span>
+        </summary>
 
-        <div className="grid sm:grid-cols-[1fr_auto] gap-3 items-start">
+        <div className="mt-4 border-t border-brand-orange-300/50 pt-4">
+          <p className="text-xs text-ink-500 mb-3 leading-relaxed">
+            可上傳最多 {OCR_MAX_PHOTOS} 張 OCR 辨識圖片（例如網路截圖、廣告傳單、看板、門牌或物件介紹紙本），AI 會自動辨識並填入欄位。
+            這裡的圖片僅供 OCR 辨識協助上架，<span className="font-bold text-ink-700">不等於下方「物件圖片」上傳，也不會自動加入物件圖庫。</span>
+            <br />
+            <span className="font-bold">A 類（看得到就填）</span>
+            格局／設備／家具／建物類型／特色／標題／描述；
+            <span className="font-bold">B 類（OCR 文字才填）</span>
+            照片中若有廣告單／看板／門牌／物件介紹紙本，會 OCR 出地址、樓層、坪數、屋齡、租金、押金、租期等資訊。
+          </p>
+
+          <div className="grid sm:grid-cols-[1fr_auto] gap-3 items-start">
           <label className={`btn btn-secondary text-sm cursor-pointer ${aiUploading ? 'opacity-60 pointer-events-none' : ''}`}>
             <MaterialIcon name="add_photo_alternate" className="!text-base mr-1" />
             {aiUploading ? '上傳中...' : '選擇 OCR 圖片'}
@@ -410,9 +417,9 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
             <MaterialIcon name="document_scanner" className="!text-base mr-1" />
             {aiRunning ? `OCR 辨識中（${aiPhotos.length} 張照片）...` : `開始 OCR 辨識（${aiPhotos.length} 張）`}
           </button>
-        </div>
+          </div>
 
-        {aiPhotos.length > 0 && (
+          {aiPhotos.length > 0 && (
           <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-10 gap-2 mt-3">
             {aiPhotos.map((url) => (
               <div key={url} className="relative group">
@@ -427,9 +434,9 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
               </div>
             ))}
           </div>
-        )}
+          )}
 
-        {aiMsg && (
+          {aiMsg && (
           <p className={`text-sm mt-3 flex items-start gap-1.5 ${aiAppliedKeys.length > 0 ? 'text-brand-green-700' : 'text-red-600'}`}>
             <MaterialIcon
               name={aiAppliedKeys.length > 0 ? 'check_circle' : 'error'}
@@ -437,23 +444,28 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
             />
             <span>{aiMsg}</span>
           </p>
-        )}
-        {aiAppliedKeys.length > 0 && (
+          )}
+          {aiAppliedKeys.length > 0 && (
           <p className="text-xs text-ink-500 mt-1">
             已套用：{aiAppliedKeys.join('・')}
           </p>
-        )}
-      </div>
+          )}
+        </div>
+      </details>
 
       {/* === 照片（放在 OCR 區塊下方） === */}
       <Card title="照片與影片（最多 20 個媒體，影片最多 2 支）">
-        <input
-          type="file"
-          multiple
-          accept="image/*,video/mp4,video/webm,video/quicktime"
-          onChange={(e) => uploadFiles(e.target.files)}
-          className="block text-sm"
-        />
+        <label className={`btn btn-orange w-full justify-center cursor-pointer sm:w-auto ${uploading ? 'opacity-60 pointer-events-none' : ''}`}>
+          <MaterialIcon name="cloud_upload" className="!text-xl mr-1" />
+          {uploading ? '上傳中...' : '上傳照片／影片'}
+          <input
+            type="file"
+            multiple
+            accept="image/*,video/mp4,video/webm,video/quicktime"
+            hidden
+            onChange={(e) => { uploadFiles(e.target.files); e.target.value = ''; }}
+          />
+        </label>
         {uploading && <p className="text-sm text-brand-orange-700 mt-2">上傳中...</p>}
         <p className="text-xs text-ink-500 mt-1">目前影片數：{videoCount} / 2（影片會自動排在第 2、3 位，且不可作為封面）</p>
         {v.images.length > 0 && (
