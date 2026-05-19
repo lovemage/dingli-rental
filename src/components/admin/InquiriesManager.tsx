@@ -54,7 +54,7 @@ const STATUS_TABS: { key: 'all' | 'new' | 'contacted' | 'closed'; label: string 
 ];
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
-  new:       { label: '新進',   className: 'bg-red-50 text-red-700' },
+  new:       { label: '未讀',   className: 'bg-brand-orange-500 text-white shadow-sm' },
   contacted: { label: '已聯絡', className: 'bg-brand-green-50 text-brand-green-700' },
   closed:    { label: '已結案', className: 'bg-paper-2 text-ink-500' },
 };
@@ -193,20 +193,30 @@ export default function InquiriesManager() {
           {items.map((it) => {
             const expanded = expandedId === it.id;
             const badge = STATUS_BADGE[it.status] || STATUS_BADGE.new;
+            const unread = it.status === 'new';
             return (
-              <div key={it.id} className="admin-card !p-0 overflow-hidden">
+              <div
+                key={it.id}
+                className={`admin-card !p-0 overflow-hidden transition ${unread ? '!bg-brand-orange-50/70 !border-brand-orange-300 shadow-md' : ''}`}
+              >
                 {/* Row header */}
                 <button
                   type="button"
                   onClick={() => setExpandedId(expanded ? null : it.id)}
-                  className="w-full text-left px-5 py-4 hover:bg-paper-2 transition flex items-center gap-4"
+                  className={`w-full text-left px-5 py-4 transition flex items-center gap-4 ${unread ? 'hover:bg-brand-orange-50' : 'hover:bg-paper-2'}`}
                 >
                   <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${badge.className} whitespace-nowrap flex-shrink-0`}>
                     {badge.label}
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-extrabold text-ink-900">{it.name}</span>
+                      {unread && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-black text-brand-orange-700">
+                          <MaterialIcon name="mark_email_unread" className="!text-sm" />
+                          新案件
+                        </span>
+                      )}
+                      <span className={`font-extrabold ${unread ? 'text-brand-orange-700' : 'text-ink-900'}`}>{it.name}</span>
                       {it.userRole && USER_ROLE_LABEL[it.userRole] && (
                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${it.userRole === 'landlord' ? 'bg-brand-orange-100 text-brand-orange-700' : 'bg-brand-green-100 text-brand-green-700'}`}>
                           {USER_ROLE_LABEL[it.userRole]}
@@ -220,10 +230,10 @@ export default function InquiriesManager() {
                       )}
                     </div>
                     {it.message && !expanded && (
-                      <p className="text-xs text-ink-500 mt-1 line-clamp-1">{it.message}</p>
+                      <p className={`text-xs mt-1 line-clamp-1 ${unread ? 'font-semibold text-ink-700' : 'text-ink-500'}`}>{it.message}</p>
                     )}
                   </div>
-                  <div className="hidden sm:block text-xs text-ink-500 whitespace-nowrap flex-shrink-0">
+                  <div className={`hidden sm:block text-xs whitespace-nowrap flex-shrink-0 ${unread ? 'font-bold text-brand-orange-700' : 'text-ink-500'}`}>
                     {fmt(it.createdAt)}
                   </div>
                   <span className={`text-ink-400 text-base flex-shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`} aria-hidden>▼</span>

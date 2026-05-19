@@ -65,7 +65,7 @@ export type PropertyFiltersValue = {
   region: string;
   district: string;
   type: string;          // 改為支援多選：以逗號分隔
-  building: string;
+  building: string;      // 改為支援多選：以逗號分隔
   minRent: string;
   maxRent: string;
   minArea: string;
@@ -193,6 +193,21 @@ export default function PropertyFilters({
     });
   }
 
+  function updateDraft(next: Partial<PropertyFiltersValue>) {
+    setDraft((prev) => ({ ...prev, ...next }));
+  }
+
+  function applyDraftFilters() {
+    const params = new URLSearchParams();
+    (Object.keys(draft) as (keyof PropertyFiltersValue)[]).forEach((k) => {
+      if (draft[k]) params.set(k, draft[k]);
+    });
+    params.delete('page');
+    startTransition(() => {
+      router.replace(`${propertiesPath}${params.toString() ? `?${params.toString()}` : ''}`, { scroll: false });
+    });
+  }
+
   function reset() {
     setDraft(EMPTY_FILTERS);
     startTransition(() => {
@@ -222,6 +237,7 @@ export default function PropertyFilters({
   const tagsArr = v.tags ? v.tags.split(',').filter(Boolean) : [];
   const eqArr = v.equipment ? v.equipment.split(',').filter(Boolean) : [];
   const typeArr = v.type ? v.type.split(',').filter(Boolean) : [];
+  const buildingArr = v.building ? v.building.split(',').filter(Boolean) : [];
 
   function toggleInList(current: string[], item: string): string {
     const next = current.includes(item) ? current.filter((x) => x !== item) : [...current, item];
@@ -390,10 +406,11 @@ export default function PropertyFilters({
         <div className="mt-4 bg-white border border-line rounded-xl p-5 shadow-sm">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             <FilterGroup title={t('buildingLabel')}>
-              <Pills
-                options={[{ label: t('noLimit'), value: '' }, ...BLDS.map((b) => ({ label: b, value: b }))]}
-                value={v.building}
-                onChange={(val) => pushFilters({ building: val })}
+              <MultiPills
+                options={BLDS.map((b) => ({ label: b, value: b }))}
+                selected={buildingArr}
+                onChange={(next) => updateDraft({ building: next.join(',') })}
+                allLabel={t('noLimit')}
               />
             </FilterGroup>
 
@@ -403,7 +420,7 @@ export default function PropertyFilters({
                 activeIdx={agePresetIndex(v.minAge, v.ageMax)}
                 currentMin={v.minAge}
                 currentMax={v.ageMax}
-                onPick={(p) => pushFilters({ minAge: p.min || '', ageMax: p.max || '' })}
+                onPick={(p) => updateDraft({ minAge: p.min || '', ageMax: p.max || '' })}
                 customLabel={t('customRange')}
                 unitLabel={t('ageUnit')}
               />
@@ -411,9 +428,9 @@ export default function PropertyFilters({
 
             <FilterGroup title={t('amenitiesLabel')}>
               <div className="flex flex-wrap gap-2">
-                <ToggleChip label={t('elevatorLabel')} active={v.elevator === '1'} onClick={() => pushFilters({ elevator: v.elevator === '1' ? '' : '1' })} />
-                <ToggleChip label={t('petsLabel')} active={v.pets === '1'} onClick={() => pushFilters({ pets: v.pets === '1' ? '' : '1' })} />
-                <ToggleChip label={t('cookingLabel')} active={v.cooking === '1'} onClick={() => pushFilters({ cooking: v.cooking === '1' ? '' : '1' })} />
+                <ToggleChip label={t('elevatorLabel')} active={v.elevator === '1'} onClick={() => updateDraft({ elevator: v.elevator === '1' ? '' : '1' })} />
+                <ToggleChip label={t('petsLabel')} active={v.pets === '1'} onClick={() => updateDraft({ pets: v.pets === '1' ? '' : '1' })} />
+                <ToggleChip label={t('cookingLabel')} active={v.cooking === '1'} onClick={() => updateDraft({ cooking: v.cooking === '1' ? '' : '1' })} />
               </div>
             </FilterGroup>
 
@@ -424,7 +441,7 @@ export default function PropertyFilters({
                     key={opt}
                     label={opt}
                     active={eqArr.includes(opt)}
-                    onClick={() => pushFilters({ equipment: toggleInList(eqArr, opt) })}
+                    onClick={() => updateDraft({ equipment: toggleInList(eqArr, opt) })}
                   />
                 ))}
               </div>
@@ -437,11 +454,21 @@ export default function PropertyFilters({
                     key={opt}
                     label={opt}
                     active={tagsArr.includes(opt)}
-                    onClick={() => pushFilters({ tags: toggleInList(tagsArr, opt) })}
+                    onClick={() => updateDraft({ tags: toggleInList(tagsArr, opt) })}
                   />
                 ))}
               </div>
             </FilterGroup>
+          </div>
+          <div className="mt-5 flex justify-end">
+            <button
+              type="button"
+              onClick={applyDraftFilters}
+              className="inline-flex items-center justify-center gap-1.5 rounded-full bg-brand-orange-500 px-5 py-2 text-sm font-extrabold text-white shadow-sm transition hover:bg-brand-orange-700 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/30"
+            >
+              <MaterialIcon name="search" className="!text-base" />
+              <span>{t('searchButton')}</span>
+            </button>
           </div>
         </div>
       )}
@@ -762,23 +789,33 @@ function FilterGroup({ title, children, colSpan = 1 }: { title: string; children
   );
 }
 
-function Pills({
+function MultiPills({
   options,
-  value,
+  selected,
   onChange,
+  allLabel,
 }: {
   options: Option[];
-  value: string;
-  onChange: (v: string) => void;
+  selected: string[];
+  onChange: (next: string[]) => void;
+  allLabel: string;
 }) {
+  const active = selected.length > 0;
   return (
     <div className="flex flex-wrap gap-2">
+      <button
+        type="button"
+        onClick={() => onChange([])}
+        className={`text-sm font-medium px-3 py-1.5 rounded-full border transition ${!active ? 'bg-brand-green-700 text-white border-brand-green-700' : 'bg-white text-ink-700 border-line hover:border-brand-green-500'}`}
+      >
+        {allLabel}
+      </button>
       {options.map((o) => (
         <button
           key={o.value}
           type="button"
-          onClick={() => onChange(o.value)}
-          className={`text-sm font-medium px-3 py-1.5 rounded-full border transition ${value === o.value ? 'bg-brand-green-700 text-white border-brand-green-700' : 'bg-white text-ink-700 border-line hover:border-brand-green-500'}`}
+          onClick={() => onChange(selected.includes(o.value) ? selected.filter((x) => x !== o.value) : [...selected, o.value])}
+          className={`text-sm font-medium px-3 py-1.5 rounded-full border transition ${selected.includes(o.value) ? 'bg-brand-green-700 text-white border-brand-green-700' : 'bg-white text-ink-700 border-line hover:border-brand-green-500'}`}
         >
           {o.label}
         </button>

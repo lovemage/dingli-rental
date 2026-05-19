@@ -810,18 +810,17 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
               />
               有車位
             </label>
-            {v.hasParking && (
-              <select
-                className="input-base max-w-sm"
-                value={v.parkingType || ''}
-                onChange={(e) => update('parkingType', e.target.value)}
-              >
-                <option value="">請選擇車位類型</option>
-                {PARKING_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
-            )}
+            <select
+              className="input-base max-w-sm disabled:opacity-60"
+              value={v.parkingType || ''}
+              disabled={!v.hasParking}
+              onChange={(e) => update('parkingType', e.target.value)}
+            >
+              <option value="">請選擇車位類型</option>
+              {PARKING_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
           </div>
         </Field>
       </Card>

@@ -64,7 +64,15 @@ export default function AdminShell({ username, children }: { username: string; c
             <MaterialIcon name="menu" className="text-3xl" />
           </button>
           <Link href="/admin" className="flex items-center gap-2">
-            <Image src="/LOGO_0.png" alt="" width={140} height={28} className="h-7 w-auto" />
+            <Image
+              src="/LOGO_0.png"
+              alt="鼎立租售管理 Dingli Rental Service"
+              width={387}
+              height={44}
+              unoptimized
+              className="h-7 w-auto"
+              style={{ width: 'auto' }}
+            />
             <span className="text-xs font-bold text-ink-700">後台</span>
           </Link>
           <button onClick={logout} className="text-xs text-ink-500">登出</button>
@@ -76,7 +84,15 @@ export default function AdminShell({ username, children }: { username: string; c
         <aside className="hidden lg:flex flex-col w-64 min-h-screen bg-white border-r border-line sticky top-0">
           <div className="p-5 border-b border-line">
             <Link href="/admin" className="flex items-center gap-2">
-              <Image src="/LOGO_0.png" alt="鼎立租售管理" width={180} height={36} className="h-9 w-auto" />
+              <Image
+                src="/LOGO_0.png"
+                alt="鼎立租售管理 Dingli Rental Service"
+                width={387}
+                height={44}
+                unoptimized
+                className="h-11 w-auto"
+                style={{ width: 'auto' }}
+              />
             </Link>
             <p className="text-xs text-ink-500 mt-1.5">後台管理系統</p>
           </div>
@@ -121,7 +137,15 @@ export default function AdminShell({ username, children }: { username: string; c
             <aside className="fixed top-0 left-0 bottom-0 w-72 bg-white z-50 lg:hidden flex flex-col">
               <div className="p-5 border-b border-line flex items-center justify-between">
                 <Link href="/admin" onClick={() => setOpen(false)} className="flex items-center gap-2">
-                  <Image src="/LOGO_0.png" alt="" width={150} height={32} className="h-8 w-auto" />
+                  <Image
+                    src="/LOGO_0.png"
+                    alt="鼎立租售管理 Dingli Rental Service"
+                    width={387}
+                    height={44}
+                    unoptimized
+                    className="h-9 w-auto"
+                    style={{ width: 'auto' }}
+                  />
                 </Link>
                 <button onClick={() => setOpen(false)} className="text-xl text-ink-700">
                   <MaterialIcon name="close" className="text-2xl" />

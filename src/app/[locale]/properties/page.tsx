@@ -60,7 +60,11 @@ async function search(params: SearchParams, locale: string) {
     if (typeList.length === 1) where.typeMid = typeList[0];
     else if (typeList.length > 1) where.typeMid = { in: typeList };
   }
-  if (params.building) where.buildingType = params.building;
+  if (params.building) {
+    const buildingList = params.building.split(',').map((t) => t.trim()).filter(Boolean);
+    if (buildingList.length === 1) where.buildingType = buildingList[0];
+    else if (buildingList.length > 1) where.buildingType = { in: buildingList };
+  }
 
   const rentRange: Prisma.IntFilter = {};
   if (params.minRent) rentRange.gte = Number(params.minRent);

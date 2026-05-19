@@ -27,7 +27,11 @@ export async function GET(req: Request) {
     if (typeList.length === 1) where.typeMid = typeList[0];
     else if (typeList.length > 1) where.typeMid = { in: typeList };
   }
-  if (buildingType) where.buildingType = buildingType;
+  if (buildingType) {
+    const buildingList = buildingType.split(',').map((t) => t.trim()).filter(Boolean);
+    if (buildingList.length === 1) where.buildingType = buildingList[0];
+    else if (buildingList.length > 1) where.buildingType = { in: buildingList };
+  }
   if (minRent > 0 || maxRent > 0) {
     where.rent = {};
     if (minRent > 0) where.rent.gte = minRent;
