@@ -19,6 +19,7 @@ function normalizeNav(
   return {
     properties: pickString(r.properties, fallback.properties),
     services: pickString(r.services, fallback.services),
+    repairs: pickString(r.repairs, fallback.repairs),
     careers: pickString(r.careers, fallback.careers),
     contact: pickString(r.contact, fallback.contact),
   };
@@ -52,6 +53,7 @@ async function getHeaderNav(locale: string): Promise<HeaderNavContent> {
     return {
       properties: t('properties'),
       services: t('services'),
+      repairs: t('repairs'),
       careers: t('careers'),
       contact: t('contact'),
     };

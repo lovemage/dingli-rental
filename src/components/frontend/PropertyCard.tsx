@@ -200,7 +200,10 @@ export default function PropertyCard({ property: p, maxTags = 3 }: Props) {
             <SpecIcon type="bathrooms" />
             {t('bathrooms', { count: p.bathrooms })}
           </span>
-          <span className="flex items-center gap-1">📐 {t('ping', { count: p.usableArea })}</span>
+          <span className="flex items-center gap-1">
+            <SpecIcon type="area" />
+            {t('ping', { count: p.usableArea })}
+          </span>
           {p.parkingType && (
             <span className="flex items-center gap-1">
               <SpecIcon type="parking" />
@@ -213,7 +216,7 @@ export default function PropertyCard({ property: p, maxTags = 3 }: Props) {
   );
 }
 
-function SpecIcon({ type }: { type: 'rooms' | 'bathrooms' | 'parking' }) {
+function SpecIcon({ type }: { type: 'rooms' | 'bathrooms' | 'area' | 'parking' }) {
   if (type === 'rooms') {
     return (
       <svg className="h-4 w-4 shrink-0 text-ink-700" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
@@ -231,6 +234,14 @@ function SpecIcon({ type }: { type: 'rooms' | 'bathrooms' | 'parking' }) {
           fill="currentColor"
           d="M8 18q-.425 0-.712-.288T7 17t.288-.712T8 16t.713.288T9 17t-.288.713T8 18m4 0q-.425 0-.712-.288T11 17t.288-.712T12 16t.713.288T13 17t-.288.713T12 18m4 0q-.425 0-.712-.288T15 17t.288-.712T16 16t.713.288T17 17t-.288.713T16 18M5 14v-2q0-2.65 1.7-4.6T11 5.1V3h2v2.1q2.6.35 4.3 2.3T19 12v2zm2-2h10q0-2.075-1.463-3.537T12 7T8.463 8.463T7 12m1 9q-.425 0-.712-.288T7 20t.288-.712T8 19t.713.288T9 20t-.288.713T8 21m4 0q-.425 0-.712-.288T11 20t.288-.712T12 19t.713.288T13 20t-.288.713T12 21m4 0q-.425 0-.712-.288T15 20t.288-.712T16 19t.713.288T17 20t-.288.713T16 21m-4-9"
         />
+      </svg>
+    );
+  }
+  if (type === 'area') {
+    return (
+      <svg className="h-4 w-4 shrink-0 text-ink-700" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4 11v8a1 1 0 0 0 1 1h8M4 6V5a1 1 0 0 1 1-1h1m5 0h2m5 0h1a1 1 0 0 1 1 1v1m0 5v2m0 5v1a1 1 0 0 1-1 1h-1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M4 12h7a1 1 0 0 1 1 1v7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     );
   }

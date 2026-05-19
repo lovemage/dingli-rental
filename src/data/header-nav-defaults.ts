@@ -7,6 +7,7 @@
 export type HeaderNavContent = {
   properties: string;
   services: string;
+  repairs: string;
   careers: string;
   contact: string;
 };
@@ -14,6 +15,7 @@ export type HeaderNavContent = {
 export const HEADER_NAV_DEFAULTS: HeaderNavContent = {
   properties: '物件分類',
   services: '服務特色',
+  repairs: '房屋修繕',
   careers: '人才招募',
   contact: '聯絡我們',
 };

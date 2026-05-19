@@ -88,6 +88,15 @@ export default function HeaderNavForm() {
           />
         </div>
         <div>
+          <label className="label-base">房屋修繕（/repairs）</label>
+          <input
+            className="input-base"
+            value={data.repairs}
+            onChange={(e) => set('repairs', e.target.value)}
+            placeholder="房屋修繕"
+          />
+        </div>
+        <div>
           <label className="label-base">人才招募（/careers）</label>
           <input
             className="input-base"

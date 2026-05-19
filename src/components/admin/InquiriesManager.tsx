@@ -129,6 +129,9 @@ export default function InquiriesManager() {
         const j = await res.json().catch(() => ({}));
         throw new Error(j?.error || '更新失敗');
       }
+      if (patch.status === 'contacted' || patch.status === 'closed') {
+        setExpandedId((current) => (current === id ? null : current));
+      }
       await refresh();
     } catch (e: any) {
       alert(e?.message || '更新失敗');

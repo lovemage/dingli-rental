@@ -56,6 +56,11 @@ export default function HeaderClient({ locale, nav }: Props) {
               </Link>
             </li>
             <li>
+              <Link href={lp('/repairs')} className="font-medium text-ink-700 hover:text-brand-green-700 transition">
+                {nav.repairs}
+              </Link>
+            </li>
+            <li>
               <Link href={lp('/careers')} className="font-medium text-ink-700 hover:text-brand-green-700 transition">
                 {nav.careers}
               </Link>
@@ -104,6 +109,15 @@ export default function HeaderClient({ locale, nav }: Props) {
                   onClick={() => setOpen(false)}
                 >
                   {nav.services}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href={lp('/repairs')}
+                  className="block py-2 font-medium text-ink-700"
+                  onClick={() => setOpen(false)}
+                >
+                  {nav.repairs}
                 </Link>
               </li>
               <li>

@@ -187,7 +187,7 @@ export default function PropertyFilters({
       }
       // replace + transition：avoid history 堆積，並讓 UI 維持互動順暢
       startTransition(() => {
-        router.replace(`${propertiesPath}${params.toString() ? `?${params.toString()}` : ''}`);
+        router.replace(`${propertiesPath}${params.toString() ? `?${params.toString()}` : ''}`, { scroll: false });
       });
       return merged;
     });
@@ -212,7 +212,7 @@ export default function PropertyFilters({
   function reset() {
     setDraft(EMPTY_FILTERS);
     startTransition(() => {
-      router.replace(propertiesPath);
+      router.replace(propertiesPath, { scroll: false });
     });
   }
 
