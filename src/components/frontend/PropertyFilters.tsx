@@ -203,6 +203,7 @@ export default function PropertyFilters({
       if (draft[k]) params.set(k, draft[k]);
     });
     params.delete('page');
+    setAdvancedOpen(false);
     startTransition(() => {
       router.replace(`${propertiesPath}${params.toString() ? `?${params.toString()}` : ''}`, { scroll: false });
     });
@@ -256,20 +257,21 @@ export default function PropertyFilters({
             pushFilters({ q });
           }}
         >
-          <div className="relative">
+          <div className="flex overflow-hidden rounded-full border border-line bg-white focus-within:border-brand-green-500 focus-within:ring-2 focus-within:ring-brand-green-500/20">
             <input
               name="q"
               type="text"
               defaultValue={v.q}
               placeholder={t('searchPlaceholder')}
-              className="w-full pl-3 pr-10 py-2 text-sm rounded-full border border-line bg-white focus:outline-none focus:border-brand-green-500 focus:ring-2 focus:ring-brand-green-500/20"
+              className="min-w-0 flex-1 bg-white px-3 py-2 text-sm focus:outline-none"
             />
             <button
               type="submit"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-500 hover:text-brand-green-700 transition"
+              className="inline-flex items-center justify-center gap-1.5 bg-brand-orange-500 px-3.5 text-sm font-extrabold text-white transition hover:bg-brand-orange-700 focus:outline-none"
               aria-label={t('searchAria')}
             >
               <MaterialIcon name="search" className="!text-base" />
+              <span className="hidden sm:inline">{t('searchButton')}</span>
             </button>
           </div>
         </form>

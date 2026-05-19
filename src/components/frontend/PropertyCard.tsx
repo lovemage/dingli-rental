@@ -61,6 +61,7 @@ export type PropertyCardData = {
   hideAddress?: boolean | null;
   featured?: boolean | null;
   listingStatus?: ListingStatus | string | null;
+  parkingType?: string | null;
 };
 
 type Props = {
@@ -190,13 +191,54 @@ export default function PropertyCard({ property: p, maxTags = 3 }: Props) {
           <TagPills tags={allTags} className="mb-4" />
         )}
 
-        <div className="flex gap-4 pt-4 border-t border-line text-xs text-ink-700 mt-auto">
-          <span className="flex items-center gap-1">🛏 {t('rooms', { count: p.rooms })}</span>
-          <span className="flex items-center gap-1">🚿 {t('bathrooms', { count: p.bathrooms })}</span>
+        <div className="flex flex-wrap gap-x-4 gap-y-2 pt-4 border-t border-line text-xs text-ink-700 mt-auto">
+          <span className="flex items-center gap-1">
+            <SpecIcon type="rooms" />
+            {t('rooms', { count: p.rooms })}
+          </span>
+          <span className="flex items-center gap-1">
+            <SpecIcon type="bathrooms" />
+            {t('bathrooms', { count: p.bathrooms })}
+          </span>
           <span className="flex items-center gap-1">📐 {t('ping', { count: p.usableArea })}</span>
+          {p.parkingType && (
+            <span className="flex items-center gap-1">
+              <SpecIcon type="parking" />
+              有
+            </span>
+          )}
         </div>
       </div>
     </Link>
+  );
+}
+
+function SpecIcon({ type }: { type: 'rooms' | 'bathrooms' | 'parking' }) {
+  if (type === 'rooms') {
+    return (
+      <svg className="h-4 w-4 shrink-0 text-ink-700" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          fill="currentColor"
+          d="M4 19v-7.375L3 12.4q-.35.25-.75.2t-.65-.4t-.187-.75t.387-.65l8.975-6.875q.275-.2.588-.3t.637-.1t.638.1t.587.3l9 6.875q.325.25.375.65t-.2.75q-.25.325-.65.375t-.725-.2L20 11.625V19q0 .825-.587 1.413T18 21H6q-.825 0-1.412-.587T4 19m2 0h12v-8.9l-6-4.575L6 10.1zm2-4q.425 0 .713-.288T9 14t-.288-.712T8 13t-.712.288T7 14t.288.713T8 15m4 0q.425 0 .713-.288T13 14t-.288-.712T12 13t-.712.288T11 14t.288.713T12 15m4 0q.425 0 .713-.288T17 14t-.288-.712T16 13t-.712.288T15 14t.288.713T16 15M6 19h12z"
+        />
+      </svg>
+    );
+  }
+  if (type === 'bathrooms') {
+    return (
+      <svg className="h-4 w-4 shrink-0 text-ink-700" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          fill="currentColor"
+          d="M8 18q-.425 0-.712-.288T7 17t.288-.712T8 16t.713.288T9 17t-.288.713T8 18m4 0q-.425 0-.712-.288T11 17t.288-.712T12 16t.713.288T13 17t-.288.713T12 18m4 0q-.425 0-.712-.288T15 17t.288-.712T16 16t.713.288T17 17t-.288.713T16 18M5 14v-2q0-2.65 1.7-4.6T11 5.1V3h2v2.1q2.6.35 4.3 2.3T19 12v2zm2-2h10q0-2.075-1.463-3.537T12 7T8.463 8.463T7 12m1 9q-.425 0-.712-.288T7 20t.288-.712T8 19t.713.288T9 20t-.288.713T8 21m4 0q-.425 0-.712-.288T11 20t.288-.712T12 19t.713.288T13 20t-.288.713T12 21m4 0q-.425 0-.712-.288T15 20t.288-.712T16 19t.713.288T17 20t-.288.713T16 21m-4-9"
+        />
+      </svg>
+    );
+  }
+  return (
+    <svg className="h-4 w-4 shrink-0 text-ink-700" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M5 20a2 2 0 1 0 4 0a2 2 0 0 0-4 0m10 0a2 2 0 1 0 4 0a2 2 0 0 0-4 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M5 20H3v-6l2-5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0H9m-6-6h15m-6 0V9M3 6l9-4l9 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 

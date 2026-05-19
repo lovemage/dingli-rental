@@ -77,16 +77,29 @@ async function search(params: SearchParams, locale: string) {
   if (Object.keys(areaRange).length) where.usableArea = areaRange;
 
   if (params.rooms) where.rooms = { gte: Number(params.rooms) };
+
+  const andClauses: Prisma.PropertyWhereInput[] = [];
+
   // 屋齡支援下限+上限區間
   const ageRange: Prisma.IntFilter = {};
   if (params.minAge) ageRange.gte = Number(params.minAge);
   if (params.ageMax) ageRange.lte = Number(params.ageMax);
-  if (Object.keys(ageRange).length) where.buildingAge = ageRange;
+  if (Object.keys(ageRange).length) {
+    const ageMax = params.ageMax ? Number(params.ageMax) : null;
+    if (!params.minAge && ageMax !== null && Number.isFinite(ageMax) && ageMax >= 3) {
+      andClauses.push({
+        OR: [
+          { buildingAge: ageRange },
+          { featureTags: { array_contains: '新成屋' } as any },
+        ],
+      });
+    } else {
+      where.buildingAge = ageRange;
+    }
+  }
   if (params.elevator === '1') where.hasElevator = true;
   if (params.pets === '1') where.petsAllowed = true;
   if (params.cooking === '1') where.cookingAllowed = true;
-
-  const andClauses: Prisma.PropertyWhereInput[] = [];
 
   if (params.tags) {
     const tagsList = params.tags.split(',').map((t) => t.trim()).filter(Boolean);

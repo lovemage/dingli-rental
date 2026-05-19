@@ -242,6 +242,7 @@ export function getLocalizedPropertyCards(
       hideAddress: p.hideAddress,
       featured: p.featured,
       listingStatus: p.listingStatus as any,
+      parkingType: p.parkingType,
     };
   });
 }
