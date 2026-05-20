@@ -36,19 +36,20 @@ type SearchParams = {
 };
 
 function parseSort(sort?: string): Prisma.PropertyOrderByWithRelationInput[] {
+  const featuredFirst: Prisma.PropertyOrderByWithRelationInput[] = [{ featured: 'desc' }];
   switch (sort) {
     case 'created_desc':
     case 'newest':
-      return [{ createdAt: 'desc' }];
+      return [...featuredFirst, { createdAt: 'desc' }];
     case 'created_asc':
-      return [{ createdAt: 'asc' }];
-    case 'rent_asc': return [{ rent: 'asc' }];
-    case 'rent_desc': return [{ rent: 'desc' }];
-    case 'area_desc': return [{ usableArea: 'desc' }];
+      return [...featuredFirst, { createdAt: 'asc' }];
+    case 'rent_asc': return [...featuredFirst, { rent: 'asc' }];
+    case 'rent_desc': return [...featuredFirst, { rent: 'desc' }];
+    case 'area_desc': return [...featuredFirst, { usableArea: 'desc' }];
     case 'area_asc':
-      return [{ usableArea: 'asc' }];
+      return [...featuredFirst, { usableArea: 'asc' }];
     default:
-      return [{ rent: 'desc' }];
+      return featuredFirst;
   }
 }
 

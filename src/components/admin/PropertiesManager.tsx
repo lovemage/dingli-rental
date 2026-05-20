@@ -9,6 +9,11 @@ type PropertyItem = {
   title: string;
   region: string;
   district: string;
+  street?: string | null;
+  lane?: string | null;
+  alley?: string | null;
+  number?: string | null;
+  numberSub?: string | null;
   typeMid: string;
   rent: number;
   usableArea: number;
@@ -27,6 +32,10 @@ function fmtDate(dateIso: string) {
   return `${dd}/${mm}/${yyyy}`;
 }
 
+function formatFullAddress(p: Pick<PropertyItem, 'region' | 'district' | 'street' | 'lane' | 'alley' | 'number' | 'numberSub'>) {
+  return `${p.region}${p.district}${p.street || ''}${p.lane ? `${p.lane}巷` : ''}${p.alley ? `${p.alley}弄` : ''}${p.number ? `${p.number}號` : ''}${p.numberSub ? `之${p.numberSub}` : ''}`;
+}
+
 export default function PropertiesManager({
   initialItems,
   monthStr,
@@ -39,7 +48,7 @@ export default function PropertiesManager({
   const ACTIVE_PAGE_SIZE = 30;
   const INACTIVE_PAGE_SIZE = 20;
   const [items, setItems] = useState(initialItems);
-  const [showOffShelf, setShowOffShelf] = useState(false);
+  const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
   const [pending, setPending] = useState<number | null>(null);
   const [activePage, setActivePage] = useState(1);
   const [inactiveSort, setInactiveSort] = useState<'rent_desc' | 'rent_asc' | 'created_desc' | 'created_asc' | 'area_desc' | 'area_asc'>('rent_desc');
@@ -62,10 +71,12 @@ export default function PropertiesManager({
     });
     return arr;
   }, [inactiveItems, inactiveSort]);
+
   const activeTotalPages = Math.max(1, Math.ceil(activeItems.length / ACTIVE_PAGE_SIZE));
   const inactiveTotalPages = Math.max(1, Math.ceil(sortedInactiveItems.length / INACTIVE_PAGE_SIZE));
   const safeActivePage = Math.min(activePage, activeTotalPages);
   const safeInactivePage = Math.min(inactivePage, inactiveTotalPages);
+
   const pagedActiveItems = useMemo(() => {
     const start = (safeActivePage - 1) * ACTIVE_PAGE_SIZE;
     return activeItems.slice(start, start + ACTIVE_PAGE_SIZE);
@@ -86,13 +97,14 @@ export default function PropertiesManager({
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || '更新狀態失敗');
       setItems((prev) => prev.map((it) => (it.id === id ? { ...it, status: data.status } : it)));
-      if (status === 'inactive') setShowOffShelf(true);
     } catch (e: any) {
       alert(e?.message || '更新失敗');
     } finally {
       setPending(null);
     }
   }
+
+  const rows = activeTab === 'active' ? pagedActiveItems : pagedInactiveItems;
 
   return (
     <div className="space-y-5">
@@ -113,11 +125,33 @@ export default function PropertiesManager({
             <input type="hidden" name="month" value={monthStr} />
             <button type="submit" className="btn btn-secondary text-sm">搜尋</button>
           </form>
-          <button type="button" className="btn btn-secondary text-sm" onClick={() => setShowOffShelf(true)}>
-            已下架 ({inactiveItems.length})
-          </button>
           <Link href="/admin/properties/new" className="btn btn-primary">+ 新增物件</Link>
         </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setActiveTab('active')}
+          className={`px-3.5 py-1.5 text-sm font-bold rounded-full border transition ${
+            activeTab === 'active'
+              ? 'bg-brand-green-700 text-white border-brand-green-700'
+              : 'bg-white text-ink-700 border-line hover:border-brand-green-500'
+          }`}
+        >
+          已上架（{activeItems.length}）
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('inactive')}
+          className={`px-3.5 py-1.5 text-sm font-bold rounded-full border transition ${
+            activeTab === 'inactive'
+              ? 'bg-brand-green-700 text-white border-brand-green-700'
+              : 'bg-white text-ink-700 border-line hover:border-brand-green-500'
+          }`}
+        >
+          已下架（{inactiveItems.length}）
+        </button>
       </div>
 
       <div className="admin-card overflow-x-auto p-0">
@@ -126,7 +160,7 @@ export default function PropertiesManager({
             <tr>
               <th className="text-left px-3 py-2 font-bold whitespace-nowrap">編號</th>
               <th className="text-left px-3 py-2 font-bold w-14">圖</th>
-              <th className="text-left px-3 py-2 font-bold">物件 / 區域</th>
+              <th className="text-left px-3 py-2 font-bold">物件 / 地址</th>
               <th className="text-left px-3 py-2 font-bold whitespace-nowrap">類型</th>
               <th className="text-right px-3 py-2 font-bold whitespace-nowrap">月租</th>
               <th className="text-right px-3 py-2 font-bold whitespace-nowrap" title={`${monthStr} 月 / 累積`}>
@@ -137,7 +171,7 @@ export default function PropertiesManager({
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
-            {pagedActiveItems.map((p) => (
+            {rows.map((p) => (
               <tr key={p.id} className="hover:bg-paper-2/40 transition">
                 <td className="px-3 py-2 font-mono text-[11px] text-ink-500 whitespace-nowrap">{p.code || '—'}</td>
                 <td className="px-3 py-2">
@@ -150,7 +184,7 @@ export default function PropertiesManager({
                     )}
                   </div>
                 </td>
-                <td className="px-3 py-2 min-w-[200px]">
+                <td className="px-3 py-2 min-w-[240px]">
                   <Link
                     href={`/properties/${p.id}`}
                     target="_blank"
@@ -160,7 +194,7 @@ export default function PropertiesManager({
                   >
                     {p.title}
                   </Link>
-                  <p className="text-xs text-ink-500">{p.region}・{p.district}</p>
+                  <p className="text-xs text-ink-500 line-clamp-1">{formatFullAddress(p)}</p>
                 </td>
                 <td className="px-3 py-2 text-xs text-ink-700 whitespace-nowrap">{p.typeMid}</td>
                 <td className="px-3 py-2 text-right font-bold text-brand-green-900 whitespace-nowrap">NT$ {p.rent.toLocaleString()}</td>
@@ -172,20 +206,55 @@ export default function PropertiesManager({
                 <td className="px-3 py-2 text-center text-xs whitespace-nowrap">{fmtDate(p.createdAt)}</td>
                 <td className="px-3 py-2 text-right whitespace-nowrap">
                   <Link href={`/admin/properties/${p.id}/edit`} className="text-xs font-medium border border-line rounded-md px-2.5 py-1 hover:border-brand-green-500 hover:text-brand-green-700 mr-1">編輯</Link>
-                  <button
-                    type="button"
-                    disabled={pending === p.id}
-                    onClick={() => updateStatus(p.id, 'inactive', 'closed')}
-                    className="text-xs font-medium border border-red-200 text-red-700 rounded-md px-2.5 py-1 hover:bg-red-50 disabled:opacity-50"
-                  >
-                    成交下架
-                  </button>
+                  {p.status === 'active' ? (
+                    <button
+                      type="button"
+                      disabled={pending === p.id}
+                      onClick={() => updateStatus(p.id, 'inactive', 'closed')}
+                      className="text-xs font-medium border border-red-200 text-red-700 rounded-md px-2.5 py-1 hover:bg-red-50 disabled:opacity-50"
+                    >
+                      成交下架
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={pending === p.id}
+                      onClick={() => updateStatus(p.id, 'active', 'active')}
+                      className="text-xs font-medium border border-brand-green-200 text-brand-green-700 rounded-md px-2.5 py-1 hover:bg-brand-green-50 disabled:opacity-50"
+                    >
+                      重新上架
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {activeTotalPages > 1 && (
+
+        {activeTab === 'inactive' && (
+          <div className="px-3 py-3 border-t border-line bg-white">
+            <label className="text-sm flex items-center gap-2">
+              <span className="text-ink-500">排序</span>
+              <select
+                className="bg-white border border-line rounded-full px-3 py-1.5 text-sm focus:outline-none focus:border-brand-green-500"
+                value={inactiveSort}
+                onChange={(e) => {
+                  setInactiveSort(e.target.value as typeof inactiveSort);
+                  setInactivePage(1);
+                }}
+              >
+                <option value="rent_desc">價格高到低</option>
+                <option value="rent_asc">價格低到高</option>
+                <option value="created_desc">新到舊</option>
+                <option value="created_asc">舊到新</option>
+                <option value="area_desc">坪數大到小</option>
+                <option value="area_asc">坪數小到大</option>
+              </select>
+            </label>
+          </div>
+        )}
+
+        {activeTab === 'active' && activeTotalPages > 1 && (
           <div className="px-3 py-3 border-t border-line flex items-center justify-center gap-2 bg-white">
             <button
               type="button"
@@ -206,99 +275,33 @@ export default function PropertiesManager({
             </button>
           </div>
         )}
+
+        {activeTab === 'inactive' && inactiveTotalPages > 1 && (
+          <div className="px-3 py-3 border-t border-line flex items-center justify-center gap-2 bg-white">
+            <button
+              type="button"
+              onClick={() => setInactivePage((p) => Math.max(1, p - 1))}
+              disabled={safeInactivePage === 1}
+              className="text-xs font-medium border border-line rounded-md px-2.5 py-1 disabled:opacity-50"
+            >
+              上一頁
+            </button>
+            <span className="text-xs text-ink-500">第 {safeInactivePage} / {inactiveTotalPages} 頁</span>
+            <button
+              type="button"
+              onClick={() => setInactivePage((p) => Math.min(inactiveTotalPages, p + 1))}
+              disabled={safeInactivePage === inactiveTotalPages}
+              className="text-xs font-medium border border-line rounded-md px-2.5 py-1 disabled:opacity-50"
+            >
+              下一頁
+            </button>
+          </div>
+        )}
       </div>
 
-      {showOffShelf && (
-        <div className="fixed inset-0 z-50 bg-ink-900/55 grid place-items-center px-4" onClick={() => setShowOffShelf(false)}>
-          <div className="bg-white rounded-xl w-full max-w-5xl max-h-[85vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="px-5 py-4 border-b border-line flex items-center justify-between">
-              <h3 className="font-black text-lg">成交下架區塊</h3>
-              <div className="flex items-center gap-2">
-                <label className="text-sm flex items-center gap-2">
-                  <span className="text-ink-500">排序</span>
-                  <select
-                    className="bg-white border border-line rounded-full px-3 py-1.5 text-sm focus:outline-none focus:border-brand-green-500"
-                    value={inactiveSort}
-                    onChange={(e) => {
-                      setInactiveSort(e.target.value as typeof inactiveSort);
-                      setInactivePage(1);
-                    }}
-                  >
-                    <option value="rent_desc">價格高到低</option>
-                    <option value="rent_asc">價格低到高</option>
-                    <option value="created_desc">新到舊</option>
-                    <option value="created_asc">舊到新</option>
-                    <option value="area_desc">坪數大到小</option>
-                    <option value="area_asc">坪數小到大</option>
-                  </select>
-                </label>
-                <button type="button" className="btn btn-secondary text-sm" onClick={() => setShowOffShelf(false)}>關閉</button>
-              </div>
-            </div>
-            <div className="p-4 overflow-auto max-h-[70vh]">
-              {inactiveItems.length === 0 ? (
-                <p className="text-sm text-ink-500">目前沒有已下架物件</p>
-              ) : (
-                <div className="space-y-2">
-                  {pagedInactiveItems.map((p) => (
-                    <div key={p.id} className="border border-line rounded-lg p-3 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-14 h-14 rounded-lg overflow-hidden bg-paper-2 flex-shrink-0">
-                          {p.imageUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={p.imageUrl} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full grid place-items-center text-ink-300 text-xs">—</div>
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                        <Link
-                          href={`/properties/${p.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-bold text-sm hover:text-brand-green-700 underline-offset-2 hover:underline line-clamp-1"
-                          title="新視窗預覽"
-                        >
-                          {p.title}
-                        </Link>
-                        <p className="text-xs text-ink-500 line-clamp-1">#{p.code || '—'} ・ {p.region}・{p.district} ・ 上架時間 {fmtDate(p.createdAt)}</p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        disabled={pending === p.id}
-                        onClick={() => updateStatus(p.id, 'active', 'active')}
-                        className="btn btn-primary text-sm disabled:opacity-50"
-                      >
-                        再次上架
-                      </button>
-                    </div>
-                  ))}
-                  {inactiveTotalPages > 1 && (
-                    <div className="pt-2 flex items-center justify-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setInactivePage((p) => Math.max(1, p - 1))}
-                        disabled={safeInactivePage === 1}
-                        className="text-xs font-medium border border-line rounded-md px-2.5 py-1 disabled:opacity-50"
-                      >
-                        上一頁
-                      </button>
-                      <span className="text-xs text-ink-500">第 {safeInactivePage} / {inactiveTotalPages} 頁</span>
-                      <button
-                        type="button"
-                        onClick={() => setInactivePage((p) => Math.min(inactiveTotalPages, p + 1))}
-                        disabled={safeInactivePage === inactiveTotalPages}
-                        className="text-xs font-medium border border-line rounded-md px-2.5 py-1 disabled:opacity-50"
-                      >
-                        下一頁
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
+      {rows.length === 0 && (
+        <div className="admin-card">
+          <p className="text-sm text-ink-500">{activeTab === 'active' ? '目前沒有已上架物件' : '目前沒有已下架物件'}</p>
         </div>
       )}
     </div>
