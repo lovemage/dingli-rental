@@ -77,6 +77,7 @@ export default async function AdminPropertiesList({
     district: p.district,
     typeMid: p.typeMid,
     rent: p.rent,
+    usableArea: p.usableArea,
     status: p.status,
     createdAt: p.createdAt.toISOString(),
     imageUrl: p.images[0]?.url || null,
