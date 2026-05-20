@@ -13,13 +13,12 @@ export async function POST(req: Request) {
     if (!ipHash) return NextResponse.json({ ok: true, skipped: 'no-ip' });
 
     const day = dayStartUtc();
-    try {
-      await prisma.siteVisit.create({ data: { ipHash, day } });
-      return NextResponse.json({ ok: true, counted: true });
-    } catch (e: any) {
-      if (e?.code === 'P2002') return NextResponse.json({ ok: true, counted: false });
-      throw e;
-    }
+    await prisma.siteVisit.upsert({
+      where: { ipHash_day: { ipHash, day } },
+      update: {},
+      create: { ipHash, day },
+    });
+    return NextResponse.json({ ok: true });
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'track failed' }, { status: 500 });
   }

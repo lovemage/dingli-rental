@@ -109,6 +109,7 @@
   "propertyFilters": {
     "searchPlaceholder": "輸入編號、區域、社區或關鍵字",
     "searchButton": "搜尋",
+    "searchAria": "搜尋物件",
     "aiButton": "鼎立AI",
     "totalCount": "共 {count} 筆物件",
     "mobileViewToggleLabel": "切換手機物件版面",

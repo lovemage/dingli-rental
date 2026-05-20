@@ -33,13 +33,13 @@ export async function POST(req: Request) {
 
     const day = dayStartUtc();
     try {
-      await prisma.propertyView.create({
-        data: { propertyId, ipHash, day },
+      await prisma.propertyView.upsert({
+        where: { propertyId_ipHash_day: { propertyId, ipHash, day } },
+        update: {},
+        create: { propertyId, ipHash, day },
       });
-      return NextResponse.json({ ok: true, counted: true });
+      return NextResponse.json({ ok: true });
     } catch (e: any) {
-      // P2002 = 已經計過，視為成功
-      if (e?.code === 'P2002') return NextResponse.json({ ok: true, counted: false });
       // P2003 = FK violation（物件在 existence check 後被刪掉的 race window）→ 視為靜默失敗
       if (e?.code === 'P2003') return NextResponse.json({ ok: false, error: 'property gone' }, { status: 404 });
       throw e;

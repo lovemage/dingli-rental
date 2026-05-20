@@ -109,6 +109,7 @@
   "propertyFilters": {
     "searchPlaceholder": "物件番号・エリア・物件名・キーワード",
     "searchButton": "検索",
+    "searchAria": "物件を検索",
     "aiButton": "鼎立AI",
     "totalCount": "{count}件の物件",
     "mobileViewToggleLabel": "スマホの物件表示を切り替え",

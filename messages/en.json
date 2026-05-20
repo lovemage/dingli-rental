@@ -109,6 +109,7 @@
   "propertyFilters": {
     "searchPlaceholder": "Property code, district, community, or keyword",
     "searchButton": "Search",
+    "searchAria": "Search listings",
     "aiButton": "Dingli AI",
     "totalCount": "{count} listings",
     "mobileViewToggleLabel": "Switch mobile listing layout",
