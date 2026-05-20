@@ -89,7 +89,7 @@ export const EMPTY_FILTERS: PropertyFiltersValue = {
   roomsMin: '', roomsMax: '', minAge: '', ageMax: '',
   elevator: '', pets: '', cooking: '',
   tags: '', equipment: '',
-  q: '', sort: 'rent_desc',
+  q: '', sort: '',
 };
 
 function rentPresetIndex(min: string, max: string): number {
@@ -157,7 +157,7 @@ export default function PropertyFilters({
     tags: searchParams.get('tags') || '',
     equipment: searchParams.get('equipment') || '',
     q: searchParams.get('q') || '',
-    sort: searchParams.get('sort') || 'rent_desc',
+    sort: searchParams.get('sort') || '',
   }), [searchParams]);
 
   // 本地 draft：吸收快速連點，避免「stale closure → 第二次點擊用舊 URL 算出錯誤 next」
@@ -418,6 +418,7 @@ export default function PropertyFilters({
             value={v.sort}
             onChange={(e) => pushFilters({ sort: e.target.value })}
           >
+            <option value="">{t('sortSelect')}</option>
             {SORT_OPTIONS.map((s) => (
               <option key={s.value} value={s.value}>{t(s.labelKey)}</option>
             ))}

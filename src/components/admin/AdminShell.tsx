@@ -52,16 +52,38 @@ export default function AdminShell({ username, children }: { username: string; c
 
   useEffect(() => {
     let alive = true;
-    fetch('/api/admin/inquiries')
-      .then((r) => r.json())
-      .then((json) => {
+    async function fetchUnread() {
+      try {
+        const res = await fetch('/api/admin/inquiries', { cache: 'no-store' });
+        const json = await res.json();
         if (!alive) return;
         const next = Number(json?.counts?.new || 0);
         setUnreadInquiries(Number.isFinite(next) ? next : 0);
-      })
-      .catch(() => {});
+      } catch {
+        // ignore
+      }
+    }
+
+    function onUpdated(e: Event) {
+      const detail = (e as CustomEvent<{ newCount?: number }>).detail;
+      const next = Number(detail?.newCount ?? 0);
+      if (Number.isFinite(next)) setUnreadInquiries(next);
+    }
+
+    function onVisible() {
+      if (document.visibilityState === 'visible') void fetchUnread();
+    }
+
+    void fetchUnread();
+    const timer = window.setInterval(() => { void fetchUnread(); }, 30000);
+    window.addEventListener('admin:inquiries-updated', onUpdated as EventListener);
+    document.addEventListener('visibilitychange', onVisible);
+
     return () => {
       alive = false;
+      window.clearInterval(timer);
+      window.removeEventListener('admin:inquiries-updated', onUpdated as EventListener);
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, []);
 
