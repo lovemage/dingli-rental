@@ -143,6 +143,7 @@ model Property {
 
   // 上下架
   status          String   @default("active") // active / inactive / pending
+  inactiveAt      DateTime?
   featured        Boolean  @default(false)
 
   // 物件刊登狀態（顯示在卡片左上角的 badge）
@@ -155,6 +156,7 @@ model Property {
   @@index([region])
   @@index([typeMid])
   @@index([status])
+  @@index([inactiveAt])
   @@index([listingStatus])
 }
 

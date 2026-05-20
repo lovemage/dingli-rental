@@ -168,17 +168,27 @@ export default function PropertiesManager({
                 <div className="space-y-2">
                   {inactiveItems.map((p) => (
                     <div key={p.id} className="border border-line rounded-lg p-3 flex items-center justify-between gap-3">
-                      <div>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-14 h-14 rounded-lg overflow-hidden bg-paper-2 flex-shrink-0">
+                          {p.imageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={p.imageUrl} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full grid place-items-center text-ink-300 text-xs">—</div>
+                          )}
+                        </div>
+                        <div className="min-w-0">
                         <Link
                           href={`/properties/${p.id}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="font-bold text-sm hover:text-brand-green-700 underline-offset-2 hover:underline"
+                          className="font-bold text-sm hover:text-brand-green-700 underline-offset-2 hover:underline line-clamp-1"
                           title="新視窗預覽"
                         >
                           {p.title}
                         </Link>
-                        <p className="text-xs text-ink-500">#{p.code || '—'} ・ {p.region}・{p.district} ・ 上架時間 {fmtDate(p.createdAt)}</p>
+                        <p className="text-xs text-ink-500 line-clamp-1">#{p.code || '—'} ・ {p.region}・{p.district} ・ 上架時間 {fmtDate(p.createdAt)}</p>
+                        </div>
                       </div>
                       <button
                         type="button"

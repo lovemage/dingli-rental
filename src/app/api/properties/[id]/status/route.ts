@@ -27,13 +27,29 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return NextResponse.json({ error: 'invalid listingStatus' }, { status: 400 });
     }
 
+    const existing = await prisma.property.findUnique({
+      where: { id },
+      select: { id: true, status: true, inactiveAt: true },
+    });
+    if (!existing) return NextResponse.json({ error: 'not found' }, { status: 404 });
+
+    let inactiveAtPatch: Date | null | undefined;
+    if (nextStatus === 'inactive') {
+      // 第一次下架（或歷史資料還沒帶到 inactiveAt）才寫入時間
+      inactiveAtPatch = existing.inactiveAt ?? new Date();
+    } else {
+      // 重新上架或轉 pending，清掉下架時間
+      inactiveAtPatch = null;
+    }
+
     const updated = await prisma.property.update({
       where: { id },
       data: {
         status: nextStatus,
+        inactiveAt: inactiveAtPatch,
         ...(nextListingStatus ? { listingStatus: nextListingStatus } : {}),
       },
-      select: { id: true, status: true, listingStatus: true },
+      select: { id: true, status: true, inactiveAt: true, listingStatus: true },
     });
 
     return NextResponse.json(updated);
