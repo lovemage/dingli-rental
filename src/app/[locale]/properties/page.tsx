@@ -23,6 +23,8 @@ type SearchParams = {
   maxRent?: string;
   minArea?: string;
   maxArea?: string;
+  roomsMin?: string;
+  roomsMax?: string;
   rooms?: string;
   minAge?: string;
   ageMax?: string;
@@ -80,7 +82,18 @@ async function search(params: SearchParams, locale: string) {
   if (params.maxArea) areaRange.lte = Number(params.maxArea);
   if (Object.keys(areaRange).length) where.usableArea = areaRange;
 
-  if (params.rooms) where.rooms = { gte: Number(params.rooms) };
+  const roomsRange: Prisma.IntFilter = {};
+  if (params.roomsMin) roomsRange.gte = Number(params.roomsMin);
+  if (params.roomsMax) roomsRange.lte = Number(params.roomsMax);
+  if (Object.keys(roomsRange).length) {
+    where.rooms = roomsRange;
+  } else if (params.rooms) {
+    // backward compatibility: old URL param
+    const legacyRooms = Number(params.rooms);
+    if (Number.isFinite(legacyRooms) && legacyRooms > 0) {
+      where.rooms = legacyRooms >= 4 ? { gte: legacyRooms } : legacyRooms;
+    }
+  }
 
   const andClauses: Prisma.PropertyWhereInput[] = [];
 
