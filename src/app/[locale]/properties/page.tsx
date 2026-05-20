@@ -37,14 +37,18 @@ type SearchParams = {
 
 function parseSort(sort?: string): Prisma.PropertyOrderByWithRelationInput[] {
   switch (sort) {
-    case 'newest': return [{ createdAt: 'desc' }];
+    case 'created_desc':
+    case 'newest':
+      return [{ createdAt: 'desc' }];
+    case 'created_asc':
+      return [{ createdAt: 'asc' }];
     case 'rent_asc': return [{ rent: 'asc' }];
     case 'rent_desc': return [{ rent: 'desc' }];
     case 'area_desc': return [{ usableArea: 'desc' }];
-    case 'age_asc':
-      return [{ buildingAge: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }];
+    case 'area_asc':
+      return [{ usableArea: 'asc' }];
     default:
-      return [{ featured: 'desc' }, { createdAt: 'desc' }];
+      return [{ rent: 'desc' }];
   }
 }
 

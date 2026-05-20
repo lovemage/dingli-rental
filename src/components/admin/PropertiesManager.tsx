@@ -118,7 +118,15 @@ export default function PropertiesManager({
                   </div>
                 </td>
                 <td className="px-3 py-2 min-w-[200px]">
-                  <p className="font-bold text-ink-900 line-clamp-1">{p.title}</p>
+                  <Link
+                    href={`/properties/${p.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-bold text-ink-900 line-clamp-1 hover:text-brand-green-700 underline-offset-2 hover:underline"
+                    title="新視窗預覽"
+                  >
+                    {p.title}
+                  </Link>
                   <p className="text-xs text-ink-500">{p.region}・{p.district}</p>
                 </td>
                 <td className="px-3 py-2 text-xs text-ink-700 whitespace-nowrap">{p.typeMid}</td>
@@ -161,7 +169,15 @@ export default function PropertiesManager({
                   {inactiveItems.map((p) => (
                     <div key={p.id} className="border border-line rounded-lg p-3 flex items-center justify-between gap-3">
                       <div>
-                        <p className="font-bold text-sm">{p.title}</p>
+                        <Link
+                          href={`/properties/${p.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-bold text-sm hover:text-brand-green-700 underline-offset-2 hover:underline"
+                          title="新視窗預覽"
+                        >
+                          {p.title}
+                        </Link>
                         <p className="text-xs text-ink-500">#{p.code || '—'} ・ {p.region}・{p.district} ・ 上架時間 {fmtDate(p.createdAt)}</p>
                       </div>
                       <button

@@ -53,12 +53,12 @@ const AGE_PRESETS: { labelKey: string; min?: string; max?: string }[] = [
 ];
 
 const SORT_OPTIONS = [
-  { labelKey: 'sortDefault', value: '' },
-  { labelKey: 'sortNewest', value: 'newest' },
-  { labelKey: 'sortRentAsc', value: 'rent_asc' },
   { labelKey: 'sortRentDesc', value: 'rent_desc' },
+  { labelKey: 'sortRentAsc', value: 'rent_asc' },
+  { labelKey: 'sortCreatedDesc', value: 'created_desc' },
+  { labelKey: 'sortCreatedAsc', value: 'created_asc' },
   { labelKey: 'sortAreaDesc', value: 'area_desc' },
-  { labelKey: 'sortAgeAsc', value: 'age_asc' },
+  { labelKey: 'sortAreaAsc', value: 'area_asc' },
 ];
 
 export type PropertyFiltersValue = {
@@ -88,7 +88,7 @@ export const EMPTY_FILTERS: PropertyFiltersValue = {
   rooms: '', minAge: '', ageMax: '',
   elevator: '', pets: '', cooking: '',
   tags: '', equipment: '',
-  q: '', sort: '',
+  q: '', sort: 'rent_desc',
 };
 
 function rentPresetIndex(min: string, max: string): number {
@@ -150,7 +150,7 @@ export default function PropertyFilters({
     tags: searchParams.get('tags') || '',
     equipment: searchParams.get('equipment') || '',
     q: searchParams.get('q') || '',
-    sort: searchParams.get('sort') || '',
+    sort: searchParams.get('sort') || 'rent_desc',
   }), [searchParams]);
 
   // 本地 draft：吸收快速連點，避免「stale closure → 第二次點擊用舊 URL 算出錯誤 next」
