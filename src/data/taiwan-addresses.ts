@@ -100,7 +100,7 @@ export const DIRECTION_OPTIONS = [
 ] as const;
 
 // 樓層類型
-export const FLOOR_TYPE_OPTIONS = ['出租單層', '全棟出租'] as const;
+export const FLOOR_TYPE_OPTIONS = ['出租單層', '全棟出租', '多層出租'] as const;
 
 // 制度型特色標籤（固定，前台用綠色 badge 強化公信力）
 export const FEATURE_TAGS = [

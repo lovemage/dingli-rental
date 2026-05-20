@@ -22,7 +22,6 @@ import {
 } from '@/data/taiwan-addresses';
 import type { Taxonomies } from '@/lib/taxonomies-shared';
 import { LISTING_STATUS_OPTIONS } from '@/components/frontend/PropertyCard';
-import { isVideoUrl, normalizePropertyMediaOrder } from '@/lib/property-media';
 
 const OCR_MAX_PHOTOS = 3;
 
@@ -82,7 +81,7 @@ export type PropertyFormValue = {
 const DEFAULTS: PropertyFormValue = {
   region: '台北市', typeMid: '整層住家', buildingType: '電梯大樓',
   adType: '', city: '台北市', district: '', street: '', lane: '', alley: '', number: '', numberSub: '',
-  hideAddress: false,
+  hideAddress: true,
   floorType: '出租單層', floor: '', floorSub: '', totalFloor: '',
   community: '',
   rooms: '', livingRooms: '', bathrooms: '', balconies: '', openLayout: false,
@@ -141,8 +140,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [aiMsg, setAiMsg] = useState('');
   const [aiAppliedKeys, setAiAppliedKeys] = useState<string[]>([]);
-  const videoCount = v.images.filter(isVideoUrl).length;
-
+  const [, setFieldErrorId] = useState<string>('');
   const districts = CITY_DISTRICTS[v.city] || [];
 
   function update<K extends keyof PropertyFormValue>(k: K, val: PropertyFormValue[K]) {
@@ -153,7 +151,30 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
     setV((s) => {
       const arr = (s[k] as unknown as string[]) || [];
       const next = arr.includes(item) ? arr.filter((x) => x !== item) : [...arr, item];
+      if (k === 'rentIncludes') {
+        const includeMgmt = next.includes('管理費');
+        return {
+          ...s,
+          [k]: next as any,
+          noManagementFee: includeMgmt ? true : s.noManagementFee,
+          managementFee: includeMgmt ? '' : s.managementFee,
+        };
+      }
       return { ...s, [k]: next as any };
+    });
+  }
+
+  function fail(message: string, fieldId?: string) {
+    setErr(message);
+    if (!fieldId) return;
+    setFieldErrorId(fieldId);
+    requestAnimationFrame(() => {
+      const el = document.getElementById(fieldId);
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if ('focus' in el && typeof (el as HTMLElement).focus === 'function') {
+        (el as HTMLElement).focus();
+      }
     });
   }
 
@@ -167,22 +188,9 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
       const res = await fetch('/api/upload?subdir=properties', { method: 'POST', body: fd });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || '上傳失敗');
-      const uploaded = (data.files as any[]) || [];
-      const currentVideos = v.images.filter(isVideoUrl).length;
-      const uploadedVideoCount = uploaded.filter((f) => f.mediaType === 'video').length;
-      if (currentVideos + uploadedVideoCount > 2) {
-        setErr('單一物件最多只能上傳 2 支影片');
-      }
-      let videoQuota = Math.max(0, 2 - currentVideos);
-      const allowedUploads = uploaded.filter((f) => {
-        if (f.mediaType !== 'video') return true;
-        if (videoQuota <= 0) return false;
-        videoQuota -= 1;
-        return true;
-      });
-      const newUrls = allowedUploads.map((f) => f.url).filter(Boolean);
-      const next = normalizePropertyMediaOrder([...v.images, ...newUrls].slice(0, 20));
-      update('images', next);
+      const uploaded = ((data.files as any[]) || []).filter((f) => f.mediaType === 'image');
+      const newUrls = uploaded.map((f) => f.url).filter(Boolean);
+      update('images', [...v.images, ...newUrls].slice(0, 20));
     } catch (e: any) {
       setErr(e?.message || '上傳失敗');
     } finally {
@@ -191,7 +199,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
   }
 
   function removeImage(url: string) {
-    update('images', normalizePropertyMediaOrder(v.images.filter((u) => u !== url)));
+    update('images', v.images.filter((u) => u !== url));
   }
 
   function moveImage(from: number, to: number) {
@@ -199,16 +207,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
     const next = [...v.images];
     const [picked] = next.splice(from, 1);
     next.splice(to, 0, picked);
-    update('images', normalizePropertyMediaOrder(next));
-  }
-
-  function setCoverImage(index: number) {
-    if (index <= 0 || index >= v.images.length) return;
-    if (isVideoUrl(v.images[index])) {
-      setErr('影片不可設為封面');
-      return;
-    }
-    moveImage(index, 0);
+    update('images', next);
   }
 
   // ===== AI 辨識 =====
@@ -302,6 +301,10 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
       ...rest,
       parkingType: parkingType || null,
       region: v.city, // 大分類 = 縣市
+      hideAddress: true,
+      floor: v.floorType === '多層出租'
+        ? (v.floor && v.floorSub ? `${v.floor}-${v.floorSub}` : (v.floor || ''))
+        : (v.floor || ''),
       rent: Number(v.rent),
       rooms: Number(v.rooms),
       livingRooms: Number(v.livingRooms),
@@ -312,7 +315,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
       managementFee: v.managementFee === '' ? null : Number(v.managementFee),
       buildingAge: v.buildingAge === '' ? null : Number(v.buildingAge),
       moveInDate: v.moveInDate || null,
-      images: normalizePropertyMediaOrder(v.images),
+      images: v.images,
     };
   }
 
@@ -345,32 +348,42 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setErr('');
+    setFieldErrorId('');
 
     // 必填基本檢查
     if (!v.title || v.title.length < 6 || v.title.length > 30) {
-      setErr('廣告標題請填寫 6 ~ 30 個字'); return;
+      fail('廣告標題請填寫 6 ~ 30 個字', 'field-title'); return;
     }
     if (!v.city || !v.district || !v.number) {
-      setErr('請完整填寫地址（縣市/鄉鎮/號）'); return;
+      fail('請完整填寫地址（縣市/鄉鎮/號）', 'field-address-number'); return;
     }
     if (!v.usableArea || Number(v.usableArea) <= 0) {
-      setErr('請填寫可使用坪數'); return;
+      fail('請填寫可使用坪數', 'field-usable-area'); return;
     }
     if (!v.rent || Number(v.rent) <= 0) {
-      setErr('請填寫租金'); return;
+      fail('請填寫租金', 'field-rent'); return;
+    }
+    if (v.hasParking && !v.parkingType) {
+      fail('請選擇車位類型', 'field-parking-type'); return;
     }
     if (!v.noManagementFee && (v.managementFee === '' || Number(v.managementFee) < 0)) {
-      setErr('請填寫管理費，或勾選「無」'); return;
+      fail('請填寫管理費，或勾選「無」', 'field-management-fee'); return;
     }
-    if (v.images.length > 0 && !v.images.some((u) => !isVideoUrl(u))) {
-      setErr('請至少保留 1 張圖片作為封面，影片不可單獨上架'); return;
-    }
-
     await persist(buildPayload());
   }
 
   return (
-    <form onSubmit={submit} className="space-y-5 pb-24">
+    <form
+      onSubmit={submit}
+      onKeyDown={(e) => {
+        if (e.key !== 'Enter') return;
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'TEXTAREA') return;
+        if (target.getAttribute('data-allow-enter') === '1') return;
+        e.preventDefault();
+      }}
+      className="space-y-3 pb-20"
+    >
       {err && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{err}</div>}
 
       {/* === OCR 上架系統 === */}
@@ -454,20 +467,19 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
       </details>
 
       {/* === 照片（放在 OCR 區塊下方） === */}
-      <Card title="照片與影片（最多 20 個媒體，影片最多 2 支）">
+      <Card title="照片（最多 20 張）">
         <label className={`btn btn-orange w-full justify-center cursor-pointer sm:w-auto ${uploading ? 'opacity-60 pointer-events-none' : ''}`}>
           <MaterialIcon name="cloud_upload" className="!text-xl mr-1" />
-          {uploading ? '上傳中...' : '上傳照片／影片'}
+          {uploading ? '上傳中...' : '上傳照片'}
           <input
             type="file"
             multiple
-            accept="image/*,video/mp4,video/webm,video/quicktime"
+            accept="image/*"
             hidden
             onChange={(e) => { uploadFiles(e.target.files); e.target.value = ''; }}
           />
         </label>
         {uploading && <p className="text-sm text-brand-orange-700 mt-2">上傳中...</p>}
-        <p className="text-xs text-ink-500 mt-1">目前影片數：{videoCount} / 2（影片會自動排在第 2、3 位，且不可作為封面）</p>
         {v.images.length > 0 && (
           <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3 mt-4">
             {v.images.map((url, i) => (
@@ -495,38 +507,23 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
                   setDragOverIndex(null);
                 }}
               >
-                {isVideoUrl(url) ? (
-                  <video src={url} className="w-full aspect-square object-cover rounded-lg border border-line bg-black" muted playsInline preload="metadata" />
-                ) : (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={url} alt="" className="w-full aspect-square object-cover rounded-lg border border-line" />
-                )}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url} alt="" className="w-full aspect-square object-cover rounded-lg border border-line" />
                 <button type="button" onClick={() => removeImage(url)} className="absolute top-1 right-1 bg-white/95 rounded-full w-7 h-7 grid place-items-center text-sm border border-line shadow-sm opacity-0 group-hover:opacity-100 transition">
                   <MaterialIcon name="close" className="text-base" />
                 </button>
                 <span className="absolute top-1 left-1 bg-white/90 text-ink-700 text-[11px] px-1.5 py-0.5 rounded border border-line font-bold">
                   <MaterialIcon name="drag_indicator" className="!text-xs mr-0.5" />
-                  {isVideoUrl(url) ? '影片' : '拖曳排序'}
+                  拖曳排序
                 </span>
                 <div className="absolute bottom-1 left-1 right-1 flex items-center justify-between gap-1">
-                  {i === 0 ? (
-                    <span className="bg-brand-green-700 text-white text-xs px-2 py-0.5 rounded-full font-bold">封面</span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setCoverImage(i)}
-                      disabled={isVideoUrl(url)}
-                      className="bg-white/95 text-ink-700 text-xs px-2 py-0.5 rounded-full border border-line font-bold hover:border-brand-green-500 hover:text-brand-green-700 transition"
-                    >
-                      設為封面
-                    </button>
-                  )}
+                  {i === 0 && <span className="bg-brand-green-700 text-white text-xs px-2 py-0.5 rounded-full font-bold">封面</span>}
                 </div>
               </div>
             ))}
           </div>
         )}
-        <p className="text-xs text-ink-500 mt-2">第一張會作為列表封面（必須是圖片）。影片會自動固定在第 2/3 位。</p>
+        <p className="text-xs text-ink-500 mt-2">第一張會作為列表封面。</p>
       </Card>
 
       {/* === 物件分類（大/中/小） === */}
@@ -573,7 +570,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
               <span className="text-sm font-bold whitespace-nowrap">弄</span>
             </div>
             <div className="flex items-center gap-1">
-              <input className="input-base !w-20" placeholder="必填" value={v.number} onChange={(e) => update('number', e.target.value)} />
+              <input id="field-address-number" className="input-base !w-20" placeholder="必填" value={v.number} onChange={(e) => update('number', e.target.value)} />
               <span className="text-sm font-bold whitespace-nowrap">號</span>
             </div>
             <div className="flex items-center gap-1">
@@ -582,7 +579,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
             </div>
           </div>
           <label className="inline-flex items-center gap-2 mt-2 text-sm">
-            <input type="checkbox" checked={v.hideAddress} onChange={(e) => update('hideAddress', e.target.checked)} />
+            <input type="checkbox" checked disabled />
             隱藏門號（前台僅顯示至街道）
           </label>
         </Field>
@@ -597,8 +594,17 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
               <input className="input-base !w-20" placeholder="必填" value={v.floor || ''} onChange={(e) => update('floor', e.target.value)} />
               <span className="text-sm font-bold whitespace-nowrap">樓</span>
             </div>
-            <span className="text-sm font-bold">之</span>
-            <input className="input-base !w-20" placeholder="選填" value={v.floorSub || ''} onChange={(e) => update('floorSub', e.target.value)} />
+            {v.floorType === '多層出租' ? (
+              <>
+                <span className="text-sm font-bold">到</span>
+                <input className="input-base !w-20" placeholder="必填" value={v.floorSub || ''} onChange={(e) => update('floorSub', e.target.value)} />
+              </>
+            ) : (
+              <>
+                <span className="text-sm font-bold">之</span>
+                <input className="input-base !w-20" placeholder="選填" value={v.floorSub || ''} onChange={(e) => update('floorSub', e.target.value)} />
+              </>
+            )}
             <span className="text-xs text-ink-500">（出租樓層 0 為整棟，-1 為地下樓，+1 為頂樓加蓋）</span>
           </div>
         </Field>
@@ -668,7 +674,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="可使用坪數 *" required>
             <div className="flex items-center gap-2">
-              <input type="number" step="0.01" min={0} className="input-base" placeholder="請填寫室內實際使用坪數" value={v.usableArea} onChange={(e) => update('usableArea', e.target.value === '' ? '' : Number(e.target.value))} />
+              <input id="field-usable-area" type="number" step="0.01" min={0} className="input-base" placeholder="請填寫室內實際使用坪數" value={v.usableArea} onChange={(e) => update('usableArea', e.target.value === '' ? '' : Number(e.target.value))} />
               <span className="text-sm font-bold">坪</span>
             </div>
           </Field>
@@ -744,7 +750,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="租金 *" required>
             <div className="flex items-center gap-2">
-              <input type="number" min={0} className="input-base" placeholder="限填入數字" value={v.rent} onChange={(e) => update('rent', e.target.value === '' ? '' : Number(e.target.value))} />
+              <input id="field-rent" type="number" min={0} className="input-base" placeholder="限填入數字" value={v.rent} onChange={(e) => update('rent', e.target.value === '' ? '' : Number(e.target.value))} />
               <span className="text-sm whitespace-nowrap">元/月</span>
             </div>
           </Field>
@@ -769,7 +775,15 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
 
         <Field label="管理費 *" required>
           <div className="flex items-center gap-2">
-            <input type="number" min={0} className="input-base !w-36" placeholder="元/月" value={v.managementFee ?? ''} disabled={v.noManagementFee} onChange={(e) => update('managementFee', e.target.value === '' ? '' : Number(e.target.value))} />
+            <input
+              id="field-management-fee"
+              type="text"
+              className="input-base !w-36"
+              placeholder="元/月"
+              value={v.noManagementFee ? '已含管' : String(v.managementFee ?? '')}
+              disabled={v.noManagementFee}
+              onChange={(e) => update('managementFee', e.target.value === '' ? '' : Number(e.target.value))}
+            />
             <span className="text-sm">元/月</span>
             <label className="inline-flex items-center gap-2 text-sm ml-2">
               <input type="checkbox" checked={v.noManagementFee} onChange={(e) => update('noManagementFee', e.target.checked)} />
@@ -796,9 +810,9 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
           </Field>
         </div>
 
-        <Field label="車位">
+        <Field label="車位 *" required>
           <div className="space-y-2">
-            <label className="inline-flex items-center gap-2 text-sm">
+            <label className="inline-flex items-center gap-2 text-sm mr-4">
               <input
                 type="checkbox"
                 checked={v.hasParking}
@@ -810,7 +824,21 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
               />
               有車位
             </label>
+            <label className="inline-flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={!v.hasParking}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    update('hasParking', false);
+                    update('parkingType', '');
+                  }
+                }}
+              />
+              無車位
+            </label>
             <select
+              id="field-parking-type"
               className="input-base max-w-sm disabled:opacity-60"
               value={v.parkingType || ''}
               disabled={!v.hasParking}
@@ -828,7 +856,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
       {/* === 特色描述 === */}
       <Card title="特色描述">
         <Field label="廣告標題 *" required>
-          <input className="input-base" placeholder="請用簡單文字描述物件特色，限 6 ~ 30 個字" value={v.title} maxLength={30} onChange={(e) => update('title', e.target.value)} />
+          <input id="field-title" className="input-base" placeholder="請用簡單文字描述物件特色，限 6 ~ 30 個字" value={v.title} maxLength={30} onChange={(e) => update('title', e.target.value)} />
           <p className="text-xs text-ink-500 mt-1">已輸入 {v.title.length} 字，限 6 ~ 30 字</p>
         </Field>
 
@@ -899,7 +927,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
       </Card>
 
       {/* 底部固定送出列 */}
-      <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-white border-t border-line px-4 py-3 z-20">
+      <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-white border-t border-line px-4 py-2.5 z-20">
         <div className="max-w-[1200px] mx-auto flex justify-end gap-2">
           <button type="button" onClick={() => router.push('/admin/properties')} className="btn btn-secondary">取消</button>
           <button type="submit" disabled={saving} className="btn btn-primary">
@@ -975,8 +1003,8 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="admin-card">
-      <h2 className="font-bold text-lg mb-4 pb-3 border-b border-line">{title}</h2>
-      <div className="space-y-4">{children}</div>
+      <h2 className="font-bold text-lg mb-3 pb-2 border-b border-line">{title}</h2>
+      <div className="space-y-3">{children}</div>
     </div>
   );
 }
@@ -1045,6 +1073,7 @@ function CustomTagsInput({
       <div className="flex gap-2">
         <input
           type="text"
+          data-allow-enter="1"
           className="input-base flex-1"
           placeholder="輸入後按 Enter 加入新標籤"
           value={input}

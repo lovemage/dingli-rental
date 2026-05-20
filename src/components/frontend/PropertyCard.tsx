@@ -62,6 +62,9 @@ export type PropertyCardData = {
   featured?: boolean | null;
   listingStatus?: ListingStatus | string | null;
   parkingType?: string | null;
+  floorType?: string | null;
+  floor?: string | null;
+  totalFloor?: string | null;
 };
 
 type Props = {
@@ -210,10 +213,26 @@ export default function PropertyCard({ property: p, maxTags = 3 }: Props) {
               有
             </span>
           )}
+          {p.floor && (
+            <span className="flex items-center gap-1">
+              <SpecIcon type="area" />
+              {formatFloorLine(p.floorType, p.floor, p.totalFloor)}
+            </span>
+          )}
         </div>
       </div>
     </Link>
   );
+}
+
+function formatFloorLine(floorType?: string | null, floor?: string | null, totalFloor?: string | null) {
+  if (!floor) return '';
+  if (floorType === '全棟出租') return `${totalFloor || floor}樓`;
+  if (floorType === '多層出租' && floor.includes('-')) {
+    const [from, to] = floor.split('-', 2);
+    return `${from}樓到${to}樓${totalFloor ? `/${totalFloor}樓` : ''}`;
+  }
+  return `${floor}樓${totalFloor ? `/${totalFloor}樓` : ''}`;
 }
 
 function SpecIcon({ type }: { type: 'rooms' | 'bathrooms' | 'area' | 'parking' }) {

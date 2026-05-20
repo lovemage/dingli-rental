@@ -21,9 +21,14 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
 
   if (!property) notFound();
 
+  const isMultiFloor = property.floorType === '多層出租' && typeof property.floor === 'string' && property.floor.includes('-');
+  const [floorFrom, floorTo] = isMultiFloor ? property.floor!.split('-', 2) : [property.floor || '', property.floorSub || ''];
+
   const initial: any = {
     ...property,
     hasParking: !!property.parkingType,
+    floor: floorFrom,
+    floorSub: floorTo,
     images: property.images.map((i) => i.url),
     moveInDate: property.moveInDate ? property.moveInDate.toISOString().slice(0, 10) : '',
     equipment: (property.equipment as string[]) || [],

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import MaterialIcon from '@/components/admin/MaterialIcon';
 
 const NAV = [
@@ -47,7 +47,23 @@ export default function AdminShell({ username, children }: { username: string; c
   const path = usePathname() || '';
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [unreadInquiries, setUnreadInquiries] = useState(0);
   const activeHref = useMemo(() => getActiveHref(path), [path]);
+
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/admin/inquiries')
+      .then((r) => r.json())
+      .then((json) => {
+        if (!alive) return;
+        const next = Number(json?.counts?.new || 0);
+        setUnreadInquiries(Number.isFinite(next) ? next : 0);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -107,6 +123,11 @@ export default function AdminShell({ username, children }: { username: string; c
                 >
                   <MaterialIcon name={n.icon} className="text-xl" />
                   {n.label}
+                  {n.href === '/admin/inquiries' && unreadInquiries > 0 && (
+                    <span className="ml-auto inline-flex min-w-5 h-5 px-1.5 items-center justify-center rounded-full bg-red-600 text-white text-[11px] font-bold">
+                      {unreadInquiries}
+                    </span>
+                  )}
                 </Link>
               );
             })}
@@ -163,6 +184,11 @@ export default function AdminShell({ username, children }: { username: string; c
                     >
                       <MaterialIcon name={n.icon} className="text-2xl" />
                       {n.label}
+                      {n.href === '/admin/inquiries' && unreadInquiries > 0 && (
+                        <span className="ml-auto inline-flex min-w-5 h-5 px-1.5 items-center justify-center rounded-full bg-red-600 text-white text-[11px] font-bold">
+                          {unreadInquiries}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}

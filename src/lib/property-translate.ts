@@ -243,6 +243,9 @@ export function getLocalizedPropertyCards(
       featured: p.featured,
       listingStatus: p.listingStatus as any,
       parkingType: p.parkingType,
+      floorType: p.floorType,
+      floor: p.floor,
+      totalFloor: p.totalFloor,
     };
   });
 }

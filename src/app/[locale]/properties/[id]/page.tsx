@@ -195,12 +195,17 @@ export default async function PropertyDetailPage({
   const floorStr =
     raw.floorType === '全棟出租' && raw.totalFloor
       ? t('wholeBuildingFloorValue', { totalFloor: raw.totalFloor })
-      : raw.floor
-        ? t('floorValue', {
-            floor: raw.floor,
-            total: raw.totalFloor ? `/${raw.totalFloor}` : '',
-          })
-        : t('dash');
+      : raw.floorType === '多層出租' && typeof raw.floor === 'string' && raw.floor.includes('-')
+        ? (() => {
+            const [from, to] = raw.floor.split('-', 2);
+            return `${from}樓到${to}樓${raw.totalFloor ? `/${raw.totalFloor}樓` : ''}`;
+          })()
+        : raw.floor
+          ? t('floorValue', {
+              floor: raw.floor,
+              total: raw.totalFloor ? `/${raw.totalFloor}` : '',
+            })
+          : t('dash');
 
   const layoutStr = t('layoutValue', {
     rooms: raw.rooms,
