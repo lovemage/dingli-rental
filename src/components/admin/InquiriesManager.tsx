@@ -77,11 +77,6 @@ export default function InquiriesManager() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [savingId, setSavingId] = useState<number | null>(null);
 
-  function publishUnreadCount(nextNew: number) {
-    if (typeof window === 'undefined') return;
-    window.dispatchEvent(new CustomEvent('admin:inquiries-updated', { detail: { newCount: nextNew } }));
-  }
-
   async function refresh(currentTab = tab, opts: { showLoading?: boolean } = {}) {
     if (opts.showLoading) setLoading(true);
     try {
@@ -92,9 +87,7 @@ export default function InquiriesManager() {
       const json = await res.json();
       if (res.ok) {
         setItems(json.items || []);
-        const nextCounts = json.counts || { all: 0, new: 0, contacted: 0, closed: 0 };
-        setCounts(nextCounts);
-        publishUnreadCount(Number(nextCounts.new || 0));
+        setCounts(json.counts || { all: 0, new: 0, contacted: 0, closed: 0 });
       }
     } finally {
       setLoading(false);
@@ -113,9 +106,7 @@ export default function InquiriesManager() {
         if (cancelled) return;
         if (res.ok) {
           setItems(json.items || []);
-          const nextCounts = json.counts || { all: 0, new: 0, contacted: 0, closed: 0 };
-          setCounts(nextCounts);
-          publishUnreadCount(Number(nextCounts.new || 0));
+          setCounts(json.counts || { all: 0, new: 0, contacted: 0, closed: 0 });
         }
       } finally {
         if (!cancelled) setLoading(false);

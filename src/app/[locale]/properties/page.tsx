@@ -23,8 +23,6 @@ type SearchParams = {
   maxRent?: string;
   minArea?: string;
   maxArea?: string;
-  roomsMin?: string;
-  roomsMax?: string;
   rooms?: string;
   minAge?: string;
   ageMax?: string;
@@ -38,20 +36,19 @@ type SearchParams = {
 };
 
 function parseSort(sort?: string): Prisma.PropertyOrderByWithRelationInput[] {
-  const featuredFirst: Prisma.PropertyOrderByWithRelationInput[] = [{ featured: 'desc' }];
   switch (sort) {
     case 'created_desc':
     case 'newest':
-      return [...featuredFirst, { createdAt: 'desc' }];
+      return [{ createdAt: 'desc' }];
     case 'created_asc':
-      return [...featuredFirst, { createdAt: 'asc' }];
-    case 'rent_asc': return [...featuredFirst, { rent: 'asc' }];
-    case 'rent_desc': return [...featuredFirst, { rent: 'desc' }];
-    case 'area_desc': return [...featuredFirst, { usableArea: 'desc' }];
+      return [{ createdAt: 'asc' }];
+    case 'rent_asc': return [{ rent: 'asc' }];
+    case 'rent_desc': return [{ rent: 'desc' }];
+    case 'area_desc': return [{ usableArea: 'desc' }];
     case 'area_asc':
-      return [...featuredFirst, { usableArea: 'asc' }];
+      return [{ usableArea: 'asc' }];
     default:
-      return featuredFirst;
+      return [{ rent: 'desc' }];
   }
 }
 
@@ -83,18 +80,7 @@ async function search(params: SearchParams, locale: string) {
   if (params.maxArea) areaRange.lte = Number(params.maxArea);
   if (Object.keys(areaRange).length) where.usableArea = areaRange;
 
-  const roomsRange: Prisma.IntFilter = {};
-  if (params.roomsMin) roomsRange.gte = Number(params.roomsMin);
-  if (params.roomsMax) roomsRange.lte = Number(params.roomsMax);
-  if (Object.keys(roomsRange).length) {
-    where.rooms = roomsRange;
-  } else if (params.rooms) {
-    // backward compatibility: old URL param
-    const legacyRooms = Number(params.rooms);
-    if (Number.isFinite(legacyRooms) && legacyRooms > 0) {
-      where.rooms = legacyRooms >= 4 ? { gte: legacyRooms } : legacyRooms;
-    }
-  }
+  if (params.rooms) where.rooms = { gte: Number(params.rooms) };
 
   const andClauses: Prisma.PropertyWhereInput[] = [];
 

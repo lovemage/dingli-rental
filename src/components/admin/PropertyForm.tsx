@@ -350,12 +350,12 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
     setErr('');
     setFieldErrorId('');
 
-    // 必填基本檢查（依頁面由上到下）
+    // 必填基本檢查
+    if (!v.title || v.title.length < 6 || v.title.length > 30) {
+      fail('廣告標題請填寫 6 ~ 30 個字', 'field-title'); return;
+    }
     if (!v.city || !v.district || !v.number) {
       fail('請完整填寫地址（縣市/鄉鎮/號）', 'field-address-number'); return;
-    }
-    if (!String(v.totalFloor || '').trim()) {
-      fail('請填寫出租總樓層', 'field-total-floor'); return;
     }
     if (!v.usableArea || Number(v.usableArea) <= 0) {
       fail('請填寫可使用坪數', 'field-usable-area'); return;
@@ -368,9 +368,6 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
     }
     if (!v.noManagementFee && (v.managementFee === '' || Number(v.managementFee) < 0)) {
       fail('請填寫管理費，或勾選「無」', 'field-management-fee'); return;
-    }
-    if (!v.title || v.title.length < 6 || v.title.length > 30) {
-      fail('廣告標題請填寫 6 ~ 30 個字', 'field-title'); return;
     }
     await persist(buildPayload());
   }
@@ -615,7 +612,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
         <Field label="出租總樓層 *" required>
           <div className="flex items-center gap-2">
             <span className="text-sm">共</span>
-            <input id="field-total-floor" className="input-base !w-32" placeholder="必填" value={v.totalFloor || ''} onChange={(e) => update('totalFloor', e.target.value)} />
+            <input className="input-base !w-32" placeholder="必填" value={v.totalFloor || ''} onChange={(e) => update('totalFloor', e.target.value)} />
             <span className="text-sm font-bold">層</span>
           </div>
         </Field>

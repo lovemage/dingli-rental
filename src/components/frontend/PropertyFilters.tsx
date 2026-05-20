@@ -37,11 +37,11 @@ const AREA_PRESETS: { labelKey: string; min?: string; max?: string }[] = [
 ];
 
 const ROOMS_PRESETS = [
-  { labelKey: 'noLimit' },
-  { labelKey: 'rooms_1', min: '1', max: '1' },
-  { labelKey: 'rooms_2', min: '2', max: '2' },
-  { labelKey: 'rooms_3', min: '3', max: '3' },
-  { labelKey: 'rooms_4plus', min: '4' },
+  { labelKey: 'noLimit', value: '' },
+  { labelKey: 'rooms_1', value: '1' },
+  { labelKey: 'rooms_2', value: '2' },
+  { labelKey: 'rooms_3', value: '3' },
+  { labelKey: 'rooms_4plus', value: '4' },
 ];
 
 // 屋齡：max-only 區間（min 維持 0），custom 模式由 minAge/maxAge 兩個欄位精確控制
@@ -70,8 +70,7 @@ export type PropertyFiltersValue = {
   maxRent: string;
   minArea: string;
   maxArea: string;
-  roomsMin: string;
-  roomsMax: string;
+  rooms: string;
   minAge: string;        // 新增：屋齡下限
   ageMax: string;        // 屋齡上限
   elevator: string;
@@ -86,10 +85,10 @@ export type PropertyFiltersValue = {
 export const EMPTY_FILTERS: PropertyFiltersValue = {
   region: '', district: '', type: '', building: '',
   minRent: '', maxRent: '', minArea: '', maxArea: '',
-  roomsMin: '', roomsMax: '', minAge: '', ageMax: '',
+  rooms: '', minAge: '', ageMax: '',
   elevator: '', pets: '', cooking: '',
   tags: '', equipment: '',
-  q: '', sort: '',
+  q: '', sort: 'rent_desc',
 };
 
 function rentPresetIndex(min: string, max: string): number {
@@ -105,10 +104,6 @@ function agePresetIndex(min: string, max: string): number {
   return AGE_PRESETS.findIndex((p) => (p.max || '') === max);
 }
 
-function roomsPresetIndex(min: string, max: string): number {
-  return ROOMS_PRESETS.findIndex((p) => (p.min || '') === min && (p.max || '') === max);
-}
-
 type FiltersProps = {
   total?: number;
   taxonomies?: Partial<Taxonomies>;
@@ -122,7 +117,6 @@ export default function PropertyFilters({
   mobileViewMode,
   onMobileViewModeChange,
 }: FiltersProps) {
-  const rootRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const t = useTranslations('propertyFilters');
@@ -147,8 +141,7 @@ export default function PropertyFilters({
     maxRent: searchParams.get('maxRent') || '',
     minArea: searchParams.get('minArea') || '',
     maxArea: searchParams.get('maxArea') || '',
-    roomsMin: searchParams.get('roomsMin') || '',
-    roomsMax: searchParams.get('roomsMax') || '',
+    rooms: searchParams.get('rooms') || '',
     minAge: searchParams.get('minAge') || '',
     ageMax: searchParams.get('ageMax') || '',
     elevator: searchParams.get('elevator') || '',
@@ -157,7 +150,7 @@ export default function PropertyFilters({
     tags: searchParams.get('tags') || '',
     equipment: searchParams.get('equipment') || '',
     q: searchParams.get('q') || '',
-    sort: searchParams.get('sort') || '',
+    sort: searchParams.get('sort') || 'rent_desc',
   }), [searchParams]);
 
   // 本地 draft：吸收快速連點，避免「stale closure → 第二次點擊用舊 URL 算出錯誤 next」
@@ -180,17 +173,6 @@ export default function PropertyFilters({
   const districts = v.region ? CITY_DISTRICTS[v.region] || [] : [];
 
   const propertiesPath = locale === 'zh' ? '/properties' : `/${locale}/properties`;
-
-  useEffect(() => {
-    if (!advancedOpen) return;
-    function onDocMouseDown(e: MouseEvent) {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
-        setAdvancedOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', onDocMouseDown);
-    return () => document.removeEventListener('mousedown', onDocMouseDown);
-  }, [advancedOpen]);
 
   function pushFilters(next: Partial<PropertyFiltersValue>, opts?: { resetPage?: boolean }) {
     // 用 functional setState 確保以「最新 draft」為基準合併，吸收快速連點
@@ -242,7 +224,7 @@ export default function PropertyFilters({
     if (v.building) n++;
     if (v.minRent || v.maxRent) n++;
     if (v.minArea || v.maxArea) n++;
-    if (v.roomsMin || v.roomsMax) n++;
+    if (v.rooms) n++;
     if (v.minAge || v.ageMax) n++;
     if (v.elevator) n++;
     if (v.pets) n++;
@@ -264,7 +246,7 @@ export default function PropertyFilters({
   }
 
   return (
-    <div ref={rootRef} className="sticky top-16 z-20 bg-paper border-b border-line py-4 -mt-4 -mx-6 px-6 sm:rounded-none shadow-sm">
+    <div className="sticky top-16 z-20 bg-paper border-b border-line py-4 -mt-4 -mx-6 px-6 sm:rounded-none shadow-sm">
       <div className="flex flex-wrap gap-2 items-center">
         <form
           className="flex-1 min-w-[200px] max-w-md"
@@ -332,14 +314,11 @@ export default function PropertyFilters({
           unitLabel={t('rentUnit')}
         />
 
-        <ChipPreset
+        <ChipSelect
           label={t('roomsLabel')}
-          presets={ROOMS_PRESETS.map((p) => ({ ...p, label: t(p.labelKey) }))}
-          activeIdx={roomsPresetIndex(v.roomsMin, v.roomsMax)}
-          currentMin={v.roomsMin}
-          currentMax={v.roomsMax}
-          onPick={(p) => pushFilters({ roomsMin: p.min || '', roomsMax: p.max || '' })}
-          customLabel={`${t('customRange')} (${t('roomsLabel')})`}
+          value={v.rooms}
+          options={ROOMS_PRESETS.map((p) => ({ label: t(p.labelKey), value: p.value }))}
+          onChange={(val) => pushFilters({ rooms: val })}
         />
 
         <ChipPreset
@@ -418,7 +397,6 @@ export default function PropertyFilters({
             value={v.sort}
             onChange={(e) => pushFilters({ sort: e.target.value })}
           >
-            <option value="">{t('sortSelect')}</option>
             {SORT_OPTIONS.map((s) => (
               <option key={s.value} value={s.value}>{t(s.labelKey)}</option>
             ))}

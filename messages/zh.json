@@ -135,7 +135,6 @@
     "areaUnit": "坪",
     "ageUnit": "年",
     "sortLabel": "排序",
-    "sortSelect": "選取",
     "sortRentDesc": "租金高到低",
     "sortRentAsc": "租金低到高",
     "sortCreatedDesc": "新到舊",

@@ -84,7 +84,10 @@ export default function PropertyCard({ property: p, maxTags = 3 }: Props) {
   const [copied, setCopied] = useState(false);
 
   const locParts = [p.region, p.district];
-  if (p.street) locParts.push(p.street);
+  if (!p.hideAddress) {
+    if (p.community) locParts.push(p.community);
+    else if (p.street) locParts.push(p.street);
+  }
   const locationLine = locParts.filter(Boolean).join('・');
   const categoryTags = [p.typeMid, p.buildingType].filter(Boolean) as string[];
 

@@ -135,7 +135,6 @@
     "areaUnit": "ping",
     "ageUnit": "yrs",
     "sortLabel": "Sort by",
-    "sortSelect": "Select",
     "sortRentDesc": "Rent: high to low",
     "sortRentAsc": "Rent: low to high",
     "sortCreatedDesc": "New to old",
