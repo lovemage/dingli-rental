@@ -146,9 +146,6 @@ export default async function RepairsPage({
               <p className="mt-5 text-ink-600 leading-8">
                 不確定要先修哪裡也沒關係。鼎立會先了解房屋位置、目前狀況與出租計畫，再協助安排後續檢查與廠商溝通。
               </p>
-              <div className="mt-6 rounded-lg border border-line bg-paper-2 p-5 text-sm leading-7 text-ink-600">
-                表單送出後會進入後台「詢問管理」，並標示為「房屋修繕」，方便業務優先辨識需求類型。
-              </div>
             </div>
             <RepairContactForm />
           </div>
