@@ -8,6 +8,7 @@ import PropertyResults from '@/components/frontend/PropertyResults';
 import { prisma } from '@/lib/prisma';
 import { getLocalizedPropertyCards } from '@/lib/property-translate';
 import { isPropertyCode, normalizePropertyCode } from '@/lib/property-code';
+import { buildPublicPropertyWhere } from '@/lib/property-search';
 import { getTaxonomies } from '@/lib/taxonomies';
 import type { Prisma } from '@/generated/prisma/client';
 
@@ -55,110 +56,7 @@ function parseSort(sort?: string): Prisma.PropertyOrderByWithRelationInput[] {
 
 async function search(params: SearchParams, locale: string) {
   const localeCandidates = locale === 'ja' ? ['ja', 'jp'] : [locale];
-  const where: Prisma.PropertyWhereInput = { status: 'active' };
-
-  if (params.region) where.region = params.region;
-  if (params.district) where.district = params.district;
-  // type 改支援多選（逗號分隔）：單一值用 equals，多值用 in
-  if (params.type) {
-    const typeList = params.type.split(',').map((t) => t.trim()).filter(Boolean);
-    if (typeList.length === 1) where.typeMid = typeList[0];
-    else if (typeList.length > 1) where.typeMid = { in: typeList };
-  }
-  if (params.building) {
-    const buildingList = params.building.split(',').map((t) => t.trim()).filter(Boolean);
-    if (buildingList.length === 1) where.buildingType = buildingList[0];
-    else if (buildingList.length > 1) where.buildingType = { in: buildingList };
-  }
-
-  const rentRange: Prisma.IntFilter = {};
-  if (params.minRent) rentRange.gte = Number(params.minRent);
-  if (params.maxRent) rentRange.lte = Number(params.maxRent);
-  if (Object.keys(rentRange).length) where.rent = rentRange;
-
-  const areaRange: Prisma.FloatFilter = {};
-  if (params.minArea) areaRange.gte = Number(params.minArea);
-  if (params.maxArea) areaRange.lte = Number(params.maxArea);
-  if (Object.keys(areaRange).length) where.usableArea = areaRange;
-
-  if (params.rooms) where.rooms = { gte: Number(params.rooms) };
-
-  const andClauses: Prisma.PropertyWhereInput[] = [];
-
-  // 屋齡支援下限+上限區間
-  const ageRange: Prisma.IntFilter = {};
-  if (params.minAge) ageRange.gte = Number(params.minAge);
-  if (params.ageMax) ageRange.lte = Number(params.ageMax);
-  if (Object.keys(ageRange).length) {
-    const ageMax = params.ageMax ? Number(params.ageMax) : null;
-    if (!params.minAge && ageMax !== null && Number.isFinite(ageMax) && ageMax >= 3) {
-      andClauses.push({
-        OR: [
-          { buildingAge: ageRange },
-          { featureTags: { array_contains: '新成屋' } as any },
-        ],
-      });
-    } else {
-      where.buildingAge = ageRange;
-    }
-  }
-  if (params.elevator === '1') where.hasElevator = true;
-  if (params.pets === '1') where.petsAllowed = true;
-  if (params.cooking === '1') where.cookingAllowed = true;
-
-  if (params.tags) {
-    const tagsList = params.tags.split(',').map((t) => t.trim()).filter(Boolean);
-    if (tagsList.length) {
-      andClauses.push({
-        OR: tagsList.map((t) => ({ featureTags: { array_contains: t } as any })),
-      });
-    }
-  }
-
-  if (params.equipment) {
-    const eqList = params.equipment.split(',').map((t) => t.trim()).filter(Boolean);
-    if (eqList.length) {
-      andClauses.push({
-        OR: eqList.map((eq) => ({ equipment: { array_contains: eq } as any })),
-      });
-    }
-  }
-
-  if (params.q) {
-    const sourceOr: Prisma.PropertyWhereInput[] = [
-      { code: { contains: params.q, mode: 'insensitive' } },
-      { title: { contains: params.q, mode: 'insensitive' } },
-      { description: { contains: params.q, mode: 'insensitive' } },
-      { community: { contains: params.q, mode: 'insensitive' } },
-      { district: { contains: params.q, mode: 'insensitive' } },
-      { street: { contains: params.q, mode: 'insensitive' } },
-    ];
-    if (locale === 'zh') {
-      andClauses.push({ OR: sourceOr });
-    } else {
-      andClauses.push({
-        OR: [
-          ...sourceOr,
-                  {
-                    translations: {
-                      some: {
-                        locale: { in: localeCandidates },
-                        OR: [
-                          { title: { contains: params.q, mode: 'insensitive' } },
-                          { description: { contains: params.q, mode: 'insensitive' } },
-                  { community: { contains: params.q, mode: 'insensitive' } },
-                  { district: { contains: params.q, mode: 'insensitive' } },
-                  { street: { contains: params.q, mode: 'insensitive' } },
-                ],
-              },
-            },
-          },
-        ],
-      });
-    }
-  }
-
-  if (andClauses.length) where.AND = andClauses;
+  const where = buildPublicPropertyWhere(params, locale);
 
   const page = Math.max(1, Number(params.page || 1));
   const pageSize = 12;

@@ -5,6 +5,7 @@ import { getCurrentAdmin } from '@/lib/auth';
 import { translateProperty } from '@/lib/property-translate';
 import { isVideoUrl, normalizePropertyMediaOrder } from '@/lib/property-media';
 import { createPropertyWithCode } from '@/lib/property-code';
+import { buildPublicPropertyWhere } from '@/lib/property-search';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,39 +14,33 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const q = url.searchParams.get('q')?.trim() || '';
   const region = url.searchParams.get('region') || '';
+  const district = url.searchParams.get('district') || '';
   const typeMid = url.searchParams.get('type') || '';
   const buildingType = url.searchParams.get('building') || '';
-  const minRent = Number(url.searchParams.get('minRent') || 0);
-  const maxRent = Number(url.searchParams.get('maxRent') || 0);
+  const minRent = url.searchParams.get('minRent') || '';
+  const maxRent = url.searchParams.get('maxRent') || '';
   const page = Math.max(1, Number(url.searchParams.get('page') || 1));
   const pageSize = Math.min(50, Math.max(1, Number(url.searchParams.get('pageSize') || 12)));
 
-  const where: any = { status: 'active' };
-  if (region) where.region = region;
-  if (typeMid) {
-    const typeList = typeMid.split(',').map((t) => t.trim()).filter(Boolean);
-    if (typeList.length === 1) where.typeMid = typeList[0];
-    else if (typeList.length > 1) where.typeMid = { in: typeList };
-  }
-  if (buildingType) {
-    const buildingList = buildingType.split(',').map((t) => t.trim()).filter(Boolean);
-    if (buildingList.length === 1) where.buildingType = buildingList[0];
-    else if (buildingList.length > 1) where.buildingType = { in: buildingList };
-  }
-  if (minRent > 0 || maxRent > 0) {
-    where.rent = {};
-    if (minRent > 0) where.rent.gte = minRent;
-    if (maxRent > 0) where.rent.lte = maxRent;
-  }
-  if (q) {
-    where.OR = [
-      { code: { contains: q, mode: 'insensitive' } },
-      { title: { contains: q, mode: 'insensitive' } },
-      { description: { contains: q, mode: 'insensitive' } },
-      { community: { contains: q, mode: 'insensitive' } },
-      { district: { contains: q, mode: 'insensitive' } },
-    ];
-  }
+  const where = buildPublicPropertyWhere({
+    q,
+    region,
+    district,
+    type: typeMid,
+    building: buildingType,
+    minRent,
+    maxRent,
+    minArea: url.searchParams.get('minArea') || '',
+    maxArea: url.searchParams.get('maxArea') || '',
+    rooms: url.searchParams.get('rooms') || '',
+    minAge: url.searchParams.get('minAge') || '',
+    ageMax: url.searchParams.get('ageMax') || '',
+    elevator: url.searchParams.get('elevator') || '',
+    pets: url.searchParams.get('pets') || '',
+    cooking: url.searchParams.get('cooking') || '',
+    tags: url.searchParams.get('tags') || '',
+    equipment: url.searchParams.get('equipment') || '',
+  }, 'zh');
 
   const [items, total] = await Promise.all([
     prisma.property.findMany({

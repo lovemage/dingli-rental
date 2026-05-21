@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { isPropertyCode, normalizePropertyCode } from '@/lib/property-code';
+import { buildAdminPropertyWhere } from '@/lib/property-search';
 import { availableMonths, parseMonthRange } from '@/lib/tracking';
 import PropertiesManager from '@/components/admin/PropertiesManager';
 
@@ -31,16 +32,7 @@ export default async function AdminPropertiesList({
     if (hit) redirect(`/admin/properties/${hit.id}/edit`);
   }
 
-  const where = q
-    ? {
-        OR: [
-          { title: { contains: q, mode: 'insensitive' as const } },
-          { community: { contains: q, mode: 'insensitive' as const } },
-          { district: { contains: q, mode: 'insensitive' as const } },
-          { code: { contains: q.toUpperCase(), mode: 'insensitive' as const } },
-        ],
-      }
-    : {};
+  const where = buildAdminPropertyWhere(q);
 
   const items = await prisma.property.findMany({
     where,
