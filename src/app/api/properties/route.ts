@@ -6,6 +6,7 @@ import { translateProperty } from '@/lib/property-translate';
 import { isVideoUrl, normalizePropertyMediaOrder } from '@/lib/property-media';
 import { createPropertyWithCode } from '@/lib/property-code';
 import { buildPublicPropertyWhere } from '@/lib/property-search';
+import { buildPropertyOrderBy } from '@/lib/property-sort';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,7 +47,7 @@ export async function GET(req: Request) {
     prisma.property.findMany({
       where,
       include: { images: { orderBy: { order: 'asc' }, take: 1 } },
-      orderBy: [{ featured: 'desc' }, { createdAt: 'desc' }],
+      orderBy: buildPropertyOrderBy(url.searchParams.get('sort') || ''),
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),

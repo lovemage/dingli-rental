@@ -12,6 +12,7 @@ import {
   FEATURE_TAGS,
 } from '@/data/taiwan-addresses';
 import type { Taxonomies } from '@/lib/taxonomies-shared';
+import { PROPERTY_SORT_OPTIONS } from '@/lib/property-sort';
 import AiChatWidget from '@/components/frontend/AiChatWidget';
 import MaterialIcon from '@/components/MaterialIcon';
 
@@ -50,15 +51,6 @@ const AGE_PRESETS: { labelKey: string; min?: string; max?: string }[] = [
   { labelKey: 'age_le_3', max: '3' },
   { labelKey: 'age_le_10', max: '10' },
   { labelKey: 'age_le_20', max: '20' },
-];
-
-const SORT_OPTIONS = [
-  { labelKey: 'sortRentDesc', value: 'rent_desc' },
-  { labelKey: 'sortRentAsc', value: 'rent_asc' },
-  { labelKey: 'sortCreatedDesc', value: 'created_desc' },
-  { labelKey: 'sortCreatedAsc', value: 'created_asc' },
-  { labelKey: 'sortAreaDesc', value: 'area_desc' },
-  { labelKey: 'sortAreaAsc', value: 'area_asc' },
 ];
 
 export type PropertyFiltersValue = {
@@ -410,7 +402,7 @@ export default function PropertyFilters({
             onChange={(e) => pushFilters({ sort: e.target.value })}
           >
             <option value="">{t('sortSelect')}</option>
-            {SORT_OPTIONS.map((s) => (
+            {PROPERTY_SORT_OPTIONS.map((s) => (
               <option key={s.value} value={s.value}>{t(s.labelKey)}</option>
             ))}
           </select>

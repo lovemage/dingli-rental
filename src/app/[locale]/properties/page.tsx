@@ -9,8 +9,8 @@ import { prisma } from '@/lib/prisma';
 import { getLocalizedPropertyCards } from '@/lib/property-translate';
 import { isPropertyCode, normalizePropertyCode } from '@/lib/property-code';
 import { buildPublicPropertyWhere } from '@/lib/property-search';
+import { buildPropertyOrderBy } from '@/lib/property-sort';
 import { getTaxonomies } from '@/lib/taxonomies';
-import type { Prisma } from '@/generated/prisma/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,24 +36,6 @@ type SearchParams = {
   page?: string;
 };
 
-function parseSort(sort?: string): Prisma.PropertyOrderByWithRelationInput[] {
-  const featuredFirst: Prisma.PropertyOrderByWithRelationInput[] = [{ featured: 'desc' }];
-  switch (sort) {
-    case 'created_desc':
-    case 'newest':
-      return [...featuredFirst, { createdAt: 'desc' }];
-    case 'created_asc':
-      return [...featuredFirst, { createdAt: 'asc' }];
-    case 'rent_asc': return [...featuredFirst, { rent: 'asc' }];
-    case 'rent_desc': return [...featuredFirst, { rent: 'desc' }];
-    case 'area_desc': return [...featuredFirst, { usableArea: 'desc' }];
-    case 'area_asc':
-      return [...featuredFirst, { usableArea: 'asc' }];
-    default:
-      return featuredFirst;
-  }
-}
-
 async function search(params: SearchParams, locale: string) {
   const localeCandidates = locale === 'ja' ? ['ja', 'jp'] : [locale];
   const where = buildPublicPropertyWhere(params, locale);
@@ -72,7 +54,7 @@ async function search(params: SearchParams, locale: string) {
               ? false
               : { where: { locale: { in: localeCandidates } } },
         },
-        orderBy: parseSort(params.sort),
+        orderBy: buildPropertyOrderBy(params.sort),
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),

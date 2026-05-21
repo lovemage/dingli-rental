@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { type AdminPropertySort, sortAdminProperties } from '@/lib/admin-property-sort';
+import { PROPERTY_SORT_OPTIONS } from '@/lib/property-sort';
 
 type PropertyItem = {
   id: number;
@@ -52,14 +53,20 @@ export default function PropertiesManager({
   const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
   const [pending, setPending] = useState<number | null>(null);
   const [activePage, setActivePage] = useState(1);
-  const [activeSort, setActiveSort] = useState<AdminPropertySort>('created_desc');
-  const [inactiveSort, setInactiveSort] = useState<AdminPropertySort>('created_desc');
+  const [activeSort, setActiveSort] = useState<AdminPropertySort | ''>('');
+  const [inactiveSort, setInactiveSort] = useState<AdminPropertySort | ''>('');
   const [inactivePage, setInactivePage] = useState(1);
 
   const activeItems = useMemo(() => items.filter((x) => x.status === 'active'), [items]);
   const inactiveItems = useMemo(() => items.filter((x) => x.status !== 'active'), [items]);
-  const sortedActiveItems = useMemo(() => sortAdminProperties(activeItems, activeSort), [activeItems, activeSort]);
-  const sortedInactiveItems = useMemo(() => sortAdminProperties(inactiveItems, inactiveSort), [inactiveItems, inactiveSort]);
+  const sortedActiveItems = useMemo(
+    () => activeSort ? sortAdminProperties(activeItems, activeSort) : activeItems,
+    [activeItems, activeSort]
+  );
+  const sortedInactiveItems = useMemo(
+    () => inactiveSort ? sortAdminProperties(inactiveItems, inactiveSort) : inactiveItems,
+    [inactiveItems, inactiveSort]
+  );
 
   const activeTotalPages = Math.max(1, Math.ceil(sortedActiveItems.length / ACTIVE_PAGE_SIZE));
   const inactiveTotalPages = Math.max(1, Math.ceil(sortedInactiveItems.length / INACTIVE_PAGE_SIZE));
@@ -150,7 +157,7 @@ export default function PropertiesManager({
             className="bg-white border border-line rounded-full px-3 py-1.5 text-sm focus:outline-none focus:border-brand-green-500"
             value={activeTab === 'active' ? activeSort : inactiveSort}
             onChange={(e) => {
-              const next = e.target.value as AdminPropertySort;
+              const next = e.target.value as AdminPropertySort | '';
               if (activeTab === 'active') {
                 setActiveSort(next);
                 setActivePage(1);
@@ -160,9 +167,12 @@ export default function PropertiesManager({
               }
             }}
           >
-            <option value="created_desc">{activeTab === 'active' ? '最新上架' : '最新下架'}</option>
-            <option value="rent_desc">價格高到低</option>
-            <option value="rent_asc">價格低到高</option>
+            <option value="">選取</option>
+            {PROPERTY_SORT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {ADMIN_SORT_LABELS[option.labelKey]}
+              </option>
+            ))}
           </select>
         </label>
       </div>
@@ -297,3 +307,12 @@ export default function PropertiesManager({
     </div>
   );
 }
+
+const ADMIN_SORT_LABELS: Record<(typeof PROPERTY_SORT_OPTIONS)[number]['labelKey'], string> = {
+  sortRentDesc: '租金高到低',
+  sortRentAsc: '租金低到高',
+  sortCreatedDesc: '新到舊',
+  sortCreatedAsc: '舊到新',
+  sortAreaDesc: '坪數大到小',
+  sortAreaAsc: '坪數小到大',
+};
