@@ -20,7 +20,7 @@ type PropertyItem = {
   rent: number;
   usableArea: number;
   status: string;
-  listingStatus?: 'active' | 'rented' | 'sold' | 'closed' | null;
+  listingStatus?: string | null;
   featured: boolean;
   createdAt: string;
   inactiveAt?: string | null;
