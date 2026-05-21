@@ -34,9 +34,10 @@ async function loadLineUrl(): Promise<string> {
 }
 
 /** 把資料庫物件壓成 AI prompt 用的精簡格式 */
-function summarizeProperty(p: any): string {
+function summarizeProperty(p: any, siteUrl: string): string {
+  const displayCode = p.code || `未編號-${p.id}`;
   const parts: string[] = [
-    `[ID ${p.id}]`,
+    `[物件編號 ${displayCode}]`,
     p.region,
     p.district,
   ];
@@ -50,6 +51,7 @@ function summarizeProperty(p: any): string {
   const tags = Array.isArray(p.featureTags) ? (p.featureTags as string[]).slice(0, 4).join('/') : '';
   if (tags) parts.push(tags);
   parts.push(`— ${p.title}`);
+  parts.push(`詳情連結：${siteUrl}/properties/${p.id}`);
   return parts.filter(Boolean).join(' · ');
 }
 
@@ -89,7 +91,7 @@ export async function POST(req: Request) {
     const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://dingli-rental.com').replace(/\/$/, '');
 
     const propertyCatalog = properties.length
-      ? properties.map(summarizeProperty).join('\n')
+      ? properties.map((p) => summarizeProperty(p, siteUrl)).join('\n')
       : '（目前資料庫沒有任何「出租中」狀態的物件）';
 
     // 把 LEGAL_SUMMARY_FOR_AI 中的 ${siteUrl} 模板替換成實際 URL
@@ -107,10 +109,10 @@ ${propertyCatalog}
 # 推薦規則（嚴格遵守）
 1. **只能推薦上方清單中列出的物件** — 清單中每一筆都已確認為「出租中」可承租狀態
 2. **絕對不可推薦清單外的物件** — 包括但不限於：已出租 / 售出 / 結束 / 下架 / 審核中的物件，或你想像中可能存在但未列出的物件
-3. **絕對不可虛構物件** — 不要編造 ID、地址、租金、坪數、房型等任何欄位
+3. **絕對不可虛構物件** — 不要編造物件編號、地址、租金、坪數、房型等任何欄位
 4. 若清單為空（沒有任何出租中物件），誠實告知用戶「目前暫無符合需求的可租物件，建議透過 LINE 聯繫業務專員了解最新進件」
-5. 推薦時請註明 ID、地區、房型、租金，方便用戶辨識
-6. 用戶想看完整資訊時，提供物件詳情連結：${siteUrl}/properties/<ID>
+5. 推薦時請註明物件編號、地區、房型、租金，方便用戶辨識與複製
+6. 用戶想看完整資訊時，使用清單中的「詳情連結」，不要自行組 URL
 7. 用戶有預約看房 / 議價 / 詳細諮詢需求時，引導他們點擊下方「LINE 諮詢」按鈕直接聯繫業務專員（連結：${lineUrl}）
 8. 用戶詢問完整服務條款內容請提供 ${siteUrl}/terms
 9. 用戶詢問完整隱私權政策內容請提供 ${siteUrl}/privacy
@@ -119,7 +121,7 @@ ${propertyCatalog}
 
 # 語言要求（最高優先）
 請使用 **${languageName}** 回應使用者。
-- 物件 ID、地址、社區名等專有名詞可保留繁體中文原文
+- 物件編號、地址、社區名等專有名詞可保留繁體中文原文
 - 其他說明文字、推薦理由、引導語句等一律用 ${languageName}
 - 若使用者切換語言（用其他語言提問），跟隨使用者最新訊息的語言回應
 

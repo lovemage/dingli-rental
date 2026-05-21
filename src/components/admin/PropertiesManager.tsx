@@ -57,6 +57,7 @@ export default function PropertiesManager({
   const [activeSort, setActiveSort] = useState<AdminPropertySort | ''>('');
   const [inactiveSort, setInactiveSort] = useState<AdminPropertySort | ''>('');
   const [inactivePage, setInactivePage] = useState(1);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   const activeItems = useMemo(() => items.filter((x) => x.status === 'active'), [items]);
   const inactiveItems = useMemo(() => items.filter((x) => x.status !== 'active'), [items]);
@@ -113,6 +114,19 @@ export default function PropertiesManager({
       alert(e?.message || '更新失敗');
     } finally {
       setPending(null);
+    }
+  }
+
+  async function copyCode(code?: string | null) {
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedCode(code);
+      setTimeout(() => {
+        setCopiedCode((current) => (current === code ? null : current));
+      }, 1200);
+    } catch {
+      setCopiedCode(null);
     }
   }
 
@@ -227,7 +241,22 @@ export default function PropertiesManager({
                     </button>
                   </td>
                 )}
-                <td className="px-3 py-2 font-mono text-[11px] text-ink-500 whitespace-nowrap">{p.code || '—'}</td>
+                <td className="px-3 py-2 font-mono text-[11px] text-ink-500 whitespace-nowrap">
+                  {p.code ? (
+                    <button
+                      type="button"
+                      onClick={() => copyCode(p.code)}
+                      className="inline-flex items-center gap-1 rounded-md border border-transparent px-1.5 py-1 font-mono text-[11px] font-bold text-ink-500 transition hover:border-brand-green-200 hover:bg-brand-green-50 hover:text-brand-green-700"
+                      title="點擊複製物件編號"
+                      aria-label={`複製物件編號 ${p.code}`}
+                    >
+                      <span>{p.code}</span>
+                      <span className="text-[10px]">{copiedCode === p.code ? '已複製' : '複製'}</span>
+                    </button>
+                  ) : (
+                    '—'
+                  )}
+                </td>
                 <td className="px-3 py-2">
                   <div className="w-12 h-12 rounded-lg overflow-hidden bg-paper-2">
                     {p.imageUrl ? (
