@@ -123,6 +123,7 @@ export default function PropertyFilters({
   const tRegions = useTranslations('regions');
   const locale = useLocale();
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const filtersRef = useRef<HTMLDivElement>(null);
   // RSC navigation 標記為 transition，讓 chip 點擊立即視覺更新，路由切換在背景
   const [, startTransition] = useTransition();
 
@@ -173,6 +174,17 @@ export default function PropertyFilters({
   const districts = v.region ? CITY_DISTRICTS[v.region] || [] : [];
 
   const propertiesPath = locale === 'zh' ? '/properties' : `/${locale}/properties`;
+
+  useEffect(() => {
+    if (!advancedOpen) return;
+    function onPointerDown(e: PointerEvent) {
+      if (filtersRef.current && !filtersRef.current.contains(e.target as Node)) {
+        setAdvancedOpen(false);
+      }
+    }
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, [advancedOpen]);
 
   function pushFilters(next: Partial<PropertyFiltersValue>, opts?: { resetPage?: boolean }) {
     // 用 functional setState 確保以「最新 draft」為基準合併，吸收快速連點
@@ -246,7 +258,7 @@ export default function PropertyFilters({
   }
 
   return (
-    <div className="sticky top-16 z-20 bg-paper border-b border-line py-4 -mt-4 -mx-6 px-6 sm:rounded-none shadow-sm">
+    <div ref={filtersRef} className="sticky top-16 z-20 bg-paper border-b border-line py-4 -mt-4 -mx-6 px-6 sm:rounded-none shadow-sm">
       <div className="flex flex-wrap gap-2 items-center">
         <form
           className="flex-1 min-w-[200px] max-w-md"

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { type AdminPropertySort, sortAdminProperties } from '@/lib/admin-property-sort';
 
 type PropertyItem = {
   id: number;
@@ -51,36 +52,24 @@ export default function PropertiesManager({
   const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
   const [pending, setPending] = useState<number | null>(null);
   const [activePage, setActivePage] = useState(1);
-  const [inactiveSort, setInactiveSort] = useState<'rent_desc' | 'rent_asc' | 'created_desc' | 'created_asc' | 'area_desc' | 'area_asc'>('rent_desc');
+  const [activeSort, setActiveSort] = useState<AdminPropertySort>('created_desc');
+  const [inactiveSort, setInactiveSort] = useState<AdminPropertySort>('created_desc');
   const [inactivePage, setInactivePage] = useState(1);
 
   const activeItems = useMemo(() => items.filter((x) => x.status === 'active'), [items]);
   const inactiveItems = useMemo(() => items.filter((x) => x.status !== 'active'), [items]);
-  const sortedInactiveItems = useMemo(() => {
-    const arr = [...inactiveItems];
-    arr.sort((a, b) => {
-      switch (inactiveSort) {
-        case 'rent_desc': return b.rent - a.rent;
-        case 'rent_asc': return a.rent - b.rent;
-        case 'created_desc': return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        case 'created_asc': return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        case 'area_desc': return b.usableArea - a.usableArea;
-        case 'area_asc': return a.usableArea - b.usableArea;
-        default: return 0;
-      }
-    });
-    return arr;
-  }, [inactiveItems, inactiveSort]);
+  const sortedActiveItems = useMemo(() => sortAdminProperties(activeItems, activeSort), [activeItems, activeSort]);
+  const sortedInactiveItems = useMemo(() => sortAdminProperties(inactiveItems, inactiveSort), [inactiveItems, inactiveSort]);
 
-  const activeTotalPages = Math.max(1, Math.ceil(activeItems.length / ACTIVE_PAGE_SIZE));
+  const activeTotalPages = Math.max(1, Math.ceil(sortedActiveItems.length / ACTIVE_PAGE_SIZE));
   const inactiveTotalPages = Math.max(1, Math.ceil(sortedInactiveItems.length / INACTIVE_PAGE_SIZE));
   const safeActivePage = Math.min(activePage, activeTotalPages);
   const safeInactivePage = Math.min(inactivePage, inactiveTotalPages);
 
   const pagedActiveItems = useMemo(() => {
     const start = (safeActivePage - 1) * ACTIVE_PAGE_SIZE;
-    return activeItems.slice(start, start + ACTIVE_PAGE_SIZE);
-  }, [activeItems, safeActivePage]);
+    return sortedActiveItems.slice(start, start + ACTIVE_PAGE_SIZE);
+  }, [sortedActiveItems, safeActivePage]);
   const pagedInactiveItems = useMemo(() => {
     const start = (safeInactivePage - 1) * INACTIVE_PAGE_SIZE;
     return sortedInactiveItems.slice(start, start + INACTIVE_PAGE_SIZE);
@@ -119,7 +108,7 @@ export default function PropertiesManager({
               type="text"
               name="q"
               defaultValue={q}
-              placeholder="編號 / 標題 / 區域"
+              placeholder="編號/標題/區域/路名"
               className="px-3 py-2 text-sm rounded-lg border border-line focus:outline-none focus:border-brand-green-500 w-48"
             />
             <input type="hidden" name="month" value={monthStr} />
@@ -152,6 +141,30 @@ export default function PropertiesManager({
         >
           已下架（{inactiveItems.length}）
         </button>
+      </div>
+
+      <div className="flex items-center justify-end">
+        <label className="text-sm flex items-center gap-2">
+          <span className="text-ink-500">排序</span>
+          <select
+            className="bg-white border border-line rounded-full px-3 py-1.5 text-sm focus:outline-none focus:border-brand-green-500"
+            value={activeTab === 'active' ? activeSort : inactiveSort}
+            onChange={(e) => {
+              const next = e.target.value as AdminPropertySort;
+              if (activeTab === 'active') {
+                setActiveSort(next);
+                setActivePage(1);
+              } else {
+                setInactiveSort(next);
+                setInactivePage(1);
+              }
+            }}
+          >
+            <option value="created_desc">{activeTab === 'active' ? '最新上架' : '最新下架'}</option>
+            <option value="rent_desc">價格高到低</option>
+            <option value="rent_asc">價格低到高</option>
+          </select>
+        </label>
       </div>
 
       <div className="admin-card overflow-x-auto p-0">
@@ -230,29 +243,6 @@ export default function PropertiesManager({
             ))}
           </tbody>
         </table>
-
-        {activeTab === 'inactive' && (
-          <div className="px-3 py-3 border-t border-line bg-white">
-            <label className="text-sm flex items-center gap-2">
-              <span className="text-ink-500">排序</span>
-              <select
-                className="bg-white border border-line rounded-full px-3 py-1.5 text-sm focus:outline-none focus:border-brand-green-500"
-                value={inactiveSort}
-                onChange={(e) => {
-                  setInactiveSort(e.target.value as typeof inactiveSort);
-                  setInactivePage(1);
-                }}
-              >
-                <option value="rent_desc">價格高到低</option>
-                <option value="rent_asc">價格低到高</option>
-                <option value="created_desc">新到舊</option>
-                <option value="created_asc">舊到新</option>
-                <option value="area_desc">坪數大到小</option>
-                <option value="area_asc">坪數小到大</option>
-              </select>
-            </label>
-          </div>
-        )}
 
         {activeTab === 'active' && activeTotalPages > 1 && (
           <div className="px-3 py-3 border-t border-line flex items-center justify-center gap-2 bg-white">
