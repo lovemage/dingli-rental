@@ -241,6 +241,7 @@ export function getLocalizedPropertyCards(
       description: tr?.description ?? p.description,
       hideAddress: p.hideAddress,
       featured: p.featured,
+      status: p.status,
       listingStatus: p.listingStatus as any,
       parkingType: p.parkingType,
       floorType: p.floorType,

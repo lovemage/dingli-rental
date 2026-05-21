@@ -76,6 +76,7 @@ export default async function AdminPropertiesList({
     rent: p.rent,
     usableArea: p.usableArea,
     status: p.status,
+    featured: p.featured,
     createdAt: p.createdAt.toISOString(),
     imageUrl: p.images[0]?.url || null,
     monthViews: viewMonthByProperty.get(p.id) ?? 0,

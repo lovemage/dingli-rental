@@ -20,6 +20,7 @@ type PropertyItem = {
   rent: number;
   usableArea: number;
   status: string;
+  featured: boolean;
   createdAt: string;
   imageUrl: string | null;
   monthViews: number;
@@ -82,7 +83,11 @@ export default function PropertiesManager({
     return sortedInactiveItems.slice(start, start + INACTIVE_PAGE_SIZE);
   }, [sortedInactiveItems, safeInactivePage]);
 
-  async function updateStatus(id: number, status: 'active' | 'inactive', listingStatus?: 'active' | 'closed') {
+  async function updateStatus(
+    id: number,
+    status: 'active' | 'inactive',
+    listingStatus?: 'active' | 'rented' | 'sold' | 'closed'
+  ) {
     setPending(id);
     try {
       const res = await fetch(`/api/properties/${id}/status`, {
@@ -92,7 +97,18 @@ export default function PropertiesManager({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || '更新狀態失敗');
-      setItems((prev) => prev.map((it) => (it.id === id ? { ...it, status: data.status } : it)));
+      setItems((prev) => {
+        const next = prev.map((it) => (
+          it.id === id
+            ? {
+                ...it,
+                status: data.status,
+                createdAt: data.createdAt ? new Date(data.createdAt).toISOString() : it.createdAt,
+              }
+            : it
+        ));
+        return next.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      });
     } catch (e: any) {
       alert(e?.message || '更新失敗');
     } finally {
@@ -181,6 +197,9 @@ export default function PropertiesManager({
         <table className="w-full text-sm">
           <thead className="bg-paper-2 text-xs text-ink-500">
             <tr>
+              {activeTab === 'inactive' && (
+                <th className="text-left px-3 py-2 font-bold whitespace-nowrap">上架</th>
+              )}
               <th className="text-left px-3 py-2 font-bold whitespace-nowrap">編號</th>
               <th className="text-left px-3 py-2 font-bold w-14">圖</th>
               <th className="text-left px-3 py-2 font-bold">物件 / 地址</th>
@@ -196,6 +215,18 @@ export default function PropertiesManager({
           <tbody className="divide-y divide-line">
             {rows.map((p) => (
               <tr key={p.id} className="hover:bg-paper-2/40 transition">
+                {activeTab === 'inactive' && (
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    <button
+                      type="button"
+                      disabled={pending === p.id}
+                      onClick={() => updateStatus(p.id, 'active', 'active')}
+                      className="text-xs font-medium border border-brand-green-200 text-brand-green-700 rounded-md px-2.5 py-1 hover:bg-brand-green-50 disabled:opacity-50"
+                    >
+                      重新上架
+                    </button>
+                  </td>
+                )}
                 <td className="px-3 py-2 font-mono text-[11px] text-ink-500 whitespace-nowrap">{p.code || '—'}</td>
                 <td className="px-3 py-2">
                   <div className="w-12 h-12 rounded-lg overflow-hidden bg-paper-2">
@@ -217,6 +248,11 @@ export default function PropertiesManager({
                   >
                     {p.title}
                   </Link>
+                  {p.featured && (
+                    <span className="mt-1 inline-flex items-center rounded-full bg-brand-orange-50 px-2 py-0.5 text-[11px] font-bold text-brand-orange-700">
+                      精選
+                    </span>
+                  )}
                   <p className="text-xs text-ink-500 line-clamp-1">{formatFullAddress(p)}</p>
                 </td>
                 <td className="px-3 py-2 text-xs text-ink-700 whitespace-nowrap">{p.typeMid}</td>
@@ -233,21 +269,12 @@ export default function PropertiesManager({
                     <button
                       type="button"
                       disabled={pending === p.id}
-                      onClick={() => updateStatus(p.id, 'inactive', 'closed')}
+                      onClick={() => updateStatus(p.id, 'inactive', 'rented')}
                       className="text-xs font-medium border border-red-200 text-red-700 rounded-md px-2.5 py-1 hover:bg-red-50 disabled:opacity-50"
                     >
                       成交下架
                     </button>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled={pending === p.id}
-                      onClick={() => updateStatus(p.id, 'active', 'active')}
-                      className="text-xs font-medium border border-brand-green-200 text-brand-green-700 rounded-md px-2.5 py-1 hover:bg-brand-green-50 disabled:opacity-50"
-                    >
-                      重新上架
-                    </button>
-                  )}
+                  ) : null}
                 </td>
               </tr>
             ))}

@@ -11,8 +11,10 @@ import {
   TONE_CLASS,
   type Tag,
 } from '@/lib/property-tags';
-
-export type ListingStatus = 'active' | 'rented' | 'sold' | 'closed';
+import {
+  listingStatusForPropertyStatus,
+  type ListingStatus,
+} from '@/lib/property-status';
 
 export const LISTING_STATUS_OPTIONS: { value: ListingStatus; label: string }[] = [
   { value: 'active', label: '出租中' },
@@ -26,14 +28,6 @@ const LISTING_STATUS_CLASS: Record<ListingStatus, string> = {
   rented: 'bg-ink-700 text-white',
   sold:   'bg-brand-orange-600 text-white',
   closed: 'bg-ink-300 text-ink-700',
-};
-
-// 兼容既有引用
-export const LISTING_STATUS_BADGE: Record<ListingStatus, { label: string; className: string }> = {
-  active: { label: '出租中', className: LISTING_STATUS_CLASS.active },
-  rented: { label: '已出租', className: LISTING_STATUS_CLASS.rented },
-  sold:   { label: '售出',   className: LISTING_STATUS_CLASS.sold },
-  closed: { label: '結束',   className: LISTING_STATUS_CLASS.closed },
 };
 
 export type PropertyCardData = {
@@ -60,6 +54,7 @@ export type PropertyCardData = {
   description?: string | null;
   hideAddress?: boolean | null;
   featured?: boolean | null;
+  status?: string | null;
   listingStatus?: ListingStatus | string | null;
   parkingType?: string | null;
   floorType?: string | null;
@@ -96,7 +91,7 @@ export default function PropertyCard({ property: p, maxTags = 3 }: Props) {
     policyAndCustom.filter((t) => t.tone !== 'green'),
   ).slice(0, maxTags);
 
-  const statusKey = (p.listingStatus ?? 'active') as ListingStatus;
+  const statusKey = listingStatusForPropertyStatus(p.status, p.listingStatus);
   const statusLabelKey =
     statusKey === 'rented' ? 'statusRented'
     : statusKey === 'sold'   ? 'statusSold'

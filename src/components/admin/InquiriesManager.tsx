@@ -44,6 +44,10 @@ function contactRow(it: Inquiry): { label: string; value: React.ReactNode } {
   };
 }
 
+function isRepairInquiry(it: Inquiry): boolean {
+  return it.propertyType === '房屋修繕';
+}
+
 type Counts = { all: number; new: number; contacted: number; closed: number };
 
 const STATUS_TABS: { key: 'all' | 'new' | 'contacted' | 'closed'; label: string }[] = [
@@ -232,6 +236,11 @@ export default function InquiriesManager() {
                       {it.userRole && USER_ROLE_LABEL[it.userRole] && (
                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${it.userRole === 'landlord' ? 'bg-brand-orange-100 text-brand-orange-700' : 'bg-brand-green-100 text-brand-green-700'}`}>
                           {USER_ROLE_LABEL[it.userRole]}
+                        </span>
+                      )}
+                      {isRepairInquiry(it) && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-brand-orange-500 text-white">
+                          房屋修繕
                         </span>
                       )}
                       <span className="text-sm text-ink-700">{it.phone}</span>

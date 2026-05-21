@@ -140,7 +140,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [aiMsg, setAiMsg] = useState('');
   const [aiAppliedKeys, setAiAppliedKeys] = useState<string[]>([]);
-  const [, setFieldErrorId] = useState<string>('');
+  const [fieldErrorId, setFieldErrorId] = useState<string>('');
   const districts = CITY_DISTRICTS[v.city] || [];
 
   function update<K extends keyof PropertyFormValue>(k: K, val: PropertyFormValue[K]) {
@@ -176,6 +176,10 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
         (el as HTMLElement).focus();
       }
     });
+  }
+
+  function inputClass(id?: string, extra = '') {
+    return `input-base ${fieldErrorId && id === fieldErrorId ? '!border-red-500 !ring-2 !ring-red-500/20' : ''} ${extra}`.trim();
   }
 
   async function uploadFiles(files: FileList | null) {
@@ -351,16 +355,32 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
     setFieldErrorId('');
 
     // 必填基本檢查（依頁面由上到下）
-    if (!v.city || !v.district || !v.number) {
-      fail('請完整填寫地址（縣市/鄉鎮/號）', 'field-address-number'); return;
+    if (!v.city) {
+      fail('請選擇縣市', 'field-city'); return;
+    }
+    if (!v.district) {
+      fail('請選擇鄉鎮市區', 'field-district'); return;
+    }
+    if (!v.number) {
+      fail('請完整填寫地址門牌號', 'field-address-number'); return;
     }
     if (!String(v.totalFloor || '').trim()) {
       fail('請填寫出租總樓層', 'field-total-floor'); return;
     }
-    if (!v.usableArea || Number(v.usableArea) <= 0) {
+    for (const [key, label, fieldId] of [
+      ['rooms', '房數', 'field-rooms'],
+      ['livingRooms', '廳數', 'field-living-rooms'],
+      ['bathrooms', '衛浴數', 'field-bathrooms'],
+      ['balconies', '陽台數', 'field-balconies'],
+    ] as const) {
+      if (v[key] === '' || Number(v[key]) < 0) {
+        fail(`請填寫格局現況：${label}`, fieldId); return;
+      }
+    }
+    if (v.usableArea === '' || Number(v.usableArea) <= 0) {
       fail('請填寫可使用坪數', 'field-usable-area'); return;
     }
-    if (!v.rent || Number(v.rent) <= 0) {
+    if (v.rent === '' || Number(v.rent) <= 0) {
       fail('請填寫租金', 'field-rent'); return;
     }
     if (v.hasParking && !v.parkingType) {
@@ -533,7 +553,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
       <Card title="物件分類">
         <div className="grid sm:grid-cols-3 gap-4">
           <Field label="大分類（縣市）">
-            <select className="input-base" value={v.city} onChange={(e) => { update('city', e.target.value); update('district', ''); }}>
+            <select id="field-city" className={inputClass('field-city')} value={v.city} onChange={(e) => { update('city', e.target.value); update('district', ''); }}>
               {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
           </Field>
@@ -559,7 +579,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
               <option value="">請選擇縣市</option>
               {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
-            <select className="input-base" value={v.district} onChange={(e) => update('district', e.target.value)}>
+            <select id="field-district" className={inputClass('field-district')} value={v.district} onChange={(e) => update('district', e.target.value)}>
               <option value="">請選擇鄉鎮</option>
               {districts.map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
@@ -573,7 +593,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
               <span className="text-sm font-bold whitespace-nowrap">弄</span>
             </div>
             <div className="flex items-center gap-1">
-              <input id="field-address-number" className="input-base !w-20" placeholder="必填" value={v.number} onChange={(e) => update('number', e.target.value)} />
+              <input id="field-address-number" className={inputClass('field-address-number', '!w-20')} placeholder="必填" value={v.number} onChange={(e) => update('number', e.target.value)} />
               <span className="text-sm font-bold whitespace-nowrap">號</span>
             </div>
             <div className="flex items-center gap-1">
@@ -615,7 +635,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
         <Field label="出租總樓層 *" required>
           <div className="flex items-center gap-2">
             <span className="text-sm">共</span>
-            <input id="field-total-floor" className="input-base !w-32" placeholder="必填" value={v.totalFloor || ''} onChange={(e) => update('totalFloor', e.target.value)} />
+            <input id="field-total-floor" className={inputClass('field-total-floor', '!w-32')} placeholder="必填" value={v.totalFloor || ''} onChange={(e) => update('totalFloor', e.target.value)} />
             <span className="text-sm font-bold">層</span>
           </div>
         </Field>
@@ -628,16 +648,17 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
         <Field label="格局（現況） *" required>
           <div className="grid grid-cols-4 gap-2">
             {[
-              ['rooms', '房', true],
-              ['livingRooms', '廳'],
-              ['bathrooms', '衛'],
-              ['balconies', '陽台'],
+              ['rooms', '房', 'field-rooms'],
+              ['livingRooms', '廳', 'field-living-rooms'],
+              ['bathrooms', '衛', 'field-bathrooms'],
+              ['balconies', '陽台', 'field-balconies'],
             ].map(([k, suffix, req]) => (
               <div key={k as string} className="flex items-center gap-1">
                 <input
+                  id={req as string}
                   type="number" min={0}
-                  className="input-base !w-full"
-                  placeholder={req ? '必填' : '選填'}
+                  className={inputClass(req as string, '!w-full')}
+                  placeholder="必填"
                   value={(v as any)[k as string] ?? ''}
                   onChange={(e) => update(k as any, e.target.value === '' ? '' : Number(e.target.value))}
                 />
@@ -677,7 +698,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="可使用坪數 *" required>
             <div className="flex items-center gap-2">
-              <input id="field-usable-area" type="number" step="0.01" min={0} className="input-base" placeholder="請填寫室內實際使用坪數" value={v.usableArea} onChange={(e) => update('usableArea', e.target.value === '' ? '' : Number(e.target.value))} />
+              <input id="field-usable-area" type="number" step="0.01" min={0} className={inputClass('field-usable-area')} placeholder="請填寫室內實際使用坪數" value={v.usableArea} onChange={(e) => update('usableArea', e.target.value === '' ? '' : Number(e.target.value))} />
               <span className="text-sm font-bold">坪</span>
             </div>
           </Field>
@@ -753,7 +774,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="租金 *" required>
             <div className="flex items-center gap-2">
-              <input id="field-rent" type="number" min={0} className="input-base" placeholder="限填入數字" value={v.rent} onChange={(e) => update('rent', e.target.value === '' ? '' : Number(e.target.value))} />
+              <input id="field-rent" type="number" min={0} className={inputClass('field-rent')} placeholder="限填入數字" value={v.rent} onChange={(e) => update('rent', e.target.value === '' ? '' : Number(e.target.value))} />
               <span className="text-sm whitespace-nowrap">元/月</span>
             </div>
           </Field>
@@ -781,7 +802,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
             <input
               id="field-management-fee"
               type="text"
-              className="input-base !w-36"
+              className={inputClass('field-management-fee', '!w-36')}
               placeholder="元/月"
               value={v.noManagementFee ? '已含管' : String(v.managementFee ?? '')}
               disabled={v.noManagementFee}
@@ -842,7 +863,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
             </label>
             <select
               id="field-parking-type"
-              className="input-base max-w-sm disabled:opacity-60"
+              className={inputClass('field-parking-type', 'max-w-sm disabled:opacity-60')}
               value={v.parkingType || ''}
               disabled={!v.hasParking}
               onChange={(e) => update('parkingType', e.target.value)}
@@ -859,7 +880,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
       {/* === 特色描述 === */}
       <Card title="特色描述">
         <Field label="廣告標題 *" required>
-          <input id="field-title" className="input-base" placeholder="請用簡單文字描述物件特色，限 6 ~ 30 個字" value={v.title} maxLength={30} onChange={(e) => update('title', e.target.value)} />
+          <input id="field-title" className={inputClass('field-title')} placeholder="請用簡單文字描述物件特色，限 6 ~ 30 個字" value={v.title} maxLength={30} onChange={(e) => update('title', e.target.value)} />
           <p className="text-xs text-ink-500 mt-1">已輸入 {v.title.length} 字，限 6 ~ 30 字</p>
         </Field>
 

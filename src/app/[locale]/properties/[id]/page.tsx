@@ -7,7 +7,9 @@ import Footer from '@/components/frontend/Footer';
 import TrackingBeacon from '@/components/frontend/TrackingBeacon';
 import PropertyGallery from '@/components/frontend/PropertyGallery';
 import { prisma } from '@/lib/prisma';
+import { getCurrentAdmin } from '@/lib/auth';
 import { localizePropertyForDetail } from '@/lib/property-translate';
+import { LISTING_STATUS_BADGE, listingStatusForPropertyStatus } from '@/lib/property-status';
 import { FLOATING_CTA_DEFAULTS, type FloatingCtaContent } from '@/data/floating-cta-defaults';
 import { routing } from '@/i18n/routing';
 
@@ -154,9 +156,12 @@ export default async function PropertyDetailPage({
     })
     .catch(() => null);
 
-  if (!raw || raw.status !== 'active') notFound();
+  const admin = await getCurrentAdmin();
+  if (!raw || (raw.status !== 'active' && !admin)) notFound();
 
   const p = localizePropertyForDetail(raw, locale);
+  const listingStatus = listingStatusForPropertyStatus(raw.status, raw.listingStatus);
+  const listingBadge = LISTING_STATUS_BADGE[listingStatus];
 
   const equipment: string[] = (p.equipment as string[]) || [];
   const furniture: string[] = (p.furniture as string[]) || [];
@@ -239,6 +244,9 @@ export default async function PropertyDetailPage({
             <div className="p-6 sm:p-10 grid lg:grid-cols-[1fr_320px] gap-8">
               <div>
                 <div className="flex flex-wrap gap-2 mb-3">
+                  <span className={`${listingBadge.className} text-xs font-bold px-2.5 py-1 rounded-full`}>
+                    {listingBadge.label}
+                  </span>
                   <span className="bg-brand-green-50 text-brand-green-900 text-xs font-bold px-2.5 py-1 rounded-full">
                     {p.region}
                   </span>

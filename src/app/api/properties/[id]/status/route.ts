@@ -47,9 +47,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       data: {
         status: nextStatus,
         inactiveAt: inactiveAtPatch,
+        ...(nextStatus === 'active' && existing.status !== 'active' ? { createdAt: new Date() } : {}),
         ...(nextListingStatus ? { listingStatus: nextListingStatus } : {}),
       },
-      select: { id: true, status: true, inactiveAt: true, listingStatus: true },
+      select: { id: true, status: true, inactiveAt: true, listingStatus: true, createdAt: true },
     });
 
     return NextResponse.json(updated);
