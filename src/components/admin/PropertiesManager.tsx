@@ -20,8 +20,10 @@ type PropertyItem = {
   rent: number;
   usableArea: number;
   status: string;
+  listingStatus?: 'active' | 'rented' | 'sold' | 'closed' | null;
   featured: boolean;
   createdAt: string;
+  inactiveAt?: string | null;
   imageUrl: string | null;
   monthViews: number;
   totalViews: number;
@@ -65,9 +67,19 @@ export default function PropertiesManager({
     () => activeSort ? sortAdminProperties(activeItems, activeSort) : activeItems,
     [activeItems, activeSort]
   );
+  const sortedInactiveDefaultItems = useMemo(() => {
+    const priority = (item: PropertyItem) => (item.listingStatus === 'sold' ? 0 : 1);
+    return [...inactiveItems].sort((a, b) => {
+      const priorityDiff = priority(a) - priority(b);
+      if (priorityDiff !== 0) return priorityDiff;
+      const aInactiveAt = new Date(a.inactiveAt || a.createdAt).getTime();
+      const bInactiveAt = new Date(b.inactiveAt || b.createdAt).getTime();
+      return bInactiveAt - aInactiveAt;
+    });
+  }, [inactiveItems]);
   const sortedInactiveItems = useMemo(
-    () => inactiveSort ? sortAdminProperties(inactiveItems, inactiveSort) : inactiveItems,
-    [inactiveItems, inactiveSort]
+    () => inactiveSort ? sortAdminProperties(sortedInactiveDefaultItems, inactiveSort) : sortedInactiveDefaultItems,
+    [sortedInactiveDefaultItems, inactiveSort]
   );
 
   const activeTotalPages = Math.max(1, Math.ceil(sortedActiveItems.length / ACTIVE_PAGE_SIZE));
@@ -104,6 +116,8 @@ export default function PropertiesManager({
             ? {
                 ...it,
                 status: data.status,
+                listingStatus: data.listingStatus ?? it.listingStatus,
+                inactiveAt: data.inactiveAt ? new Date(data.inactiveAt).toISOString() : null,
                 createdAt: data.createdAt ? new Date(data.createdAt).toISOString() : it.createdAt,
               }
             : it
@@ -127,6 +141,24 @@ export default function PropertiesManager({
       }, 1200);
     } catch {
       setCopiedCode(null);
+    }
+  }
+
+  async function setFeatured(id: number) {
+    setPending(id);
+    try {
+      const res = await fetch(`/api/properties/${id}/featured`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ featured: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || '設定精選失敗');
+      setItems((prev) => prev.map((it) => (it.id === id ? { ...it, featured: true } : it)));
+    } catch (e: any) {
+      alert(e?.message || '設定精選失敗');
+    } finally {
+      setPending(null);
     }
   }
 
@@ -215,15 +247,16 @@ export default function PropertiesManager({
                 <th className="text-left px-3 py-2 font-bold whitespace-nowrap">上架</th>
               )}
               <th className="text-left px-3 py-2 font-bold whitespace-nowrap">編號</th>
+              <th className="text-center px-3 py-2 font-bold whitespace-nowrap">精選</th>
               <th className="text-left px-3 py-2 font-bold w-14">圖</th>
               <th className="text-left px-3 py-2 font-bold">物件 / 地址</th>
               <th className="text-left px-3 py-2 font-bold whitespace-nowrap">類型</th>
-              <th className="text-right px-3 py-2 font-bold whitespace-nowrap">月租</th>
+              <th className="text-center px-3 py-2 font-bold whitespace-nowrap">月租</th>
               <th className="text-right px-3 py-2 font-bold whitespace-nowrap" title={`${monthStr} 月 / 累積`}>
                 瀏覽（{monthStr.slice(5)}月 / 累積）
               </th>
               <th className="text-center px-3 py-2 font-bold whitespace-nowrap">上架時間</th>
-              <th className="text-right px-3 py-2 font-bold whitespace-nowrap">操作</th>
+              <th className="text-center px-3 py-2 font-bold whitespace-nowrap">操作</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -257,6 +290,22 @@ export default function PropertiesManager({
                     '—'
                   )}
                 </td>
+                <td className="px-3 py-2 text-center whitespace-nowrap">
+                  {p.featured ? (
+                    <span className="inline-flex items-center rounded-full bg-brand-orange-50 px-2 py-0.5 text-[11px] font-bold text-brand-orange-700">
+                      精選
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={pending === p.id}
+                      onClick={() => setFeatured(p.id)}
+                      className="text-xs font-medium border border-brand-orange-200 text-brand-orange-700 rounded-md px-2.5 py-1 hover:bg-brand-orange-50 disabled:opacity-50"
+                    >
+                      設置
+                    </button>
+                  )}
+                </td>
                 <td className="px-3 py-2">
                   <div className="w-12 h-12 rounded-lg overflow-hidden bg-paper-2">
                     {p.imageUrl ? (
@@ -277,22 +326,17 @@ export default function PropertiesManager({
                   >
                     {p.title}
                   </Link>
-                  {p.featured && (
-                    <span className="mt-1 inline-flex items-center rounded-full bg-brand-orange-50 px-2 py-0.5 text-[11px] font-bold text-brand-orange-700">
-                      精選
-                    </span>
-                  )}
                   <p className="text-xs text-ink-500 line-clamp-1">{formatFullAddress(p)}</p>
                 </td>
                 <td className="px-3 py-2 text-xs text-ink-700 whitespace-nowrap">{p.typeMid}</td>
-                <td className="px-3 py-2 text-right font-bold text-brand-green-900 whitespace-nowrap">NT$ {p.rent.toLocaleString()}</td>
+                <td className="px-3 py-2 text-center font-bold text-brand-green-900 whitespace-nowrap">NT$ {p.rent.toLocaleString()}</td>
                 <td className="px-3 py-2 text-right font-mono text-xs whitespace-nowrap">
                   <span className="text-brand-green-700 font-bold">{p.monthViews.toLocaleString()}</span>
                   <span className="text-ink-400"> / </span>
                   <span className="text-ink-700">{p.totalViews.toLocaleString()}</span>
                 </td>
                 <td className="px-3 py-2 text-center text-xs whitespace-nowrap">{fmtDate(p.createdAt)}</td>
-                <td className="px-3 py-2 text-right whitespace-nowrap">
+                <td className="px-3 py-2 text-center whitespace-nowrap">
                   <Link href={`/admin/properties/${p.id}/edit`} className="text-xs font-medium border border-line rounded-md px-2.5 py-1 hover:border-brand-green-500 hover:text-brand-green-700 mr-1">編輯</Link>
                   {p.status === 'active' ? (
                     <button

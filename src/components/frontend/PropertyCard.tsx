@@ -66,6 +66,7 @@ type Props = {
   property: PropertyCardData;
   /** 顯示多少個標籤，預設 3 */
   maxTags?: number;
+  variant?: 'card' | 'mobileList';
 };
 
 function localePath(locale: string, path: string) {
@@ -73,7 +74,7 @@ function localePath(locale: string, path: string) {
   return `/${locale}${path === '/' ? '' : path}`;
 }
 
-export default function PropertyCard({ property: p, maxTags = 3 }: Props) {
+export default function PropertyCard({ property: p, maxTags = 3, variant = 'card' }: Props) {
   const t = useTranslations('propertyCard');
   const locale = useLocale();
   const [copied, setCopied] = useState(false);
@@ -98,6 +99,7 @@ export default function PropertyCard({ property: p, maxTags = 3 }: Props) {
     : statusKey === 'closed' ? 'statusClosed'
     : 'statusActive';
   const statusClassName = LISTING_STATUS_CLASS[statusKey] ?? LISTING_STATUS_CLASS.active;
+  const isMobileList = variant === 'mobileList';
 
   async function copyCode(e: React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
@@ -115,9 +117,13 @@ export default function PropertyCard({ property: p, maxTags = 3 }: Props) {
   return (
     <Link
       href={localePath(locale, `/properties/${p.id}`)}
-      className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col border border-line"
+      className={isMobileList
+        ? 'group flex flex-row overflow-hidden border border-line bg-white shadow-none transition-all duration-300 hover:bg-paper-2/60 sm:flex-col sm:rounded-xl sm:shadow-sm sm:hover:-translate-y-1 sm:hover:shadow-lg'
+        : 'group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col border border-line'}
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-paper-2">
+      <div className={isMobileList
+        ? 'relative aspect-square w-[42%] shrink-0 overflow-hidden bg-paper-2 sm:w-full sm:aspect-[4/3]'
+        : 'relative aspect-[4/3] overflow-hidden bg-paper-2'}>
         {p.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -129,24 +135,26 @@ export default function PropertyCard({ property: p, maxTags = 3 }: Props) {
           <div className="w-full h-full grid place-items-center text-ink-300 text-sm">—</div>
         )}
 
-        <div className="absolute top-3 left-3 right-3 flex items-start justify-between gap-2 pointer-events-none">
+        <div className={isMobileList
+          ? 'absolute left-2 right-2 top-2 flex items-start justify-between gap-1.5 pointer-events-none sm:left-3 sm:right-3 sm:top-3 sm:gap-2'
+          : 'absolute top-3 left-3 right-3 flex items-start justify-between gap-2 pointer-events-none'}>
           <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-            <span className={`${statusClassName} text-xs font-bold px-3 py-1 rounded-full shadow-sm whitespace-nowrap`}>
+            <span className={`${statusClassName} text-[10px] sm:text-xs font-bold px-2 py-0.5 sm:px-3 sm:py-1 rounded-full shadow-sm whitespace-nowrap`}>
               {t(statusLabelKey)}
             </span>
             {p.featured && (
-              <span className="bg-brand-orange-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm whitespace-nowrap">
+              <span className="bg-brand-orange-500 text-white text-[10px] sm:text-xs font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-sm whitespace-nowrap">
                 ★ {t('featured')}
               </span>
             )}
           </div>
-          <span className="bg-white/95 text-ink-700 text-xs font-medium px-2.5 py-1 rounded-full shadow-sm whitespace-nowrap shrink-0">
+          <span className="hidden bg-white/95 text-ink-700 text-xs font-medium px-2.5 py-1 rounded-full shadow-sm whitespace-nowrap shrink-0 sm:inline-flex">
             {p.typeMid}
           </span>
         </div>
       </div>
 
-      <div className="p-5 flex flex-col flex-1">
+      <div className={isMobileList ? 'min-w-0 flex flex-1 flex-col p-3 sm:p-5' : 'p-5 flex flex-col flex-1'}>
         {p.code && (
           <div className="mb-1 flex items-center gap-1.5">
             <span className="text-[10px] font-mono font-bold tracking-wider text-ink-400">編號 {p.code}</span>
@@ -161,19 +169,19 @@ export default function PropertyCard({ property: p, maxTags = 3 }: Props) {
             </button>
           </div>
         )}
-        <h3 className="text-xl sm:text-2xl font-black text-brand-green-900 mb-1 tracking-tight whitespace-nowrap">
+        <h3 className="text-lg sm:text-2xl font-black text-brand-green-900 mb-1 tracking-tight whitespace-nowrap">
           {t('currencyPrefix')} {p.rent.toLocaleString()}
           <span className="text-xs sm:text-sm text-ink-500 font-medium">{t('rentSuffix')}</span>
         </h3>
-        <h4 className="text-base font-bold mb-1.5 line-clamp-1 group-hover:text-brand-green-700 transition">
+        <h4 className="text-sm sm:text-base font-bold mb-1.5 line-clamp-2 sm:line-clamp-1 group-hover:text-brand-green-700 transition">
           {p.title}
         </h4>
-        <p className="text-sm text-ink-500 mb-2 flex items-center gap-1 line-clamp-1">
+        <p className="text-xs sm:text-sm text-ink-500 mb-2 flex items-center gap-1 line-clamp-1">
           <span>📍</span>
           <span className="truncate">{locationLine}</span>
         </p>
         {categoryTags.length > 0 && (
-          <div className="mb-3 flex flex-wrap gap-1.5">
+          <div className={isMobileList ? 'mb-2 hidden flex-wrap gap-1.5 sm:flex' : 'mb-3 flex flex-wrap gap-1.5'}>
             {categoryTags.map((tag) => (
               <span key={tag} className="text-[11px] font-medium px-2 py-0.5 rounded-full border bg-paper text-ink-700 border-line">
                 {tag}
@@ -183,10 +191,12 @@ export default function PropertyCard({ property: p, maxTags = 3 }: Props) {
         )}
 
         {allTags.length > 0 && (
-          <TagPills tags={allTags} className="mb-4" />
+          <TagPills tags={allTags} className={isMobileList ? 'mb-3 hidden sm:flex' : 'mb-4'} />
         )}
 
-        <div className="flex flex-wrap gap-x-4 gap-y-2 pt-4 border-t border-line text-xs text-ink-700 mt-auto">
+        <div className={isMobileList
+          ? 'mt-auto flex flex-wrap gap-x-3 gap-y-1 border-t border-line pt-2 text-[11px] text-ink-700 sm:gap-x-4 sm:gap-y-2 sm:pt-4 sm:text-xs'
+          : 'flex flex-wrap gap-x-4 gap-y-2 pt-4 border-t border-line text-xs text-ink-700 mt-auto'}>
           <span className="flex items-center gap-1">
             <SpecIcon type="rooms" />
             {t('rooms', { count: p.rooms })}

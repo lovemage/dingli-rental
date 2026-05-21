@@ -178,25 +178,6 @@ export default function PropertyFilters({
     return () => document.removeEventListener('pointerdown', onPointerDown);
   }, [advancedOpen]);
 
-  function pushFilters(next: Partial<PropertyFiltersValue>, opts?: { resetPage?: boolean }) {
-    // 用 functional setState 確保以「最新 draft」為基準合併，吸收快速連點
-    setDraft((prev) => {
-      const merged = { ...prev, ...next };
-      const params = new URLSearchParams();
-      (Object.keys(merged) as (keyof PropertyFiltersValue)[]).forEach((k) => {
-        if (merged[k]) params.set(k, merged[k]);
-      });
-      if (!opts || opts.resetPage !== false) {
-        params.delete('page');
-      }
-      // replace + transition：avoid history 堆積，並讓 UI 維持互動順暢
-      startTransition(() => {
-        router.replace(`${propertiesPath}${params.toString() ? `?${params.toString()}` : ''}`, { scroll: false });
-      });
-      return merged;
-    });
-  }
-
   function updateDraft(next: Partial<PropertyFiltersValue>) {
     setDraft((prev) => ({ ...prev, ...next }));
   }
@@ -250,22 +231,21 @@ export default function PropertyFilters({
   }
 
   return (
-    <div ref={filtersRef} className="sticky top-16 z-20 bg-paper border-b border-line py-4 -mt-4 -mx-6 px-6 sm:rounded-none shadow-sm">
+    <div ref={filtersRef} className="z-20 bg-paper border-b border-line py-4 -mt-4 -mx-6 px-6 shadow-sm md:sticky md:top-16 sm:rounded-none">
       <div className="flex flex-wrap gap-2 items-center">
         <form
           className="flex-1 min-w-[200px] max-w-md"
           onSubmit={(e) => {
             e.preventDefault();
-            const form = new FormData(e.currentTarget);
-            const q = String(form.get('q') || '').trim();
-            pushFilters({ q });
+            applyDraftFilters();
           }}
         >
           <div className="flex overflow-hidden rounded-full border border-line bg-white focus-within:border-brand-green-500 focus-within:ring-2 focus-within:ring-brand-green-500/20">
             <input
               name="q"
               type="text"
-              defaultValue={v.q}
+              value={v.q}
+              onChange={(e) => updateDraft({ q: e.target.value })}
               placeholder={t('searchPlaceholder')}
               className="min-w-0 flex-1 bg-white px-3 py-2 text-sm focus:outline-none"
             />
@@ -287,7 +267,7 @@ export default function PropertyFilters({
             { label: t('noLimit'), value: '' },
             ...REGION_OPTIONS.map((r) => ({ label: tRegions(r.labelKey), value: r.value })),
           ]}
-          onChange={(val) => pushFilters({ region: val, district: '' })}
+          onChange={(val) => updateDraft({ region: val, district: '' })}
         />
 
         {v.region && districts.length > 0 && (
@@ -295,7 +275,7 @@ export default function PropertyFilters({
             label={t('districtLabel')}
             value={v.district}
             options={[{ label: t('noLimit'), value: '' }, ...districts.map((d) => ({ label: d, value: d }))]}
-            onChange={(val) => pushFilters({ district: val })}
+            onChange={(val) => updateDraft({ district: val })}
           />
         )}
 
@@ -303,7 +283,7 @@ export default function PropertyFilters({
           label={t('typeLabel')}
           options={TYPES.map((tp) => ({ label: tp, value: tp }))}
           selected={typeArr}
-          onChange={(arr) => pushFilters({ type: arr.join(',') })}
+          onChange={(arr) => updateDraft({ type: arr.join(',') })}
           allLabel={t('noLimit')}
         />
 
@@ -313,7 +293,7 @@ export default function PropertyFilters({
           activeIdx={rentPresetIndex(v.minRent, v.maxRent)}
           currentMin={v.minRent}
           currentMax={v.maxRent}
-          onPick={(p) => pushFilters({ minRent: p.min || '', maxRent: p.max || '' })}
+          onPick={(p) => updateDraft({ minRent: p.min || '', maxRent: p.max || '' })}
           customLabel={t('customRange')}
           unitLabel={t('rentUnit')}
         />
@@ -322,7 +302,7 @@ export default function PropertyFilters({
           label={t('roomsLabel')}
           value={v.rooms}
           options={ROOMS_PRESETS.map((p) => ({ label: t(p.labelKey), value: p.value }))}
-          onChange={(val) => pushFilters({ rooms: val })}
+          onChange={(val) => updateDraft({ rooms: val })}
         />
 
         <ChipPreset
@@ -331,7 +311,7 @@ export default function PropertyFilters({
           activeIdx={areaPresetIndex(v.minArea, v.maxArea)}
           currentMin={v.minArea}
           currentMax={v.maxArea}
-          onPick={(p) => pushFilters({ minArea: p.min || '', maxArea: p.max || '' })}
+          onPick={(p) => updateDraft({ minArea: p.min || '', maxArea: p.max || '' })}
           customLabel={t('customRange')}
           unitLabel={t('areaUnit')}
         />
@@ -399,7 +379,7 @@ export default function PropertyFilters({
           <select
             className="bg-white border border-line rounded-full px-3 py-1.5 text-sm focus:outline-none focus:border-brand-green-500"
             value={v.sort}
-            onChange={(e) => pushFilters({ sort: e.target.value })}
+            onChange={(e) => updateDraft({ sort: e.target.value })}
           >
             <option value="">{t('sortSelect')}</option>
             {PROPERTY_SORT_OPTIONS.map((s) => (
