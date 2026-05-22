@@ -9,9 +9,11 @@ import { LISTING_STATUS_BADGE, type ListingStatus } from '@/lib/property-status'
 
 const TOOL_BUTTON_CLASS = 'inline-flex items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap transition sm:text-xs';
 const TOOL_BUTTON_NEUTRAL_CLASS = `${TOOL_BUTTON_CLASS} border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700`;
-const TOOL_BUTTON_ACCENT_CLASS = `${TOOL_BUTTON_CLASS} border-brand-orange-200 bg-brand-orange-50 text-brand-orange-700 hover:bg-brand-orange-100`;
-const TOOL_BUTTON_SUCCESS_CLASS = `${TOOL_BUTTON_CLASS} border-brand-green-200 bg-brand-green-50 text-brand-green-700 hover:bg-brand-green-100`;
-const TOOL_BUTTON_DANGER_CLASS = `${TOOL_BUTTON_CLASS} border-red-200 bg-red-50 text-red-700 hover:bg-red-100`;
+const TOOL_ICON_BUTTON_CLASS = 'inline-flex h-9 w-9 items-center justify-center rounded-full border transition';
+const TOOL_ICON_BUTTON_NEUTRAL_CLASS = `${TOOL_ICON_BUTTON_CLASS} border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700`;
+const TOOL_ICON_BUTTON_ACCENT_CLASS = `${TOOL_ICON_BUTTON_CLASS} border-brand-orange-200 bg-brand-orange-50 text-brand-orange-700 hover:bg-brand-orange-100`;
+const TOOL_ICON_BUTTON_SUCCESS_CLASS = `${TOOL_ICON_BUTTON_CLASS} border-brand-green-200 bg-brand-green-50 text-brand-green-700 hover:bg-brand-green-100`;
+const TOOL_ICON_BUTTON_DANGER_CLASS = `${TOOL_ICON_BUTTON_CLASS} border-red-200 bg-red-50 text-red-700 hover:bg-red-100`;
 const TOP_CONTROL_CLASS = 'inline-flex h-9 items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition';
 
 type ViewTab = 'active' | 'inactive' | 'featured';
@@ -459,12 +461,12 @@ export default function PropertiesManager({
                           href={previewHref}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="line-clamp-2 text-sm font-bold text-ink-900 transition hover:text-brand-green-700 sm:text-base"
+                          className="line-clamp-1 text-sm font-bold text-ink-900 transition hover:text-brand-green-700 sm:line-clamp-2 sm:text-base"
                           title="新視窗預覽"
                         >
                           {p.title}
                         </Link>
-                        <p className="mt-1 line-clamp-2 text-[11px] text-ink-500 sm:text-xs">{formatFullAddress(p)}</p>
+                        <p className="mt-1 line-clamp-1 text-[11px] text-ink-500 sm:line-clamp-2 sm:text-xs">{formatFullAddress(p)}</p>
                       </div>
 
                       <div className="shrink-0 text-left sm:text-right">
@@ -475,46 +477,63 @@ export default function PropertiesManager({
                       </div>
                     </div>
 
-                    <div className="mt-2 grid gap-x-3 gap-y-1 text-[11px] text-ink-600 sm:grid-cols-2 sm:text-xs xl:grid-cols-4">
-                      <p className="min-w-0 truncate">月瀏覽 {p.monthViews.toLocaleString()} / 累積 {p.totalViews.toLocaleString()}</p>
-                      <p className="min-w-0 truncate">上架時間 {fmtDate(p.createdAt)}</p>
-                      <p className="min-w-0 truncate">下架時間 {p.status !== 'active' ? fmtDate(p.inactiveAt) : '—'}</p>
-                      <p className="min-w-0 truncate">狀態 {badge.label}</p>
+                    <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-ink-600 sm:grid-cols-2 sm:text-xs xl:grid-cols-4">
+                      <p className="min-w-0 truncate">
+                        <span className="sm:hidden">瀏覽 </span>
+                        <span className="hidden sm:inline">月瀏覽 </span>
+                        {p.monthViews.toLocaleString()}
+                        <span className="text-ink-400"> / </span>
+                        {p.totalViews.toLocaleString()}
+                      </p>
+                      <p className="min-w-0 truncate">
+                        <span className="sm:hidden">上架 </span>
+                        <span className="hidden sm:inline">上架時間 </span>
+                        {fmtDate(p.createdAt)}
+                      </p>
+                      <p className="hidden min-w-0 truncate sm:block">下架時間 {p.status !== 'active' ? fmtDate(p.inactiveAt) : '—'}</p>
+                      <p className="hidden min-w-0 truncate sm:block">狀態 {badge.label}</p>
                     </div>
 
                     <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
-                      <Link href={`/admin/properties/${p.id}/edit`} className={TOOL_BUTTON_NEUTRAL_CLASS}>
-                        <MaterialIcon name="edit" className="!text-sm" />
-                        編輯
+                      <Link
+                        href={`/admin/properties/${p.id}/edit`}
+                        className={TOOL_ICON_BUTTON_NEUTRAL_CLASS}
+                        title="編輯"
+                        aria-label="編輯"
+                      >
+                        <MaterialIcon name="edit" className="!text-lg" />
                       </Link>
 
                       <Link
                         href={previewHref}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={TOOL_BUTTON_NEUTRAL_CLASS}
+                        className={TOOL_ICON_BUTTON_NEUTRAL_CLASS}
+                        title="預覽"
+                        aria-label="預覽"
                       >
-                        <MaterialIcon name="open_in_new" className="!text-sm" />
-                        預覽
+                        <MaterialIcon name="open_in_new" className="!text-lg" />
                       </Link>
 
                       <button
                         type="button"
                         onClick={(event) => handleCopyShare(event, p.id)}
-                        className={TOOL_BUTTON_NEUTRAL_CLASS}
+                        className={TOOL_ICON_BUTTON_NEUTRAL_CLASS}
+                        title={copiedShareId === p.id ? '已複製連結' : '分享'}
+                        aria-label={copiedShareId === p.id ? '已複製連結' : '分享'}
                       >
-                        <MaterialIcon name={copiedShareId === p.id ? 'check' : 'share'} className="!text-sm" />
-                        {copiedShareId === p.id ? '已複製連結' : '分享'}
+                        <MaterialIcon name={copiedShareId === p.id ? 'check' : 'share'} className="!text-lg" />
                       </button>
 
                       <button
                         type="button"
                         disabled={pending === p.id}
                         onClick={() => toggleFeatured(p.id, p.featured)}
-                        className={p.featured ? TOOL_BUTTON_ACCENT_CLASS : TOOL_BUTTON_NEUTRAL_CLASS}
+                        className={p.featured ? TOOL_ICON_BUTTON_ACCENT_CLASS : TOOL_ICON_BUTTON_NEUTRAL_CLASS}
+                        title={p.featured ? '取消精選' : '設為精選'}
+                        aria-label={p.featured ? '取消精選' : '設為精選'}
                       >
-                        <MaterialIcon name={p.featured ? 'star' : 'star_outline'} className="!text-sm" fill={p.featured} />
-                        {p.featured ? '取消精選' : '設為精選'}
+                        <MaterialIcon name={p.featured ? 'star' : 'star_outline'} className="!text-lg" fill={p.featured} />
                       </button>
 
                       {p.status === 'active' ? (
@@ -522,20 +541,22 @@ export default function PropertiesManager({
                           type="button"
                           disabled={pending === p.id}
                           onClick={() => updateStatus(p.id, 'inactive', 'rented')}
-                          className={TOOL_BUTTON_DANGER_CLASS}
+                          className={TOOL_ICON_BUTTON_DANGER_CLASS}
+                          title="成交下架"
+                          aria-label="成交下架"
                         >
-                          <MaterialIcon name="inventory_2" className="!text-sm" />
-                          成交下架
+                          <MaterialIcon name="inventory_2" className="!text-lg" />
                         </button>
                       ) : (
                         <button
                           type="button"
                           disabled={pending === p.id}
                           onClick={() => updateStatus(p.id, 'active', 'active')}
-                          className={TOOL_BUTTON_SUCCESS_CLASS}
+                          className={TOOL_ICON_BUTTON_SUCCESS_CLASS}
+                          title="重新上架"
+                          aria-label="重新上架"
                         >
-                          <MaterialIcon name="published_with_changes" className="!text-sm" />
-                          重新上架
+                          <MaterialIcon name="published_with_changes" className="!text-lg" />
                         </button>
                       )}
                     </div>
