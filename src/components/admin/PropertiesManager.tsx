@@ -21,7 +21,7 @@ const ACTION_BUTTON_TONES = {
 const VIEW_TOGGLE_CLASS = 'hidden h-9 w-9 items-center justify-center rounded-xl border border-line bg-white text-ink-700 shadow-sm transition hover:border-brand-green-500 hover:text-brand-green-700 sm:inline-flex';
 const TOP_CONTROL_CLASS = 'inline-flex h-9 items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition';
 
-type ViewTab = 'active' | 'inactive' | 'featured';
+type ViewTab = 'active' | 'inactive' | 'featured' | 'general';
 
 type PropertyItem = {
   id: number;
@@ -101,6 +101,7 @@ export default function PropertiesManager({
   const ACTIVE_PAGE_SIZE = 30;
   const INACTIVE_PAGE_SIZE = 20;
   const FEATURED_PAGE_SIZE = 30;
+  const GENERAL_PAGE_SIZE = 30;
 
   const [items, setItems] = useState(initialItems);
   const [activeTab, setActiveTab] = useState<ViewTab>('active');
@@ -108,9 +109,11 @@ export default function PropertiesManager({
   const [activePage, setActivePage] = useState(1);
   const [inactivePage, setInactivePage] = useState(1);
   const [featuredPage, setFeaturedPage] = useState(1);
+  const [generalPage, setGeneralPage] = useState(1);
   const [activeSort, setActiveSort] = useState<AdminPropertySort | ''>('');
   const [inactiveSort, setInactiveSort] = useState<AdminPropertySort | ''>('');
   const [featuredSort, setFeaturedSort] = useState<AdminPropertySort | ''>('');
+  const [generalSort, setGeneralSort] = useState<AdminPropertySort | ''>('');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [copiedShareId, setCopiedShareId] = useState<number | null>(null);
   const [desktopViewMode, setDesktopViewMode] = useState<'card' | 'compact'>('card');
@@ -118,6 +121,7 @@ export default function PropertiesManager({
   const activeItems = useMemo(() => items.filter((x) => x.status === 'active'), [items]);
   const inactiveItems = useMemo(() => items.filter((x) => x.status !== 'active'), [items]);
   const featuredItems = useMemo(() => items.filter((x) => x.featured), [items]);
+  const generalItems = useMemo(() => items.filter((x) => !x.featured), [items]);
 
   const sortedActiveItems = useMemo(
     () => (activeSort ? sortAdminProperties(activeItems, activeSort) : activeItems),
@@ -150,12 +154,24 @@ export default function PropertiesManager({
     [featuredSort, sortedFeaturedDefaultItems],
   );
 
+  const sortedGeneralDefaultItems = useMemo(
+    () => sortFeaturedDefaultItems(generalItems),
+    [generalItems],
+  );
+
+  const sortedGeneralItems = useMemo(
+    () => (generalSort ? sortAdminProperties(sortedGeneralDefaultItems, generalSort) : sortedGeneralDefaultItems),
+    [generalSort, sortedGeneralDefaultItems],
+  );
+
   const activeTotalPages = Math.max(1, Math.ceil(sortedActiveItems.length / ACTIVE_PAGE_SIZE));
   const inactiveTotalPages = Math.max(1, Math.ceil(sortedInactiveItems.length / INACTIVE_PAGE_SIZE));
   const featuredTotalPages = Math.max(1, Math.ceil(sortedFeaturedItems.length / FEATURED_PAGE_SIZE));
+  const generalTotalPages = Math.max(1, Math.ceil(sortedGeneralItems.length / GENERAL_PAGE_SIZE));
   const safeActivePage = Math.min(activePage, activeTotalPages);
   const safeInactivePage = Math.min(inactivePage, inactiveTotalPages);
   const safeFeaturedPage = Math.min(featuredPage, featuredTotalPages);
+  const safeGeneralPage = Math.min(generalPage, generalTotalPages);
 
   const pagedActiveItems = useMemo(() => {
     const start = (safeActivePage - 1) * ACTIVE_PAGE_SIZE;
@@ -172,33 +188,46 @@ export default function PropertiesManager({
     return sortedFeaturedItems.slice(start, start + FEATURED_PAGE_SIZE);
   }, [safeFeaturedPage, sortedFeaturedItems]);
 
+  const pagedGeneralItems = useMemo(() => {
+    const start = (safeGeneralPage - 1) * GENERAL_PAGE_SIZE;
+    return sortedGeneralItems.slice(start, start + GENERAL_PAGE_SIZE);
+  }, [safeGeneralPage, sortedGeneralItems]);
+
   const rows =
     activeTab === 'active'
       ? pagedActiveItems
       : activeTab === 'inactive'
         ? pagedInactiveItems
-        : pagedFeaturedItems;
+        : activeTab === 'featured'
+          ? pagedFeaturedItems
+          : pagedGeneralItems;
 
   const currentSort =
     activeTab === 'active'
       ? activeSort
       : activeTab === 'inactive'
         ? inactiveSort
-        : featuredSort;
+        : activeTab === 'featured'
+          ? featuredSort
+          : generalSort;
 
   const currentPage =
     activeTab === 'active'
       ? safeActivePage
       : activeTab === 'inactive'
         ? safeInactivePage
-        : safeFeaturedPage;
+        : activeTab === 'featured'
+          ? safeFeaturedPage
+          : safeGeneralPage;
 
   const totalPages =
     activeTab === 'active'
       ? activeTotalPages
       : activeTab === 'inactive'
         ? inactiveTotalPages
-        : featuredTotalPages;
+        : activeTab === 'featured'
+          ? featuredTotalPages
+          : generalTotalPages;
 
   async function updateStatus(
     id: number,
@@ -298,7 +327,11 @@ export default function PropertiesManager({
       setInactivePage(nextPage);
       return;
     }
-    setFeaturedPage(nextPage);
+    if (activeTab === 'featured') {
+      setFeaturedPage(nextPage);
+      return;
+    }
+    setGeneralPage(nextPage);
   }
 
   function changeSort(next: AdminPropertySort | '') {
@@ -312,8 +345,13 @@ export default function PropertiesManager({
       setInactivePage(1);
       return;
     }
-    setFeaturedSort(next);
-    setFeaturedPage(1);
+    if (activeTab === 'featured') {
+      setFeaturedSort(next);
+      setFeaturedPage(1);
+      return;
+    }
+    setGeneralSort(next);
+    setGeneralPage(1);
   }
 
   const emptyText =
@@ -321,7 +359,9 @@ export default function PropertiesManager({
       ? '目前沒有已上架物件'
       : activeTab === 'inactive'
         ? '目前沒有已下架物件'
-        : '目前沒有精選物件';
+        : activeTab === 'featured'
+          ? '目前沒有精選物件'
+          : '目前沒有一般物件';
 
   return (
     <div className="space-y-4">
@@ -329,7 +369,7 @@ export default function PropertiesManager({
         <div className="min-w-0">
           <h1 className="mb-1 text-xl font-black sm:text-2xl">物件管理</h1>
           <p className="text-xs text-ink-500 sm:text-sm">
-            上架中 {activeItems.length} 筆 / 已下架 {inactiveItems.length} 筆 / 精選 {featuredItems.length} 筆
+            上架中 {activeItems.length} 筆 / 已下架 {inactiveItems.length} 筆 / 精選 {featuredItems.length} 筆 / 一般 {generalItems.length} 筆
           </p>
         </div>
 
@@ -433,6 +473,18 @@ export default function PropertiesManager({
             >
               <MaterialIcon name="star" className="!text-sm" fill={activeTab === 'featured'} />
               精選（{featuredItems.length}）
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('general')}
+              className={`${TOP_CONTROL_CLASS} px-3 ${
+                activeTab === 'general'
+                  ? 'border-brand-green-700 bg-brand-green-700 text-white'
+                  : 'border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700'
+              }`}
+            >
+              <MaterialIcon name="star_outline" className="!text-sm" />
+              一般（{generalItems.length}）
             </button>
           </div>
 
