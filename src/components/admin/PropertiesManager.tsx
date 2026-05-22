@@ -1,9 +1,23 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { type MouseEvent, useMemo, useState } from 'react';
+import MaterialIcon from '@/components/admin/MaterialIcon';
 import { type AdminPropertySort, sortAdminProperties } from '@/lib/admin-property-sort';
 import { PROPERTY_SORT_OPTIONS } from '@/lib/property-sort';
+import {
+  LISTING_STATUS_BADGE,
+  type ListingStatus,
+} from '@/lib/property-status';
+
+const MAX_ACTIVE_FEATURED = 6;
+
+const TOOL_BUTTON_CLASS = 'inline-flex items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap transition sm:text-xs';
+const TOOL_BUTTON_NEUTRAL_CLASS = `${TOOL_BUTTON_CLASS} border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700`;
+const TOOL_BUTTON_ACCENT_CLASS = `${TOOL_BUTTON_CLASS} border-brand-orange-200 bg-brand-orange-50 text-brand-orange-700 hover:bg-brand-orange-100`;
+const TOOL_BUTTON_SUCCESS_CLASS = `${TOOL_BUTTON_CLASS} border-brand-green-200 bg-brand-green-50 text-brand-green-700 hover:bg-brand-green-100`;
+const TOOL_BUTTON_DANGER_CLASS = `${TOOL_BUTTON_CLASS} border-red-200 bg-red-50 text-red-700 hover:bg-red-100`;
+const TOP_CONTROL_CLASS = 'inline-flex h-9 items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition';
 
 type PropertyItem = {
   id: number;
@@ -29,7 +43,8 @@ type PropertyItem = {
   totalViews: number;
 };
 
-function fmtDate(dateIso: string) {
+function fmtDate(dateIso?: string | null) {
+  if (!dateIso) return '—';
   const d = new Date(dateIso);
   const dd = String(d.getDate()).padStart(2, '0');
   const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -39,6 +54,17 @@ function fmtDate(dateIso: string) {
 
 function formatFullAddress(p: Pick<PropertyItem, 'region' | 'district' | 'street' | 'lane' | 'alley' | 'number' | 'numberSub'>) {
   return `${p.region}${p.district}${p.street || ''}${p.lane ? `${p.lane}巷` : ''}${p.alley ? `${p.alley}弄` : ''}${p.number ? `${p.number}號` : ''}${p.numberSub ? `之${p.numberSub}` : ''}`;
+}
+
+function getStatusBadge(item: Pick<PropertyItem, 'status' | 'listingStatus'>) {
+  const status = item.listingStatus;
+  if (status === 'rented' || status === 'sold' || status === 'closed') {
+    return LISTING_STATUS_BADGE[status as ListingStatus];
+  }
+  if (item.status !== 'active') {
+    return { label: '已下架', className: 'bg-paper-2 text-ink-700' };
+  }
+  return LISTING_STATUS_BADGE.active;
 }
 
 export default function PropertiesManager({
@@ -52,21 +78,25 @@ export default function PropertiesManager({
 }) {
   const ACTIVE_PAGE_SIZE = 30;
   const INACTIVE_PAGE_SIZE = 20;
+
   const [items, setItems] = useState(initialItems);
   const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
   const [pending, setPending] = useState<number | null>(null);
   const [activePage, setActivePage] = useState(1);
+  const [inactivePage, setInactivePage] = useState(1);
   const [activeSort, setActiveSort] = useState<AdminPropertySort | ''>('');
   const [inactiveSort, setInactiveSort] = useState<AdminPropertySort | ''>('');
-  const [inactivePage, setInactivePage] = useState(1);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [copiedShareId, setCopiedShareId] = useState<number | null>(null);
 
   const activeItems = useMemo(() => items.filter((x) => x.status === 'active'), [items]);
   const inactiveItems = useMemo(() => items.filter((x) => x.status !== 'active'), [items]);
+
   const sortedActiveItems = useMemo(
-    () => activeSort ? sortAdminProperties(activeItems, activeSort) : activeItems,
-    [activeItems, activeSort]
+    () => (activeSort ? sortAdminProperties(activeItems, activeSort) : activeItems),
+    [activeItems, activeSort],
   );
+
   const sortedInactiveDefaultItems = useMemo(() => {
     const priority = (item: PropertyItem) => (item.listingStatus === 'sold' ? 0 : 1);
     return [...inactiveItems].sort((a, b) => {
@@ -77,9 +107,10 @@ export default function PropertiesManager({
       return bInactiveAt - aInactiveAt;
     });
   }, [inactiveItems]);
+
   const sortedInactiveItems = useMemo(
-    () => inactiveSort ? sortAdminProperties(sortedInactiveDefaultItems, inactiveSort) : sortedInactiveDefaultItems,
-    [sortedInactiveDefaultItems, inactiveSort]
+    () => (inactiveSort ? sortAdminProperties(sortedInactiveDefaultItems, inactiveSort) : sortedInactiveDefaultItems),
+    [sortedInactiveDefaultItems, inactiveSort],
   );
 
   const activeTotalPages = Math.max(1, Math.ceil(sortedActiveItems.length / ACTIVE_PAGE_SIZE));
@@ -90,16 +121,22 @@ export default function PropertiesManager({
   const pagedActiveItems = useMemo(() => {
     const start = (safeActivePage - 1) * ACTIVE_PAGE_SIZE;
     return sortedActiveItems.slice(start, start + ACTIVE_PAGE_SIZE);
-  }, [sortedActiveItems, safeActivePage]);
+  }, [safeActivePage, sortedActiveItems]);
+
   const pagedInactiveItems = useMemo(() => {
     const start = (safeInactivePage - 1) * INACTIVE_PAGE_SIZE;
     return sortedInactiveItems.slice(start, start + INACTIVE_PAGE_SIZE);
-  }, [sortedInactiveItems, safeInactivePage]);
+  }, [safeInactivePage, sortedInactiveItems]);
+
+  const rows = activeTab === 'active' ? pagedActiveItems : pagedInactiveItems;
+  const currentSort = activeTab === 'active' ? activeSort : inactiveSort;
+  const currentPage = activeTab === 'active' ? safeActivePage : safeInactivePage;
+  const totalPages = activeTab === 'active' ? activeTotalPages : inactiveTotalPages;
 
   async function updateStatus(
     id: number,
     status: 'active' | 'inactive',
-    listingStatus?: 'active' | 'rented' | 'sold' | 'closed'
+    listingStatus?: 'active' | 'rented' | 'sold' | 'closed',
   ) {
     setPending(id);
     try {
@@ -124,8 +161,34 @@ export default function PropertiesManager({
         ));
         return next.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       });
-    } catch (e: any) {
-      alert(e?.message || '更新失敗');
+    } catch (error: any) {
+      alert(error?.message || '更新失敗');
+    } finally {
+      setPending(null);
+    }
+  }
+
+  async function toggleFeatured(id: number, currentFeatured: boolean) {
+    if (!currentFeatured) {
+      const activeFeaturedCount = items.filter((it) => it.status === 'active' && it.featured).length;
+      if (activeFeaturedCount >= MAX_ACTIVE_FEATURED) {
+        alert(`精選上限為 ${MAX_ACTIVE_FEATURED} 筆，請先取消其他精選物件。`);
+        return;
+      }
+    }
+
+    setPending(id);
+    try {
+      const res = await fetch(`/api/properties/${id}/featured`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ featured: !currentFeatured }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || '設定精選失敗');
+      setItems((prev) => prev.map((it) => (it.id === id ? { ...it, featured: Boolean(data.featured) } : it)));
+    } catch (error: any) {
+      alert(error?.message || '設定精選失敗');
     } finally {
       setPending(null);
     }
@@ -140,270 +203,304 @@ export default function PropertiesManager({
         setCopiedCode((current) => (current === code ? null : current));
       }, 1200);
     } catch {
-      setCopiedCode(null);
+      alert('複製編號失敗');
     }
   }
 
-  async function setFeatured(id: number) {
-    setPending(id);
+  async function copyShareLink(id: number) {
     try {
-      const res = await fetch(`/api/properties/${id}/featured`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ featured: true }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || '設定精選失敗');
-      setItems((prev) => prev.map((it) => (it.id === id ? { ...it, featured: true } : it)));
-    } catch (e: any) {
-      alert(e?.message || '設定精選失敗');
-    } finally {
-      setPending(null);
+      const url = new URL(`/properties/${id}`, window.location.origin).toString();
+      await navigator.clipboard.writeText(url);
+      setCopiedShareId(id);
+      setTimeout(() => {
+        setCopiedShareId((current) => (current === id ? null : current));
+      }, 1200);
+    } catch {
+      alert('複製分享連結失敗');
     }
   }
 
-  const rows = activeTab === 'active' ? pagedActiveItems : pagedInactiveItems;
+  function handleCopyCode(event: MouseEvent<HTMLButtonElement>, code?: string | null) {
+    event.preventDefault();
+    void copyCode(code);
+  }
+
+  function handleCopyShare(event: MouseEvent<HTMLButtonElement>, id: number) {
+    event.preventDefault();
+    void copyShareLink(id);
+  }
+
+  function changePage(nextPage: number) {
+    if (activeTab === 'active') {
+      setActivePage(nextPage);
+      return;
+    }
+    setInactivePage(nextPage);
+  }
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black mb-1">物件管理</h1>
-          <p className="text-ink-500 text-sm">上架中 {activeItems.length} 筆 / 已下架 {inactiveItems.length} 筆</p>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="mb-1 text-xl font-black sm:text-2xl">物件管理</h1>
+          <p className="text-xs text-ink-500 sm:text-sm">上架中 {activeItems.length} 筆 / 已下架 {inactiveItems.length} 筆</p>
         </div>
-        <div className="flex items-start gap-2 flex-wrap">
-          <form action="/admin/properties" method="get" className="flex items-center gap-1">
+
+        <div className="flex w-full flex-wrap items-center justify-end gap-2 lg:w-auto lg:flex-nowrap">
+          <form action="/admin/properties" method="get" className="flex min-w-0 flex-1 flex-wrap items-center gap-2 lg:flex-none">
             <input
               type="text"
               name="q"
               defaultValue={q}
-              placeholder="編號/標題/區域/路名"
-              className="px-3 py-2 text-sm rounded-lg border border-line focus:outline-none focus:border-brand-green-500 w-48"
+              placeholder="編號 / 標題 / 區域 / 路名"
+              className="h-9 min-w-0 flex-1 rounded-full border border-line bg-white px-3 text-xs focus:border-brand-green-500 focus:outline-none sm:min-w-[220px] sm:text-sm"
             />
             <input type="hidden" name="month" value={monthStr} />
-            <button type="submit" className="btn btn-secondary text-sm">搜尋</button>
+            <button
+              type="submit"
+              className={`${TOP_CONTROL_CLASS} border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700`}
+            >
+              <MaterialIcon name="search" className="!text-sm" />
+              搜尋
+            </button>
           </form>
-          <Link href="/admin/properties/new" className="btn btn-primary">+ 新增物件</Link>
+
+          <Link
+            href="/admin/properties/new"
+            className={`${TOP_CONTROL_CLASS} border-brand-green-700 bg-brand-green-700 text-white hover:bg-brand-green-900`}
+          >
+            <MaterialIcon name="add" className="!text-sm" />
+            新增物件
+          </Link>
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setActiveTab('active')}
-          className={`px-3.5 py-1.5 text-sm font-bold rounded-full border transition ${
-            activeTab === 'active'
-              ? 'bg-brand-green-700 text-white border-brand-green-700'
-              : 'bg-white text-ink-700 border-line hover:border-brand-green-500'
-          }`}
-        >
-          已上架（{activeItems.length}）
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('inactive')}
-          className={`px-3.5 py-1.5 text-sm font-bold rounded-full border transition ${
-            activeTab === 'inactive'
-              ? 'bg-brand-green-700 text-white border-brand-green-700'
-              : 'bg-white text-ink-700 border-line hover:border-brand-green-500'
-          }`}
-        >
-          已下架（{inactiveItems.length}）
-        </button>
-      </div>
+      <div className="admin-card !p-3 sm:!p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab('active')}
+              className={`${TOP_CONTROL_CLASS} px-3 ${
+                activeTab === 'active'
+                  ? 'border-brand-green-700 bg-brand-green-700 text-white'
+                  : 'border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700'
+              }`}
+            >
+              已上架（{activeItems.length}）
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('inactive')}
+              className={`${TOP_CONTROL_CLASS} px-3 ${
+                activeTab === 'inactive'
+                  ? 'border-brand-green-700 bg-brand-green-700 text-white'
+                  : 'border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700'
+              }`}
+            >
+              已下架（{inactiveItems.length}）
+            </button>
+          </div>
 
-      <div className="flex items-center justify-end">
-        <label className="text-sm flex items-center gap-2">
-          <span className="text-ink-500">排序</span>
-          <select
-            className="bg-white border border-line rounded-full px-3 py-1.5 text-sm focus:outline-none focus:border-brand-green-500"
-            value={activeTab === 'active' ? activeSort : inactiveSort}
-            onChange={(e) => {
-              const next = e.target.value as AdminPropertySort | '';
-              if (activeTab === 'active') {
-                setActiveSort(next);
-                setActivePage(1);
-              } else {
-                setInactiveSort(next);
-                setInactivePage(1);
-              }
-            }}
-          >
-            <option value="">選取</option>
-            {PROPERTY_SORT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {ADMIN_SORT_LABELS[option.labelKey]}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+          <label className="flex items-center gap-2 text-xs sm:text-sm">
+            <span className="whitespace-nowrap text-ink-500">排序</span>
+            <select
+              className="h-9 rounded-full border border-line bg-white px-3 text-xs focus:border-brand-green-500 focus:outline-none sm:min-w-[132px] sm:text-sm"
+              value={currentSort}
+              onChange={(e) => {
+                const next = e.target.value as AdminPropertySort | '';
+                if (activeTab === 'active') {
+                  setActiveSort(next);
+                  setActivePage(1);
+                } else {
+                  setInactiveSort(next);
+                  setInactivePage(1);
+                }
+              }}
+            >
+              <option value="">選取</option>
+              {PROPERTY_SORT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {ADMIN_SORT_LABELS[option.labelKey]}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
 
-      <div className="admin-card overflow-x-auto p-0">
-        <table className="w-full text-sm">
-          <thead className="bg-paper-2 text-xs text-ink-500">
-            <tr>
-              {activeTab === 'inactive' && (
-                <th className="text-left px-3 py-2 font-bold whitespace-nowrap">上架</th>
-              )}
-              <th className="text-left px-3 py-2 font-bold whitespace-nowrap">編號</th>
-              <th className="text-center px-3 py-2 font-bold whitespace-nowrap">精選</th>
-              <th className="text-left px-3 py-2 font-bold w-14">圖</th>
-              <th className="text-left px-3 py-2 font-bold">物件 / 地址</th>
-              <th className="text-left px-3 py-2 font-bold whitespace-nowrap">類型</th>
-              <th className="text-center px-3 py-2 font-bold whitespace-nowrap">月租</th>
-              <th className="text-right px-3 py-2 font-bold whitespace-nowrap" title={`${monthStr} 月 / 累積`}>
-                瀏覽（{monthStr.slice(5)}月 / 累積）
-              </th>
-              <th className="text-center px-3 py-2 font-bold whitespace-nowrap">上架時間</th>
-              <th className="text-center px-3 py-2 font-bold whitespace-nowrap">操作</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-line">
-            {rows.map((p) => (
-              <tr key={p.id} className="hover:bg-paper-2/40 transition">
-                {activeTab === 'inactive' && (
-                  <td className="px-3 py-2 whitespace-nowrap">
-                    <button
-                      type="button"
-                      disabled={pending === p.id}
-                      onClick={() => updateStatus(p.id, 'active', 'active')}
-                      className="text-xs font-medium border border-brand-green-200 text-brand-green-700 rounded-md px-2.5 py-1 hover:bg-brand-green-50 disabled:opacity-50"
-                    >
-                      重新上架
-                    </button>
-                  </td>
-                )}
-                <td className="px-3 py-2 font-mono text-[11px] text-ink-500 whitespace-nowrap">
-                  {p.code ? (
-                    <button
-                      type="button"
-                      onClick={() => copyCode(p.code)}
-                      className="inline-flex items-center gap-1 rounded-md border border-transparent px-1.5 py-1 font-mono text-[11px] font-bold text-ink-500 transition hover:border-brand-green-200 hover:bg-brand-green-50 hover:text-brand-green-700"
-                      title="點擊複製物件編號"
-                      aria-label={`複製物件編號 ${p.code}`}
-                    >
-                      <span>{p.code}</span>
-                      <span className="text-[10px]">{copiedCode === p.code ? '已複製' : '複製'}</span>
-                    </button>
-                  ) : (
-                    '—'
-                  )}
-                </td>
-                <td className="px-3 py-2 text-center whitespace-nowrap">
-                  {p.featured ? (
-                    <span className="inline-flex items-center rounded-full bg-brand-orange-50 px-2 py-0.5 text-[11px] font-bold text-brand-orange-700">
-                      精選
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled={pending === p.id}
-                      onClick={() => setFeatured(p.id)}
-                      className="text-xs font-medium border border-brand-orange-200 text-brand-orange-700 rounded-md px-2.5 py-1 hover:bg-brand-orange-50 disabled:opacity-50"
-                    >
-                      設置
-                    </button>
-                  )}
-                </td>
-                <td className="px-3 py-2">
-                  <div className="w-12 h-12 rounded-lg overflow-hidden bg-paper-2">
-                    {p.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.imageUrl} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full grid place-items-center text-ink-300 text-xs">—</div>
-                    )}
-                  </div>
-                </td>
-                <td className="px-3 py-2 min-w-[240px]">
+        {rows.length > 0 ? (
+          <div className="mt-3 space-y-3">
+            {rows.map((p) => {
+              const badge = getStatusBadge(p);
+              const previewHref = `/properties/${p.id}`;
+
+              return (
+                <article
+                  key={p.id}
+                  className="flex gap-3 rounded-2xl border border-line bg-white p-2.5 transition hover:border-brand-green-200 hover:bg-paper-2/30 sm:gap-4 sm:p-3"
+                >
                   <Link
-                    href={`/properties/${p.id}`}
+                    href={previewHref}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-bold text-ink-900 line-clamp-1 hover:text-brand-green-700 underline-offset-2 hover:underline"
+                    className="relative block aspect-square w-24 shrink-0 overflow-hidden rounded-xl bg-paper-2 sm:aspect-[4/3] sm:w-36 lg:w-40"
                     title="新視窗預覽"
                   >
-                    {p.title}
+                    {p.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.imageUrl} alt={p.title} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="grid h-full w-full place-items-center text-xs text-ink-300">—</div>
+                    )}
                   </Link>
-                  <p className="text-xs text-ink-500 line-clamp-1">{formatFullAddress(p)}</p>
-                </td>
-                <td className="px-3 py-2 text-xs text-ink-700 whitespace-nowrap">{p.typeMid}</td>
-                <td className="px-3 py-2 text-center font-bold text-brand-green-900 whitespace-nowrap">NT$ {p.rent.toLocaleString()}</td>
-                <td className="px-3 py-2 text-right font-mono text-xs whitespace-nowrap">
-                  <span className="text-brand-green-700 font-bold">{p.monthViews.toLocaleString()}</span>
-                  <span className="text-ink-400"> / </span>
-                  <span className="text-ink-700">{p.totalViews.toLocaleString()}</span>
-                </td>
-                <td className="px-3 py-2 text-center text-xs whitespace-nowrap">{fmtDate(p.createdAt)}</td>
-                <td className="px-3 py-2 text-center whitespace-nowrap">
-                  <Link href={`/admin/properties/${p.id}/edit`} className="text-xs font-medium border border-line rounded-md px-2.5 py-1 hover:border-brand-green-500 hover:text-brand-green-700 mr-1">編輯</Link>
-                  {p.status === 'active' ? (
-                    <button
-                      type="button"
-                      disabled={pending === p.id}
-                      onClick={() => updateStatus(p.id, 'inactive', 'rented')}
-                      className="text-xs font-medium border border-red-200 text-red-700 rounded-md px-2.5 py-1 hover:bg-red-50 disabled:opacity-50"
-                    >
-                      成交下架
-                    </button>
-                  ) : null}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
 
-        {activeTab === 'active' && activeTotalPages > 1 && (
-          <div className="px-3 py-3 border-t border-line flex items-center justify-center gap-2 bg-white">
-            <button
-              type="button"
-              onClick={() => setActivePage((p) => Math.max(1, p - 1))}
-              disabled={safeActivePage === 1}
-              className="text-xs font-medium border border-line rounded-md px-2.5 py-1 disabled:opacity-50"
-            >
-              上一頁
-            </button>
-            <span className="text-xs text-ink-500">第 {safeActivePage} / {activeTotalPages} 頁</span>
-            <button
-              type="button"
-              onClick={() => setActivePage((p) => Math.min(activeTotalPages, p + 1))}
-              disabled={safeActivePage === activeTotalPages}
-              className="text-xs font-medium border border-line rounded-md px-2.5 py-1 disabled:opacity-50"
-            >
-              下一頁
-            </button>
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className={`${badge.className} rounded-full px-2 py-0.5 text-[10px] font-bold shadow-sm sm:text-[11px]`}>
+                        {badge.label}
+                      </span>
+                      {p.featured && (
+                        <span className="rounded-full bg-brand-orange-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm sm:text-[11px]">
+                          ★ 精選
+                        </span>
+                      )}
+                      <span className="rounded-full border border-line bg-paper px-2 py-0.5 text-[10px] font-medium text-ink-700 sm:text-[11px]">
+                        {p.typeMid}
+                      </span>
+                      {p.code && (
+                        <button
+                          type="button"
+                          onClick={(event) => handleCopyCode(event, p.code)}
+                          className="inline-flex items-center gap-1 rounded-full border border-line bg-white px-2 py-0.5 text-[10px] font-mono font-bold text-ink-500 transition hover:border-brand-green-500 hover:text-brand-green-700 sm:text-[11px]"
+                          title="複製物件編號"
+                        >
+                          {p.code}
+                          <span className="font-sans">{copiedCode === p.code ? '已複製' : '複製'}</span>
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="mt-2 flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <Link
+                          href={previewHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="line-clamp-2 text-sm font-bold text-ink-900 transition hover:text-brand-green-700 sm:text-base"
+                          title="新視窗預覽"
+                        >
+                          {p.title}
+                        </Link>
+                        <p className="mt-1 line-clamp-2 text-[11px] text-ink-500 sm:text-xs">{formatFullAddress(p)}</p>
+                      </div>
+
+                      <div className="shrink-0 text-left sm:text-right">
+                        <p className="text-base font-black tracking-tight text-brand-green-900 sm:text-xl">
+                          NT$ {p.rent.toLocaleString()}
+                        </p>
+                        <p className="text-[11px] text-ink-500 sm:text-xs">{p.usableArea.toLocaleString()} 坪</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-2 grid gap-x-3 gap-y-1 text-[11px] text-ink-600 sm:grid-cols-2 sm:text-xs xl:grid-cols-4">
+                      <p className="min-w-0 truncate">月瀏覽 {p.monthViews.toLocaleString()} / 累積 {p.totalViews.toLocaleString()}</p>
+                      <p className="min-w-0 truncate">上架時間 {fmtDate(p.createdAt)}</p>
+                      <p className="min-w-0 truncate">下架時間 {activeTab === 'inactive' ? fmtDate(p.inactiveAt) : '—'}</p>
+                      <p className="min-w-0 truncate">狀態 {badge.label}</p>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
+                      <Link href={`/admin/properties/${p.id}/edit`} className={TOOL_BUTTON_NEUTRAL_CLASS}>
+                        <MaterialIcon name="edit" className="!text-sm" />
+                        編輯
+                      </Link>
+
+                      <Link
+                        href={previewHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={TOOL_BUTTON_NEUTRAL_CLASS}
+                      >
+                        <MaterialIcon name="open_in_new" className="!text-sm" />
+                        預覽
+                      </Link>
+
+                      <button
+                        type="button"
+                        onClick={(event) => handleCopyShare(event, p.id)}
+                        className={TOOL_BUTTON_NEUTRAL_CLASS}
+                      >
+                        <MaterialIcon name={copiedShareId === p.id ? 'check' : 'share'} className="!text-sm" />
+                        {copiedShareId === p.id ? '已複製連結' : '分享'}
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={pending === p.id}
+                        onClick={() => toggleFeatured(p.id, p.featured)}
+                        className={p.featured ? TOOL_BUTTON_ACCENT_CLASS : TOOL_BUTTON_NEUTRAL_CLASS}
+                      >
+                        <MaterialIcon name={p.featured ? 'star' : 'star_outline'} className="!text-sm" fill={p.featured} />
+                        {p.featured ? '取消精選' : '設為精選'}
+                      </button>
+
+                      {p.status === 'active' ? (
+                        <button
+                          type="button"
+                          disabled={pending === p.id}
+                          onClick={() => updateStatus(p.id, 'inactive', 'rented')}
+                          className={TOOL_BUTTON_DANGER_CLASS}
+                        >
+                          <MaterialIcon name="inventory_2" className="!text-sm" />
+                          成交下架
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={pending === p.id}
+                          onClick={() => updateStatus(p.id, 'active', 'active')}
+                          className={TOOL_BUTTON_SUCCESS_CLASS}
+                        >
+                          <MaterialIcon name="published_with_changes" className="!text-sm" />
+                          重新上架
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="py-12 text-center text-sm text-ink-500">
+            {activeTab === 'active' ? '目前沒有已上架物件' : '目前沒有已下架物件'}
           </div>
         )}
 
-        {activeTab === 'inactive' && inactiveTotalPages > 1 && (
-          <div className="px-3 py-3 border-t border-line flex items-center justify-center gap-2 bg-white">
+        {rows.length > 0 && totalPages > 1 && (
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 border-t border-line pt-4">
             <button
               type="button"
-              onClick={() => setInactivePage((p) => Math.max(1, p - 1))}
-              disabled={safeInactivePage === 1}
-              className="text-xs font-medium border border-line rounded-md px-2.5 py-1 disabled:opacity-50"
+              onClick={() => changePage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className={TOOL_BUTTON_NEUTRAL_CLASS}
             >
               上一頁
             </button>
-            <span className="text-xs text-ink-500">第 {safeInactivePage} / {inactiveTotalPages} 頁</span>
+            <span className="text-xs text-ink-500">
+              第 {currentPage} / {totalPages} 頁
+            </span>
             <button
               type="button"
-              onClick={() => setInactivePage((p) => Math.min(inactiveTotalPages, p + 1))}
-              disabled={safeInactivePage === inactiveTotalPages}
-              className="text-xs font-medium border border-line rounded-md px-2.5 py-1 disabled:opacity-50"
+              onClick={() => changePage(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+              className={TOOL_BUTTON_NEUTRAL_CLASS}
             >
               下一頁
             </button>
           </div>
         )}
       </div>
-
-      {rows.length === 0 && (
-        <div className="admin-card">
-          <p className="text-sm text-ink-500">{activeTab === 'active' ? '目前沒有已上架物件' : '目前沒有已下架物件'}</p>
-        </div>
-      )}
     </div>
   );
 }

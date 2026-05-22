@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentAdmin } from '@/lib/auth';
+import { validateActiveFeaturedLimit } from '@/lib/featured-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,9 +30,19 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     const existing = await prisma.property.findUnique({
       where: { id },
-      select: { id: true, status: true, inactiveAt: true },
+      select: { id: true, status: true, featured: true, inactiveAt: true },
     });
     if (!existing) return NextResponse.json({ error: 'not found' }, { status: 404 });
+
+    const limitError = await validateActiveFeaturedLimit({
+      propertyId: id,
+      nextFeatured: existing.featured,
+      nextStatus,
+    });
+    if (limitError) {
+      const status = limitError === 'not found' ? 404 : 400;
+      return NextResponse.json({ error: limitError }, { status });
+    }
 
     let inactiveAtPatch: Date | null | undefined;
     if (nextStatus === 'inactive') {

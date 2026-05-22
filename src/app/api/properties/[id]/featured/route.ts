@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentAdmin } from '@/lib/auth';
+import { validateActiveFeaturedLimit } from '@/lib/featured-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   try {
     const body = await req.json().catch(() => ({}));
     const featured = typeof body?.featured === 'boolean' ? body.featured : true;
+    const limitError = await validateActiveFeaturedLimit({ propertyId: id, nextFeatured: featured });
+    if (limitError) {
+      const status = limitError === 'not found' ? 404 : 400;
+      return NextResponse.json({ error: limitError }, { status });
+    }
 
     const updated = await prisma.property.update({
       where: { id },
