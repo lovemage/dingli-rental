@@ -525,17 +525,27 @@ export default function PropertiesManager({
                         <p className={`mt-1 line-clamp-1 text-[11px] text-ink-500 ${
                           isCompact ? 'sm:hidden' : 'sm:line-clamp-2 sm:text-xs'
                         }`}>{formatFullAddress(p)}</p>
-                      </div>
-
-                      <div className={`shrink-0 text-left ${isCompact ? 'sm:flex sm:items-baseline sm:gap-2 sm:text-right' : 'sm:text-right'}`}>
-                        <p className={`font-black tracking-tight text-brand-green-900 ${isCompact ? 'text-base' : 'text-base sm:text-xl'}`}>
-                          NT$ {p.rent.toLocaleString()}
-                        </p>
-                        <p className={`text-[11px] text-ink-500 sm:text-xs ${isCompact ? 'sm:hidden' : ''}`}>{p.usableArea.toLocaleString()} 坪</p>
-                        {isCompact && (
-                          <p className="hidden whitespace-nowrap text-[11px] font-medium text-ink-500 sm:block">管理費 {mgmtFeeStr}</p>
+                        {!isCompact && (
+                          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-ink-600 sm:text-xs">
+                            <span className="text-base font-black tracking-tight text-brand-green-900 sm:text-lg">
+                              NT$ {p.rent.toLocaleString()}
+                            </span>
+                            <span>{p.usableArea.toLocaleString()} 坪</span>
+                            <span>{p.rooms} 房 {p.livingRooms} 廳</span>
+                            <span>{p.parkingType ? '有車位' : '無車位'}</span>
+                          </div>
                         )}
                       </div>
+
+                      {isCompact && (
+                        <div className="shrink-0 text-left sm:flex sm:items-baseline sm:gap-2 sm:text-right">
+                          <p className="text-base font-black tracking-tight text-brand-green-900">
+                            NT$ {p.rent.toLocaleString()}
+                          </p>
+                          <p className="text-[11px] text-ink-500 sm:hidden">{p.usableArea.toLocaleString()} 坪</p>
+                          <p className="hidden whitespace-nowrap text-[11px] font-medium text-ink-500 sm:block">管理費 {mgmtFeeStr}</p>
+                        </div>
+                      )}
                     </div>
                     </div>
 
