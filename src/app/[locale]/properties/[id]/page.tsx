@@ -264,7 +264,15 @@ export default async function PropertyDetailPage({
                   <span className="text-[11px] font-mono font-bold tracking-wider text-ink-400 mb-1 block">#{p.code}</span>
                 )}
                 <h1 className="text-2xl sm:text-3xl font-black mb-2">{p.title}</h1>
-                <p className="text-ink-500 mb-6">📍 {addressDisplay}</p>
+                <p className="text-ink-500 mb-3">📍 {addressDisplay}</p>
+
+                <div className="mb-6">
+                  <p className="text-sm text-ink-500">{t('rentLabel')}</p>
+                  <p className="text-3xl sm:text-4xl font-black text-brand-green-900">
+                    NT$ {raw.rent.toLocaleString()}
+                    <span className="ml-1.5 text-sm font-medium text-ink-500">{t('rentSuffix')}</span>
+                  </p>
+                </div>
 
                 {featureTags.length > 0 && (
                   <div className="mb-4 flex flex-wrap gap-2">
@@ -339,13 +347,7 @@ export default async function PropertyDetailPage({
               </div>
 
               <aside className="bg-paper-2 rounded-xl p-6 h-fit lg:sticky lg:top-24">
-                <p className="text-sm text-ink-500">{t('rentLabel')}</p>
-                <p className="text-3xl font-black text-brand-green-900 mb-1">
-                  NT$ {raw.rent.toLocaleString()}
-                </p>
-                <p className="text-sm text-ink-500 mb-4">{t('rentSuffix')}</p>
-
-                <div className="border-t border-line pt-4 space-y-2 text-sm">
+                <div className="space-y-2 text-sm">
                   <Row label={t('depositLabel')} value={p.deposit} />
                   <Row label={t('managementFee')} value={managementFeeStr} />
                   {rentIncludes.length > 0 && (
