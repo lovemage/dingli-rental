@@ -537,20 +537,13 @@ export default function PropertiesManager({
                         )}
                       </div>
 
-                      {isCompact && (
-                        <div className="shrink-0 text-left sm:flex sm:items-baseline sm:gap-2 sm:text-right">
-                          <p className="text-base font-black tracking-tight text-brand-green-900">
-                            NT$ {p.rent.toLocaleString()}
-                          </p>
-                          <p className="text-[11px] text-ink-500 sm:hidden">{p.usableArea.toLocaleString()} 坪</p>
-                          <p className="hidden whitespace-nowrap text-[11px] font-medium text-ink-500 sm:block">管理費 {mgmtFeeStr}</p>
-                        </div>
-                      )}
                     </div>
                     </div>
 
                     {isCompact && (
                       <div className="hidden items-center gap-x-3 whitespace-nowrap text-[11px] text-ink-600 sm:flex">
+                        <span className="text-xs font-black tracking-tight text-brand-green-900">NT$ {p.rent.toLocaleString()}</span>
+                        <span className="font-medium text-ink-700">管理費 {mgmtFeeStr}</span>
                         <span>{p.rooms} 房 {p.livingRooms} 廳</span>
                         <span>{p.parkingType ? '有車位' : '無車位'}</span>
                         <span>{p.usableArea.toLocaleString()} 坪</span>
@@ -596,18 +589,6 @@ export default function PropertiesManager({
                       >
                         <MaterialIcon name="edit" className="!text-lg" />
                         <span className={actionLabelClass}>編輯</span>
-                      </Link>
-
-                      <Link
-                        href={previewHref}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={actionBtn('neutral')}
-                        title="預覽"
-                        aria-label="預覽"
-                      >
-                        <MaterialIcon name="open_in_new" className="!text-lg" />
-                        <span className={actionLabelClass}>預覽</span>
                       </Link>
 
                       <button
