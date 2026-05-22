@@ -5,12 +5,7 @@ import { type MouseEvent, useMemo, useState } from 'react';
 import MaterialIcon from '@/components/admin/MaterialIcon';
 import { type AdminPropertySort, sortAdminProperties } from '@/lib/admin-property-sort';
 import { PROPERTY_SORT_OPTIONS } from '@/lib/property-sort';
-import {
-  LISTING_STATUS_BADGE,
-  type ListingStatus,
-} from '@/lib/property-status';
-
-const MAX_ACTIVE_FEATURED = 6;
+import { LISTING_STATUS_BADGE, type ListingStatus } from '@/lib/property-status';
 
 const TOOL_BUTTON_CLASS = 'inline-flex items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap transition sm:text-xs';
 const TOOL_BUTTON_NEUTRAL_CLASS = `${TOOL_BUTTON_CLASS} border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700`;
@@ -18,6 +13,8 @@ const TOOL_BUTTON_ACCENT_CLASS = `${TOOL_BUTTON_CLASS} border-brand-orange-200 b
 const TOOL_BUTTON_SUCCESS_CLASS = `${TOOL_BUTTON_CLASS} border-brand-green-200 bg-brand-green-50 text-brand-green-700 hover:bg-brand-green-100`;
 const TOOL_BUTTON_DANGER_CLASS = `${TOOL_BUTTON_CLASS} border-red-200 bg-red-50 text-red-700 hover:bg-red-100`;
 const TOP_CONTROL_CLASS = 'inline-flex h-9 items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition';
+
+type ViewTab = 'active' | 'inactive' | 'featured';
 
 type PropertyItem = {
   id: number;
@@ -67,6 +64,15 @@ function getStatusBadge(item: Pick<PropertyItem, 'status' | 'listingStatus'>) {
   return LISTING_STATUS_BADGE.active;
 }
 
+function sortFeaturedDefaultItems(items: PropertyItem[]) {
+  return [...items].sort((a, b) => {
+    const aActive = a.status === 'active' ? 1 : 0;
+    const bActive = b.status === 'active' ? 1 : 0;
+    if (aActive !== bActive) return bActive - aActive;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+}
+
 export default function PropertiesManager({
   initialItems,
   monthStr,
@@ -78,19 +84,23 @@ export default function PropertiesManager({
 }) {
   const ACTIVE_PAGE_SIZE = 30;
   const INACTIVE_PAGE_SIZE = 20;
+  const FEATURED_PAGE_SIZE = 30;
 
   const [items, setItems] = useState(initialItems);
-  const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
+  const [activeTab, setActiveTab] = useState<ViewTab>('active');
   const [pending, setPending] = useState<number | null>(null);
   const [activePage, setActivePage] = useState(1);
   const [inactivePage, setInactivePage] = useState(1);
+  const [featuredPage, setFeaturedPage] = useState(1);
   const [activeSort, setActiveSort] = useState<AdminPropertySort | ''>('');
   const [inactiveSort, setInactiveSort] = useState<AdminPropertySort | ''>('');
+  const [featuredSort, setFeaturedSort] = useState<AdminPropertySort | ''>('');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [copiedShareId, setCopiedShareId] = useState<number | null>(null);
 
   const activeItems = useMemo(() => items.filter((x) => x.status === 'active'), [items]);
   const inactiveItems = useMemo(() => items.filter((x) => x.status !== 'active'), [items]);
+  const featuredItems = useMemo(() => items.filter((x) => x.featured), [items]);
 
   const sortedActiveItems = useMemo(
     () => (activeSort ? sortAdminProperties(activeItems, activeSort) : activeItems),
@@ -110,13 +120,25 @@ export default function PropertiesManager({
 
   const sortedInactiveItems = useMemo(
     () => (inactiveSort ? sortAdminProperties(sortedInactiveDefaultItems, inactiveSort) : sortedInactiveDefaultItems),
-    [sortedInactiveDefaultItems, inactiveSort],
+    [inactiveSort, sortedInactiveDefaultItems],
+  );
+
+  const sortedFeaturedDefaultItems = useMemo(
+    () => sortFeaturedDefaultItems(featuredItems),
+    [featuredItems],
+  );
+
+  const sortedFeaturedItems = useMemo(
+    () => (featuredSort ? sortAdminProperties(sortedFeaturedDefaultItems, featuredSort) : sortedFeaturedDefaultItems),
+    [featuredSort, sortedFeaturedDefaultItems],
   );
 
   const activeTotalPages = Math.max(1, Math.ceil(sortedActiveItems.length / ACTIVE_PAGE_SIZE));
   const inactiveTotalPages = Math.max(1, Math.ceil(sortedInactiveItems.length / INACTIVE_PAGE_SIZE));
+  const featuredTotalPages = Math.max(1, Math.ceil(sortedFeaturedItems.length / FEATURED_PAGE_SIZE));
   const safeActivePage = Math.min(activePage, activeTotalPages);
   const safeInactivePage = Math.min(inactivePage, inactiveTotalPages);
+  const safeFeaturedPage = Math.min(featuredPage, featuredTotalPages);
 
   const pagedActiveItems = useMemo(() => {
     const start = (safeActivePage - 1) * ACTIVE_PAGE_SIZE;
@@ -128,10 +150,38 @@ export default function PropertiesManager({
     return sortedInactiveItems.slice(start, start + INACTIVE_PAGE_SIZE);
   }, [safeInactivePage, sortedInactiveItems]);
 
-  const rows = activeTab === 'active' ? pagedActiveItems : pagedInactiveItems;
-  const currentSort = activeTab === 'active' ? activeSort : inactiveSort;
-  const currentPage = activeTab === 'active' ? safeActivePage : safeInactivePage;
-  const totalPages = activeTab === 'active' ? activeTotalPages : inactiveTotalPages;
+  const pagedFeaturedItems = useMemo(() => {
+    const start = (safeFeaturedPage - 1) * FEATURED_PAGE_SIZE;
+    return sortedFeaturedItems.slice(start, start + FEATURED_PAGE_SIZE);
+  }, [safeFeaturedPage, sortedFeaturedItems]);
+
+  const rows =
+    activeTab === 'active'
+      ? pagedActiveItems
+      : activeTab === 'inactive'
+        ? pagedInactiveItems
+        : pagedFeaturedItems;
+
+  const currentSort =
+    activeTab === 'active'
+      ? activeSort
+      : activeTab === 'inactive'
+        ? inactiveSort
+        : featuredSort;
+
+  const currentPage =
+    activeTab === 'active'
+      ? safeActivePage
+      : activeTab === 'inactive'
+        ? safeInactivePage
+        : safeFeaturedPage;
+
+  const totalPages =
+    activeTab === 'active'
+      ? activeTotalPages
+      : activeTab === 'inactive'
+        ? inactiveTotalPages
+        : featuredTotalPages;
 
   async function updateStatus(
     id: number,
@@ -169,14 +219,6 @@ export default function PropertiesManager({
   }
 
   async function toggleFeatured(id: number, currentFeatured: boolean) {
-    if (!currentFeatured) {
-      const activeFeaturedCount = items.filter((it) => it.status === 'active' && it.featured).length;
-      if (activeFeaturedCount >= MAX_ACTIVE_FEATURED) {
-        alert(`精選上限為 ${MAX_ACTIVE_FEATURED} 筆，請先取消其他精選物件。`);
-        return;
-      }
-    }
-
     setPending(id);
     try {
       const res = await fetch(`/api/properties/${id}/featured`, {
@@ -235,15 +277,43 @@ export default function PropertiesManager({
       setActivePage(nextPage);
       return;
     }
-    setInactivePage(nextPage);
+    if (activeTab === 'inactive') {
+      setInactivePage(nextPage);
+      return;
+    }
+    setFeaturedPage(nextPage);
   }
+
+  function changeSort(next: AdminPropertySort | '') {
+    if (activeTab === 'active') {
+      setActiveSort(next);
+      setActivePage(1);
+      return;
+    }
+    if (activeTab === 'inactive') {
+      setInactiveSort(next);
+      setInactivePage(1);
+      return;
+    }
+    setFeaturedSort(next);
+    setFeaturedPage(1);
+  }
+
+  const emptyText =
+    activeTab === 'active'
+      ? '目前沒有已上架物件'
+      : activeTab === 'inactive'
+        ? '目前沒有已下架物件'
+        : '目前沒有精選物件';
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           <h1 className="mb-1 text-xl font-black sm:text-2xl">物件管理</h1>
-          <p className="text-xs text-ink-500 sm:text-sm">上架中 {activeItems.length} 筆 / 已下架 {inactiveItems.length} 筆</p>
+          <p className="text-xs text-ink-500 sm:text-sm">
+            上架中 {activeItems.length} 筆 / 已下架 {inactiveItems.length} 筆 / 精選 {featuredItems.length} 筆
+          </p>
         </div>
 
         <div className="flex w-full flex-wrap items-center justify-end gap-2 lg:w-auto lg:flex-nowrap">
@@ -300,6 +370,18 @@ export default function PropertiesManager({
             >
               已下架（{inactiveItems.length}）
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('featured')}
+              className={`${TOP_CONTROL_CLASS} px-3 ${
+                activeTab === 'featured'
+                  ? 'border-brand-orange-500 bg-brand-orange-500 text-white'
+                  : 'border-brand-orange-200 bg-brand-orange-50 text-brand-orange-700 hover:bg-brand-orange-100'
+              }`}
+            >
+              <MaterialIcon name="star" className="!text-sm" fill={activeTab === 'featured'} />
+              精選（{featuredItems.length}）
+            </button>
           </div>
 
           <label className="flex items-center gap-2 text-xs sm:text-sm">
@@ -307,16 +389,7 @@ export default function PropertiesManager({
             <select
               className="h-9 rounded-full border border-line bg-white px-3 text-xs focus:border-brand-green-500 focus:outline-none sm:min-w-[132px] sm:text-sm"
               value={currentSort}
-              onChange={(e) => {
-                const next = e.target.value as AdminPropertySort | '';
-                if (activeTab === 'active') {
-                  setActiveSort(next);
-                  setActivePage(1);
-                } else {
-                  setInactiveSort(next);
-                  setInactivePage(1);
-                }
-              }}
+              onChange={(e) => changeSort(e.target.value as AdminPropertySort | '')}
             >
               <option value="">選取</option>
               {PROPERTY_SORT_OPTIONS.map((option) => (
@@ -337,13 +410,13 @@ export default function PropertiesManager({
               return (
                 <article
                   key={p.id}
-                  className="flex gap-3 rounded-2xl border border-line bg-white p-2.5 transition hover:border-brand-green-200 hover:bg-paper-2/30 sm:gap-4 sm:p-3"
+                  className="flex flex-col gap-3 rounded-2xl border border-line bg-white p-2.5 transition hover:border-brand-green-200 hover:bg-paper-2/30 sm:flex-row sm:gap-4 sm:p-3"
                 >
                   <Link
                     href={previewHref}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="relative block aspect-square w-24 shrink-0 overflow-hidden rounded-xl bg-paper-2 sm:aspect-[4/3] sm:w-36 lg:w-40"
+                    className="relative block aspect-[16/10] w-full shrink-0 overflow-hidden rounded-xl bg-paper-2 sm:aspect-[4/3] sm:w-36 lg:w-40"
                     title="新視窗預覽"
                   >
                     {p.imageUrl ? (
@@ -405,7 +478,7 @@ export default function PropertiesManager({
                     <div className="mt-2 grid gap-x-3 gap-y-1 text-[11px] text-ink-600 sm:grid-cols-2 sm:text-xs xl:grid-cols-4">
                       <p className="min-w-0 truncate">月瀏覽 {p.monthViews.toLocaleString()} / 累積 {p.totalViews.toLocaleString()}</p>
                       <p className="min-w-0 truncate">上架時間 {fmtDate(p.createdAt)}</p>
-                      <p className="min-w-0 truncate">下架時間 {activeTab === 'inactive' ? fmtDate(p.inactiveAt) : '—'}</p>
+                      <p className="min-w-0 truncate">下架時間 {p.status !== 'active' ? fmtDate(p.inactiveAt) : '—'}</p>
                       <p className="min-w-0 truncate">狀態 {badge.label}</p>
                     </div>
 
@@ -472,9 +545,7 @@ export default function PropertiesManager({
             })}
           </div>
         ) : (
-          <div className="py-12 text-center text-sm text-ink-500">
-            {activeTab === 'active' ? '目前沒有已上架物件' : '目前沒有已下架物件'}
-          </div>
+          <div className="py-12 text-center text-sm text-ink-500">{emptyText}</div>
         )}
 
         {rows.length > 0 && totalPages > 1 && (

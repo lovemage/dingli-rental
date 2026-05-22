@@ -5,7 +5,6 @@ import { getCurrentAdmin } from '@/lib/auth';
 import { deleteUpload } from '@/lib/storage';
 import { translateProperty } from '@/lib/property-translate';
 import { isVideoUrl, normalizePropertyMediaOrder } from '@/lib/property-media';
-import { validateActiveFeaturedLimit } from '@/lib/featured-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,18 +51,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       include: { images: true },
     });
     if (!existing) return NextResponse.json({ error: 'not found' }, { status: 404 });
-
-    const nextFeatured = typeof data.featured === 'boolean' ? data.featured : existing.featured;
-    const nextStatus = typeof data.status === 'string' ? data.status : existing.status;
-    const limitError = await validateActiveFeaturedLimit({
-      propertyId: id,
-      nextFeatured,
-      nextStatus,
-    });
-    if (limitError) {
-      const status = limitError === 'not found' ? 404 : 400;
-      return NextResponse.json({ error: limitError }, { status });
-    }
 
     // 替換圖片：刪除舊的不在新清單的圖
     const newUrlSet = new Set<string>(orderedMedia);

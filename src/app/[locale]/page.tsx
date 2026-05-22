@@ -19,6 +19,7 @@ import {
   type ServicesContent,
 } from '@/data/homepage-defaults';
 import { translateCmsSection } from '@/lib/cms-translate';
+import { HOMEPAGE_FEATURED_LIMIT, selectHomepageFeaturedItems } from '@/lib/featured-selection';
 import { getLocalizedPropertyCards } from '@/lib/property-translate';
 
 export const dynamic = 'force-dynamic';
@@ -145,9 +146,8 @@ async function getFeaturedProperties(locale: string): Promise<PropertyCardData[]
         translations: locale === 'zh' ? false : { where: { locale } },
       },
       orderBy: [{ updatedAt: 'desc' }],
-      take: 6,
     });
-    return getLocalizedPropertyCards(items, locale);
+    return getLocalizedPropertyCards(selectHomepageFeaturedItems(items, HOMEPAGE_FEATURED_LIMIT), locale);
   } catch {
     return [];
   }
