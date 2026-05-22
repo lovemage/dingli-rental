@@ -9,11 +9,12 @@ import { LISTING_STATUS_BADGE, type ListingStatus } from '@/lib/property-status'
 
 const TOOL_BUTTON_CLASS = 'inline-flex items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap transition sm:text-xs';
 const TOOL_BUTTON_NEUTRAL_CLASS = `${TOOL_BUTTON_CLASS} border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700`;
-const TOOL_ICON_BUTTON_CLASS = 'inline-flex h-9 w-9 items-center justify-center rounded-full border transition';
-const TOOL_ICON_BUTTON_NEUTRAL_CLASS = `${TOOL_ICON_BUTTON_CLASS} border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700`;
-const TOOL_ICON_BUTTON_ACCENT_CLASS = `${TOOL_ICON_BUTTON_CLASS} border-brand-orange-200 bg-brand-orange-50 text-brand-orange-700 hover:bg-brand-orange-100`;
-const TOOL_ICON_BUTTON_SUCCESS_CLASS = `${TOOL_ICON_BUTTON_CLASS} border-brand-green-200 bg-brand-green-50 text-brand-green-700 hover:bg-brand-green-100`;
-const TOOL_ICON_BUTTON_DANGER_CLASS = `${TOOL_ICON_BUTTON_CLASS} border-red-200 bg-red-50 text-red-700 hover:bg-red-100`;
+const ACTION_BUTTON_CLASS = 'inline-flex h-9 w-9 items-center justify-center rounded-full border transition sm:h-auto sm:w-auto sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs sm:font-semibold';
+const ACTION_BUTTON_NEUTRAL_CLASS = `${ACTION_BUTTON_CLASS} border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700`;
+const ACTION_BUTTON_ACCENT_CLASS = `${ACTION_BUTTON_CLASS} border-brand-orange-200 bg-brand-orange-50 text-brand-orange-700 hover:bg-brand-orange-100`;
+const ACTION_BUTTON_SUCCESS_CLASS = `${ACTION_BUTTON_CLASS} border-brand-green-200 bg-brand-green-50 text-brand-green-700 hover:bg-brand-green-100`;
+const ACTION_BUTTON_DANGER_CLASS = `${ACTION_BUTTON_CLASS} border-red-200 bg-red-50 text-red-700 hover:bg-red-100`;
+const VIEW_TOGGLE_CLASS = 'hidden h-9 w-9 items-center justify-center rounded-xl border border-line bg-white text-ink-700 shadow-sm transition hover:border-brand-green-500 hover:text-brand-green-700 sm:inline-flex';
 const TOP_CONTROL_CLASS = 'inline-flex h-9 items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition';
 
 type ViewTab = 'active' | 'inactive' | 'featured';
@@ -99,6 +100,7 @@ export default function PropertiesManager({
   const [featuredSort, setFeaturedSort] = useState<AdminPropertySort | ''>('');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [copiedShareId, setCopiedShareId] = useState<number | null>(null);
+  const [desktopViewMode, setDesktopViewMode] = useState<'card' | 'compact'>('card');
 
   const activeItems = useMemo(() => items.filter((x) => x.status === 'active'), [items]);
   const inactiveItems = useMemo(() => items.filter((x) => x.status !== 'active'), [items]);
@@ -344,6 +346,19 @@ export default function PropertiesManager({
             <MaterialIcon name="add" className="!text-sm" />
             新增物件
           </Link>
+
+          <button
+            type="button"
+            onClick={() => setDesktopViewMode((current) => (current === 'card' ? 'compact' : 'card'))}
+            className={VIEW_TOGGLE_CLASS}
+            title={desktopViewMode === 'card' ? '切換為緊湊列表' : '切換為卡片列表'}
+            aria-label={desktopViewMode === 'card' ? '切換為緊湊列表' : '切換為卡片列表'}
+          >
+            <MaterialIcon
+              name={desktopViewMode === 'card' ? 'view_list' : 'grid_view'}
+              className="!text-lg"
+            />
+          </button>
         </div>
       </div>
 
@@ -412,13 +427,21 @@ export default function PropertiesManager({
               return (
                 <article
                   key={p.id}
-                  className="flex flex-col gap-3 rounded-2xl border border-line bg-white p-2.5 transition hover:border-brand-green-200 hover:bg-paper-2/30 sm:flex-row sm:gap-4 sm:p-3"
+                  className={`flex flex-col gap-3 rounded-2xl border border-line bg-white p-2.5 transition hover:border-brand-green-200 hover:bg-paper-2/30 sm:p-3 ${
+                    desktopViewMode === 'compact'
+                      ? 'sm:grid sm:grid-cols-[120px_minmax(0,2.2fr)_minmax(120px,0.9fr)_minmax(138px,1fr)_minmax(220px,1.2fr)] sm:items-center sm:gap-3'
+                      : 'sm:flex-row sm:gap-4'
+                  }`}
                 >
                   <Link
                     href={previewHref}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="relative block aspect-[16/10] w-full shrink-0 overflow-hidden rounded-xl bg-paper-2 sm:aspect-[4/3] sm:w-36 lg:w-40"
+                    className={`relative block aspect-[16/10] w-full shrink-0 overflow-hidden rounded-xl bg-paper-2 ${
+                      desktopViewMode === 'compact'
+                        ? 'sm:h-20 sm:w-[120px] sm:aspect-auto'
+                        : 'sm:aspect-[4/3] sm:w-36 lg:w-40'
+                    }`}
                     title="新視窗預覽"
                   >
                     {p.imageUrl ? (
@@ -429,7 +452,7 @@ export default function PropertiesManager({
                     )}
                   </Link>
 
-                  <div className="flex min-w-0 flex-1 flex-col">
+                  <div className={`flex min-w-0 flex-1 flex-col ${desktopViewMode === 'compact' ? 'sm:block' : ''}`}>
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className={`${badge.className} rounded-full px-2 py-0.5 text-[10px] font-bold shadow-sm sm:text-[11px]`}>
                         {badge.label}
@@ -455,21 +478,25 @@ export default function PropertiesManager({
                       )}
                     </div>
 
-                    <div className="mt-2 flex flex-wrap items-start justify-between gap-2">
+                    <div className={`mt-2 flex flex-wrap items-start justify-between gap-2 ${desktopViewMode === 'compact' ? 'sm:mt-1 sm:block' : ''}`}>
                       <div className="min-w-0 flex-1">
                         <Link
                           href={previewHref}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="line-clamp-1 text-sm font-bold text-ink-900 transition hover:text-brand-green-700 sm:line-clamp-2 sm:text-base"
+                          className={`line-clamp-1 text-sm font-bold text-ink-900 transition hover:text-brand-green-700 ${
+                            desktopViewMode === 'compact' ? 'sm:line-clamp-1 sm:text-sm' : 'sm:line-clamp-2 sm:text-base'
+                          }`}
                           title="新視窗預覽"
                         >
                           {p.title}
                         </Link>
-                        <p className="mt-1 line-clamp-1 text-[11px] text-ink-500 sm:line-clamp-2 sm:text-xs">{formatFullAddress(p)}</p>
+                        <p className={`mt-1 line-clamp-1 text-[11px] text-ink-500 ${
+                          desktopViewMode === 'compact' ? 'sm:line-clamp-1 sm:text-[11px]' : 'sm:line-clamp-2 sm:text-xs'
+                        }`}>{formatFullAddress(p)}</p>
                       </div>
 
-                      <div className="shrink-0 text-left sm:text-right">
+                      <div className={`shrink-0 text-left ${desktopViewMode === 'compact' ? 'sm:mt-2 sm:text-left' : 'sm:text-right'}`}>
                         <p className="text-base font-black tracking-tight text-brand-green-900 sm:text-xl">
                           NT$ {p.rent.toLocaleString()}
                         </p>
@@ -477,63 +504,77 @@ export default function PropertiesManager({
                       </div>
                     </div>
 
-                    <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-ink-600 sm:grid-cols-2 sm:text-xs xl:grid-cols-4">
+                    <div className={`mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-ink-600 sm:text-xs ${
+                      desktopViewMode === 'compact'
+                        ? 'sm:mt-3 sm:grid-cols-1'
+                        : activeTab === 'active'
+                          ? 'sm:grid-cols-2'
+                          : 'sm:grid-cols-2 xl:grid-cols-4'
+                    }`}>
                       <p className="min-w-0 truncate">
                         <span className="sm:hidden">瀏覽 </span>
-                        <span className="hidden sm:inline">月瀏覽 </span>
+                        <span className="hidden sm:inline">{desktopViewMode === 'compact' ? '瀏覽 ' : '月瀏覽 '}</span>
                         {p.monthViews.toLocaleString()}
                         <span className="text-ink-400"> / </span>
                         {p.totalViews.toLocaleString()}
                       </p>
                       <p className="min-w-0 truncate">
                         <span className="sm:hidden">上架 </span>
-                        <span className="hidden sm:inline">上架時間 </span>
+                        <span className="hidden sm:inline">{desktopViewMode === 'compact' ? '上架 ' : '上架時間 '}</span>
                         {fmtDate(p.createdAt)}
                       </p>
-                      <p className="hidden min-w-0 truncate sm:block">下架時間 {p.status !== 'active' ? fmtDate(p.inactiveAt) : '—'}</p>
-                      <p className="hidden min-w-0 truncate sm:block">狀態 {badge.label}</p>
+                      {activeTab !== 'active' && (
+                        <p className="hidden min-w-0 truncate sm:block">下架時間 {p.status !== 'active' ? fmtDate(p.inactiveAt) : '—'}</p>
+                      )}
+                      {activeTab !== 'active' && (
+                        <p className="hidden min-w-0 truncate sm:block">狀態 {badge.label}</p>
+                      )}
                     </div>
 
-                    <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
+                    <div className={`mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3 ${desktopViewMode === 'compact' ? 'sm:mt-0 sm:justify-end sm:border-t-0 sm:pt-0' : ''}`}>
                       <Link
                         href={`/admin/properties/${p.id}/edit`}
-                        className={TOOL_ICON_BUTTON_NEUTRAL_CLASS}
+                        className={ACTION_BUTTON_NEUTRAL_CLASS}
                         title="編輯"
                         aria-label="編輯"
                       >
                         <MaterialIcon name="edit" className="!text-lg" />
+                        <span className="hidden sm:inline">編輯</span>
                       </Link>
 
                       <Link
                         href={previewHref}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={TOOL_ICON_BUTTON_NEUTRAL_CLASS}
+                        className={ACTION_BUTTON_NEUTRAL_CLASS}
                         title="預覽"
                         aria-label="預覽"
                       >
                         <MaterialIcon name="open_in_new" className="!text-lg" />
+                        <span className="hidden sm:inline">預覽</span>
                       </Link>
 
                       <button
                         type="button"
                         onClick={(event) => handleCopyShare(event, p.id)}
-                        className={TOOL_ICON_BUTTON_NEUTRAL_CLASS}
+                        className={ACTION_BUTTON_NEUTRAL_CLASS}
                         title={copiedShareId === p.id ? '已複製連結' : '分享'}
                         aria-label={copiedShareId === p.id ? '已複製連結' : '分享'}
                       >
                         <MaterialIcon name={copiedShareId === p.id ? 'check' : 'share'} className="!text-lg" />
+                        <span className="hidden sm:inline">{copiedShareId === p.id ? '已複製連結' : '分享'}</span>
                       </button>
 
                       <button
                         type="button"
                         disabled={pending === p.id}
                         onClick={() => toggleFeatured(p.id, p.featured)}
-                        className={p.featured ? TOOL_ICON_BUTTON_ACCENT_CLASS : TOOL_ICON_BUTTON_NEUTRAL_CLASS}
+                        className={p.featured ? ACTION_BUTTON_ACCENT_CLASS : ACTION_BUTTON_NEUTRAL_CLASS}
                         title={p.featured ? '取消精選' : '設為精選'}
                         aria-label={p.featured ? '取消精選' : '設為精選'}
                       >
                         <MaterialIcon name={p.featured ? 'star' : 'star_outline'} className="!text-lg" fill={p.featured} />
+                        <span className="hidden sm:inline">{p.featured ? '取消精選' : '設為精選'}</span>
                       </button>
 
                       {p.status === 'active' ? (
@@ -541,22 +582,24 @@ export default function PropertiesManager({
                           type="button"
                           disabled={pending === p.id}
                           onClick={() => updateStatus(p.id, 'inactive', 'rented')}
-                          className={TOOL_ICON_BUTTON_DANGER_CLASS}
+                          className={ACTION_BUTTON_DANGER_CLASS}
                           title="成交下架"
                           aria-label="成交下架"
                         >
                           <MaterialIcon name="inventory_2" className="!text-lg" />
+                          <span className="hidden sm:inline">成交下架</span>
                         </button>
                       ) : (
                         <button
                           type="button"
                           disabled={pending === p.id}
                           onClick={() => updateStatus(p.id, 'active', 'active')}
-                          className={TOOL_ICON_BUTTON_SUCCESS_CLASS}
+                          className={ACTION_BUTTON_SUCCESS_CLASS}
                           title="重新上架"
                           aria-label="重新上架"
                         >
                           <MaterialIcon name="published_with_changes" className="!text-lg" />
+                          <span className="hidden sm:inline">重新上架</span>
                         </button>
                       )}
                     </div>
