@@ -509,14 +509,14 @@ export default function PropertiesManager({
                       )}
                     </div>
 
-                    <div className={`flex flex-wrap items-start justify-between gap-2 ${isCompact ? 'sm:min-w-0 sm:flex-1 sm:flex-nowrap sm:items-baseline sm:gap-3' : ''}`}>
-                      <div className="min-w-0 flex-1">
+                    <div className={`flex flex-wrap items-start gap-2 ${isCompact ? 'sm:min-w-0 sm:flex-1 sm:flex-nowrap sm:items-baseline sm:justify-start sm:gap-2' : 'justify-between'}`}>
+                      <div className={`min-w-0 flex-1 ${isCompact ? 'sm:flex-initial sm:shrink' : ''}`}>
                         <Link
                           href={previewHref}
                           target="_blank"
                           rel="noopener noreferrer"
                           className={`line-clamp-1 text-sm font-bold text-ink-900 transition hover:text-brand-green-700 ${
-                            isCompact ? 'sm:text-sm' : 'sm:line-clamp-2 sm:text-base'
+                            isCompact ? 'sm:block sm:truncate sm:text-sm' : 'sm:line-clamp-2 sm:text-base'
                           }`}
                           title="新視窗預覽"
                         >
