@@ -7,7 +7,7 @@ import PropertiesManager from '@/components/admin/PropertiesManager';
 
 export const dynamic = 'force-dynamic';
 
-type SearchParams = { q?: string; month?: string };
+type SearchParams = { q?: string; month?: string; minRent?: string; maxRent?: string };
 
 function currentMonthStr(): string {
   const now = new Date();
@@ -21,6 +21,8 @@ export default async function AdminPropertiesList({
 }) {
   const sp = await searchParams;
   const q = (sp.q || '').trim();
+  const minRent = (sp.minRent || '').trim();
+  const maxRent = (sp.maxRent || '').trim();
   const monthStr = (sp.month || '').trim() || currentMonthStr();
   const monthRange = parseMonthRange(monthStr);
   void availableMonths();
@@ -32,7 +34,7 @@ export default async function AdminPropertiesList({
     if (hit) redirect(`/admin/properties/${hit.id}/edit`);
   }
 
-  const where = buildAdminPropertyWhere(q);
+  const where = buildAdminPropertyWhere(q, { minRent, maxRent });
 
   const items = await prisma.property.findMany({
     where,
@@ -90,5 +92,13 @@ export default async function AdminPropertiesList({
     totalViews: viewTotalByProperty.get(p.id) ?? 0,
   }));
 
-  return <PropertiesManager initialItems={normalizedItems} monthStr={monthStr} q={q} />;
+  return (
+    <PropertiesManager
+      initialItems={normalizedItems}
+      monthStr={monthStr}
+      q={q}
+      minRent={minRent}
+      maxRent={maxRent}
+    />
+  );
 }

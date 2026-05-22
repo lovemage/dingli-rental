@@ -89,10 +89,14 @@ export default function PropertiesManager({
   initialItems,
   monthStr,
   q,
+  minRent,
+  maxRent,
 }: {
   initialItems: PropertyItem[];
   monthStr: string;
   q: string;
+  minRent: string;
+  maxRent: string;
 }) {
   const ACTIVE_PAGE_SIZE = 30;
   const INACTIVE_PAGE_SIZE = 20;
@@ -331,6 +335,28 @@ export default function PropertiesManager({
 
         <div className="flex w-full flex-wrap items-center justify-end gap-2 lg:w-auto lg:flex-nowrap">
           <form action="/admin/properties" method="get" className="flex min-w-0 flex-1 flex-wrap items-center gap-2 lg:flex-none">
+            <div className="flex items-center gap-1">
+              <span className="hidden whitespace-nowrap text-xs text-ink-500 sm:inline">租金</span>
+              <input
+                type="number"
+                name="minRent"
+                defaultValue={minRent}
+                min="0"
+                inputMode="numeric"
+                placeholder="最低"
+                className="h-9 w-[4.5rem] rounded-full border border-line bg-white px-3 text-xs focus:border-brand-green-500 focus:outline-none sm:w-24 sm:text-sm"
+              />
+              <span className="text-ink-400">–</span>
+              <input
+                type="number"
+                name="maxRent"
+                defaultValue={maxRent}
+                min="0"
+                inputMode="numeric"
+                placeholder="最高"
+                className="h-9 w-[4.5rem] rounded-full border border-line bg-white px-3 text-xs focus:border-brand-green-500 focus:outline-none sm:w-24 sm:text-sm"
+              />
+            </div>
             <input
               type="text"
               name="q"

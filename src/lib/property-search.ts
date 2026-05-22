@@ -144,12 +144,15 @@ export function buildPublicPropertyWhere(
   return where;
 }
 
-export function buildAdminPropertyWhere(q: string): Prisma.PropertyWhereInput {
-  const keyword = q.trim();
-  if (!keyword) return {};
+export function buildAdminPropertyWhere(
+  q: string,
+  opts?: { minRent?: string; maxRent?: string },
+): Prisma.PropertyWhereInput {
+  const where: Prisma.PropertyWhereInput = {};
 
-  return {
-    OR: [
+  const keyword = q.trim();
+  if (keyword) {
+    where.OR = [
       { title: { contains: keyword, mode: 'insensitive' } },
       { community: { contains: keyword, mode: 'insensitive' } },
       { region: { contains: keyword, mode: 'insensitive' } },
@@ -160,6 +163,15 @@ export function buildAdminPropertyWhere(q: string): Prisma.PropertyWhereInput {
       { number: { contains: keyword, mode: 'insensitive' } },
       { numberSub: { contains: keyword, mode: 'insensitive' } },
       { code: { contains: keyword.toUpperCase(), mode: 'insensitive' } },
-    ],
-  };
+    ];
+  }
+
+  const rentRange: Prisma.IntFilter = {};
+  const min = Number((opts?.minRent || '').trim());
+  const max = Number((opts?.maxRent || '').trim());
+  if ((opts?.minRent || '').trim() && Number.isFinite(min)) rentRange.gte = min;
+  if ((opts?.maxRent || '').trim() && Number.isFinite(max)) rentRange.lte = max;
+  if (Object.keys(rentRange).length) where.rent = rentRange;
+
+  return where;
 }
