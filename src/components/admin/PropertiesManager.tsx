@@ -40,6 +40,8 @@ type PropertyItem = {
   rooms: number;
   livingRooms: number;
   parkingType?: string | null;
+  managementFee?: number | null;
+  noManagementFee?: boolean;
   status: string;
   listingStatus?: string | null;
   featured: boolean;
@@ -436,6 +438,11 @@ export default function PropertiesManager({
               const actionBtn = (tone: keyof typeof ACTION_BUTTON_TONES) =>
                 `${ACTION_BUTTON_BASE} ${actionSize} ${ACTION_BUTTON_TONES[tone]}`;
               const actionLabelClass = isCompact ? 'hidden' : 'hidden sm:inline';
+              const mgmtFeeStr = p.noManagementFee
+                ? '無'
+                : p.managementFee
+                  ? `NT$ ${p.managementFee.toLocaleString()}`
+                  : '—';
 
               return (
                 <article
@@ -452,7 +459,7 @@ export default function PropertiesManager({
                     rel="noopener noreferrer"
                     className={`relative block aspect-[16/10] w-full shrink-0 overflow-hidden rounded-xl bg-paper-2 ${
                       isCompact
-                        ? 'sm:aspect-auto sm:h-14 sm:w-24'
+                        ? 'sm:aspect-auto sm:h-16 sm:w-24'
                         : 'sm:aspect-[4/3] sm:w-36 lg:w-40'
                     }`}
                     title="新視窗預覽"
@@ -466,6 +473,8 @@ export default function PropertiesManager({
                   </Link>
 
                   <div className={`flex min-w-0 flex-1 flex-col ${isCompact ? 'sm:flex-row sm:items-center sm:gap-3' : ''}`}>
+                    <div className={`flex min-w-0 flex-1 flex-col ${isCompact ? 'sm:gap-1' : ''}`}>
+                    <div className={`flex min-w-0 flex-col gap-2 ${isCompact ? 'sm:flex-row sm:items-center sm:gap-2' : ''}`}>
                     <div className={`flex flex-wrap items-center gap-1.5 ${isCompact ? 'sm:flex-nowrap sm:shrink-0' : ''}`}>
                       <span className={`${badge.className} rounded-full px-2 py-0.5 text-[10px] font-bold shadow-sm sm:text-[11px]`}>
                         {badge.label}
@@ -500,7 +509,7 @@ export default function PropertiesManager({
                       )}
                     </div>
 
-                    <div className={`mt-2 flex flex-wrap items-start justify-between gap-2 ${isCompact ? 'sm:mt-0 sm:min-w-0 sm:flex-1 sm:flex-nowrap sm:items-baseline sm:gap-3' : ''}`}>
+                    <div className={`flex flex-wrap items-start justify-between gap-2 ${isCompact ? 'sm:min-w-0 sm:flex-1 sm:flex-nowrap sm:items-baseline sm:gap-3' : ''}`}>
                       <div className="min-w-0 flex-1">
                         <Link
                           href={previewHref}
@@ -518,16 +527,20 @@ export default function PropertiesManager({
                         }`}>{formatFullAddress(p)}</p>
                       </div>
 
-                      <div className={`shrink-0 text-left ${isCompact ? 'sm:text-right' : 'sm:text-right'}`}>
+                      <div className={`shrink-0 text-left ${isCompact ? 'sm:flex sm:items-baseline sm:gap-2 sm:text-right' : 'sm:text-right'}`}>
                         <p className={`font-black tracking-tight text-brand-green-900 ${isCompact ? 'text-base' : 'text-base sm:text-xl'}`}>
                           NT$ {p.rent.toLocaleString()}
                         </p>
                         <p className={`text-[11px] text-ink-500 sm:text-xs ${isCompact ? 'sm:hidden' : ''}`}>{p.usableArea.toLocaleString()} 坪</p>
+                        {isCompact && (
+                          <p className="hidden whitespace-nowrap text-[11px] font-medium text-ink-500 sm:block">管理費 {mgmtFeeStr}</p>
+                        )}
                       </div>
+                    </div>
                     </div>
 
                     {isCompact && (
-                      <div className="hidden shrink-0 items-center gap-x-3 whitespace-nowrap text-[11px] text-ink-600 sm:flex">
+                      <div className="hidden items-center gap-x-3 whitespace-nowrap text-[11px] text-ink-600 sm:flex">
                         <span>{p.rooms} 房 {p.livingRooms} 廳</span>
                         <span>{p.parkingType ? '有車位' : '無車位'}</span>
                         <span>{p.usableArea.toLocaleString()} 坪</span>
@@ -561,6 +574,7 @@ export default function PropertiesManager({
                       {activeTab !== 'active' && (
                         <p className="hidden min-w-0 truncate sm:block">狀態 {badge.label}</p>
                       )}
+                    </div>
                     </div>
 
                     <div className={`mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3 ${isCompact ? 'sm:mt-0 sm:shrink-0 sm:flex-nowrap sm:justify-end sm:border-t-0 sm:pt-0' : ''}`}>

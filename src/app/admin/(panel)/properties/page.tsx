@@ -78,6 +78,8 @@ export default async function AdminPropertiesList({
     rooms: p.rooms,
     livingRooms: p.livingRooms,
     parkingType: p.parkingType,
+    managementFee: p.managementFee,
+    noManagementFee: p.noManagementFee,
     status: p.status,
     listingStatus: p.listingStatus,
     featured: p.featured,
