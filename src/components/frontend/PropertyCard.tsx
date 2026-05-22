@@ -82,7 +82,7 @@ export default function PropertyCard({ property: p, maxTags = 3, variant = 'card
   const locParts = [p.region, p.district];
   if (p.street) locParts.push(p.street);
   const locationLine = locParts.filter(Boolean).join('・');
-  const categoryTags = [p.typeMid, p.buildingType].filter(Boolean) as string[];
+  const categoryTags = [...new Set([p.typeMid, p.buildingType].filter(Boolean) as string[])];
 
   const policyAndCustom = classifyFeatureTags(p.featureTags);
   const derived = getDerivedTags(p);
