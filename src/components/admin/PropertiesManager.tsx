@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { type MouseEvent, useMemo, useState } from 'react';
+import { type MouseEvent, useMemo, useRef, useState } from 'react';
 import MaterialIcon from '@/components/admin/MaterialIcon';
 import { type AdminPropertySort, sortAdminProperties } from '@/lib/admin-property-sort';
 import { PROPERTY_SORT_OPTIONS } from '@/lib/property-sort';
@@ -116,7 +116,8 @@ export default function PropertiesManager({
   const [generalSort, setGeneralSort] = useState<AdminPropertySort | ''>('');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [copiedShareId, setCopiedShareId] = useState<number | null>(null);
-  const [desktopViewMode, setDesktopViewMode] = useState<'card' | 'compact'>('card');
+  const [desktopViewMode, setDesktopViewMode] = useState<'card' | 'compact'>('compact');
+  const listTopRef = useRef<HTMLDivElement | null>(null);
 
   const activeItems = useMemo(() => items.filter((x) => x.status === 'active'), [items]);
   const inactiveItems = useMemo(() => items.filter((x) => x.status !== 'active'), [items]);
@@ -318,20 +319,29 @@ export default function PropertiesManager({
     void copyShareLink(id);
   }
 
+  function scrollListToTop() {
+    if (typeof window === 'undefined') return;
+    const target = listTopRef.current;
+    if (target) {
+      const rect = target.getBoundingClientRect();
+      const offset = window.scrollY + rect.top - 16;
+      window.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
   function changePage(nextPage: number) {
     if (activeTab === 'active') {
       setActivePage(nextPage);
-      return;
-    }
-    if (activeTab === 'inactive') {
+    } else if (activeTab === 'inactive') {
       setInactivePage(nextPage);
-      return;
-    }
-    if (activeTab === 'featured') {
+    } else if (activeTab === 'featured') {
       setFeaturedPage(nextPage);
-      return;
+    } else {
+      setGeneralPage(nextPage);
     }
-    setGeneralPage(nextPage);
+    scrollListToTop();
   }
 
   function changeSort(next: AdminPropertySort | '') {
@@ -437,7 +447,7 @@ export default function PropertiesManager({
         </div>
       </div>
 
-      <div className="admin-card !p-3 sm:!p-4">
+      <div className="admin-card !p-3 sm:!p-4" ref={listTopRef}>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <button
@@ -506,7 +516,7 @@ export default function PropertiesManager({
         </div>
 
         {rows.length > 0 ? (
-          <div className="mt-3 space-y-3">
+          <div className="mt-3 space-y-[3px] sm:space-y-3">
             {rows.map((p) => {
               const badge = getStatusBadge(p);
               const previewHref = `/properties/${p.id}`;
@@ -521,11 +531,12 @@ export default function PropertiesManager({
                 : p.managementFee
                   ? `NT$ ${p.managementFee.toLocaleString()}`
                   : '—';
+              const fullAddress = formatFullAddress(p);
 
               return (
                 <article
                   key={p.id}
-                  className={`flex flex-col gap-3 rounded-2xl border border-line bg-white p-2.5 transition hover:border-brand-green-200 hover:bg-paper-2/30 ${
+                  className={`flex flex-row gap-2 rounded-xl border border-line bg-white p-2 transition hover:border-brand-green-200 hover:bg-paper-2/30 sm:rounded-2xl sm:gap-3 sm:p-2.5 ${
                     isCompact
                       ? 'sm:flex-row sm:items-center sm:gap-3 sm:p-2'
                       : 'sm:flex-row sm:gap-4 sm:p-3'
@@ -535,7 +546,7 @@ export default function PropertiesManager({
                     href={previewHref}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`relative block aspect-[16/10] w-full shrink-0 overflow-hidden rounded-xl bg-paper-2 ${
+                    className={`relative block aspect-square w-20 shrink-0 overflow-hidden rounded-lg bg-paper-2 sm:rounded-xl ${
                       isCompact
                         ? 'sm:aspect-auto sm:h-16 sm:w-24'
                         : 'sm:aspect-[4/3] sm:w-36 lg:w-40'
@@ -552,16 +563,16 @@ export default function PropertiesManager({
 
                   <div className={`flex min-w-0 flex-1 flex-col ${isCompact ? 'sm:flex-row sm:items-center sm:gap-3' : ''}`}>
                     <div className={`flex min-w-0 flex-1 flex-col ${isCompact ? 'sm:gap-1' : ''}`}>
-                    <div className={`flex min-w-0 flex-col gap-2 ${isCompact ? 'sm:flex-row sm:items-center sm:gap-2' : ''}`}>
-                    <div className={`flex flex-wrap items-center gap-1.5 ${isCompact ? 'sm:flex-nowrap sm:shrink-0' : ''}`}>
-                      <span className={`${badge.className} rounded-full px-2 py-0.5 text-[10px] font-bold shadow-sm sm:text-[11px]`}>
+                    <div className={`flex min-w-0 flex-col gap-1 sm:gap-2 ${isCompact ? 'sm:flex-row sm:items-center sm:gap-2' : ''}`}>
+                    <div className={`flex flex-wrap items-center gap-1 sm:gap-1.5 ${isCompact ? 'sm:flex-nowrap sm:shrink-0' : ''}`}>
+                      <span className={`${badge.className} rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm sm:px-2 sm:text-[11px]`}>
                         {badge.label}
                       </span>
                       <button
                         type="button"
                         disabled={pending === p.id}
                         onClick={() => toggleFeatured(p.id, p.featured)}
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold whitespace-nowrap shadow-sm transition disabled:cursor-not-allowed disabled:opacity-50 sm:text-[11px] ${
+                        className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold whitespace-nowrap shadow-sm transition disabled:cursor-not-allowed disabled:opacity-50 sm:px-2 sm:text-[11px] ${
                           p.featured
                             ? 'bg-brand-orange-500 text-white hover:bg-brand-orange-600'
                             : 'border border-line bg-paper text-ink-500 hover:border-brand-orange-300 hover:text-brand-orange-600'
@@ -571,14 +582,14 @@ export default function PropertiesManager({
                       >
                         {p.featured ? '★ 精選' : '一般'}
                       </button>
-                      <span className={`rounded-full border border-line bg-paper px-2 py-0.5 text-[10px] font-medium text-ink-700 sm:text-[11px] ${isCompact ? 'sm:hidden' : ''}`}>
+                      <span className={`hidden rounded-full border border-line bg-paper px-2 py-0.5 text-[10px] font-medium text-ink-700 sm:inline-block sm:text-[11px] ${isCompact ? 'sm:hidden' : ''}`}>
                         {p.typeMid}
                       </span>
                       {p.code && (
                         <button
                           type="button"
                           onClick={(event) => handleCopyCode(event, p.code)}
-                          className={`inline-flex items-center gap-1 rounded-full border border-line bg-white px-2 py-0.5 text-[10px] font-mono font-bold text-ink-500 transition hover:border-brand-green-500 hover:text-brand-green-700 sm:text-[11px] ${isCompact ? 'sm:hidden' : ''}`}
+                          className={`inline-flex items-center gap-1 rounded-full border border-line bg-white px-1.5 py-0.5 text-[10px] font-mono font-bold text-ink-500 transition hover:border-brand-green-500 hover:text-brand-green-700 sm:px-2 sm:text-[11px] ${isCompact ? 'sm:hidden' : ''}`}
                           title="複製物件編號"
                         >
                           {p.code}
@@ -589,22 +600,32 @@ export default function PropertiesManager({
 
                     <div className={`flex flex-wrap items-start gap-2 ${isCompact ? 'sm:min-w-0 sm:flex-1 sm:flex-nowrap sm:items-baseline sm:justify-start sm:gap-2' : 'justify-between'}`}>
                       <div className={`min-w-0 flex-1 ${isCompact ? 'sm:flex-initial sm:shrink' : ''}`}>
-                        <Link
-                          href={previewHref}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`line-clamp-1 text-sm font-bold text-ink-900 transition hover:text-brand-green-700 ${
-                            isCompact ? 'sm:block sm:truncate sm:text-sm' : 'sm:line-clamp-2 sm:text-base'
+                        <div className="flex items-baseline gap-2">
+                          <Link
+                            href={previewHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`line-clamp-1 flex-1 text-sm font-bold text-ink-900 transition hover:text-brand-green-700 ${
+                              isCompact ? 'sm:block sm:truncate sm:text-sm' : 'sm:line-clamp-2 sm:text-base'
+                            }`}
+                            title="新視窗預覽"
+                          >
+                            {p.title}
+                          </Link>
+                          <span className="shrink-0 text-xs font-black tracking-tight text-brand-green-900 sm:hidden">
+                            NT$ {p.rent.toLocaleString()}
+                          </span>
+                        </div>
+                        <p
+                          className={`mt-0.5 line-clamp-1 text-[11px] text-ink-500 ${
+                            isCompact ? 'sm:hidden' : 'sm:line-clamp-2 sm:text-xs'
                           }`}
-                          title="新視窗預覽"
+                          title={fullAddress}
                         >
-                          {p.title}
-                        </Link>
-                        <p className={`mt-1 line-clamp-1 text-[11px] text-ink-500 ${
-                          isCompact ? 'sm:hidden' : 'sm:line-clamp-2 sm:text-xs'
-                        }`}>{formatFullAddress(p)}</p>
+                          {fullAddress}
+                        </p>
                         {!isCompact && (
-                          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-ink-600 sm:text-xs">
+                          <div className="mt-1.5 hidden flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-ink-600 sm:flex sm:text-xs">
                             <span className="text-base font-black tracking-tight text-brand-green-900 sm:text-lg">
                               NT$ {p.rent.toLocaleString()}
                             </span>
@@ -630,7 +651,7 @@ export default function PropertiesManager({
                       </div>
                     )}
 
-                    <div className={`mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-ink-600 sm:text-xs ${
+                    <div className={`mt-1 hidden grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-ink-600 sm:grid sm:text-xs ${
                       isCompact
                         ? 'sm:hidden'
                         : activeTab === 'active'
@@ -658,7 +679,7 @@ export default function PropertiesManager({
                     </div>
                     </div>
 
-                    <div className={`mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3 ${isCompact ? 'sm:mt-0 sm:shrink-0 sm:flex-nowrap sm:justify-end sm:border-t-0 sm:pt-0' : ''}`}>
+                    <div className={`mt-2 flex flex-wrap items-center gap-1.5 border-t border-line pt-2 sm:mt-3 sm:gap-2 sm:pt-3 ${isCompact ? 'sm:mt-0 sm:shrink-0 sm:flex-nowrap sm:justify-end sm:border-t-0 sm:pt-0' : ''}`}>
                       <Link
                         href={`/admin/properties/${p.id}/edit`}
                         className={actionBtn('neutral')}

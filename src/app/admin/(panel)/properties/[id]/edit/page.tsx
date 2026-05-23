@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import PropertyForm from '@/components/admin/PropertyForm';
+import { splitMultiFloor } from '@/components/frontend/PropertyCard';
 import { getTaxonomies } from '@/lib/taxonomies';
 
 export const dynamic = 'force-dynamic';
@@ -21,8 +22,11 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
 
   if (!property) notFound();
 
-  const isMultiFloor = property.floorType === '多層出租' && typeof property.floor === 'string' && property.floor.includes('-');
-  const [floorFrom, floorTo] = isMultiFloor ? property.floor!.split('-', 2) : [property.floor || '', property.floorSub || ''];
+  const rawFloor = typeof property.floor === 'string' ? property.floor : '';
+  const isMultiFloor = property.floorType === '多層出租' && rawFloor.length > 1 && rawFloor.indexOf('-', 1) > 0;
+  const [floorFrom, floorTo] = isMultiFloor
+    ? splitMultiFloor(rawFloor)
+    : [rawFloor, property.floorSub || ''];
 
   const initial: any = {
     ...property,

@@ -62,8 +62,8 @@ export const BUILDING_TYPES = [
 
 // 設備（床/衣櫃/沙發 從 FURNITURE 移過來，原因：使用者搜尋時把這些當作必備設備而非家具）
 export const EQUIPMENT_OPTIONS = [
-  '洗衣機', '冰箱', '電視', '冷氣', '熱水器', '網路', '第四台', '天然瓦斯',
-  '床', '衣櫃', '沙發',
+  '洗衣機', '冰箱', '電視', '冷氣', '熱水器', '天然瓦斯',
+  '床', '衣櫃', '沙發', '網路', '第四台',
 ] as const;
 
 // 家具（保留作為彈性欄位；admin 可在 /admin/taxonomy 自訂）
@@ -83,7 +83,30 @@ export const RENT_INCLUDES_OPTIONS = [
 ] as const;
 
 // 最短租期
-export const MIN_LEASE_OPTIONS = ['一年', '半年', '三個月', '不限'] as const;
+export const MIN_LEASE_OPTIONS = ['一年', '半年', '三個月', '不限', '自訂'] as const;
+
+// 將「自訂月數」格式化為中文（13 → 一年1個月、24 → 兩年）
+export function formatCustomLeaseMonths(months: number): string {
+  if (!Number.isFinite(months) || months <= 0) return '';
+  const m = Math.floor(months);
+  if (m < 12) return `${m}個月`;
+  const years = Math.floor(m / 12);
+  const remainder = m % 12;
+  const yearsStr = `${years}年`;
+  if (remainder === 0) return yearsStr;
+  return `${yearsStr}${remainder}個月`;
+}
+
+// 將儲存值（可能為 enum、或「自訂:13」這類自訂值）解析為顯示字串
+export function formatMinLeaseDisplay(value?: string | null): string {
+  if (!value) return '';
+  const trimmed = value.trim();
+  if (trimmed.startsWith('自訂:')) {
+    const n = Number(trimmed.slice(3));
+    return formatCustomLeaseMonths(n) || '自訂';
+  }
+  return trimmed;
+}
 
 // 車位
 export const PARKING_OPTIONS = [

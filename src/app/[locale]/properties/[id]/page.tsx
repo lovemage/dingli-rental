@@ -6,6 +6,8 @@ import Header from '@/components/frontend/Header';
 import Footer from '@/components/frontend/Footer';
 import TrackingBeacon from '@/components/frontend/TrackingBeacon';
 import PropertyGallery from '@/components/frontend/PropertyGallery';
+import { formatFloorLine } from '@/components/frontend/PropertyCard';
+import { formatMinLeaseDisplay } from '@/data/taiwan-addresses';
 import { prisma } from '@/lib/prisma';
 import { getCurrentAdmin } from '@/lib/auth';
 import { localizePropertyForDetail } from '@/lib/property-translate';
@@ -197,20 +199,8 @@ export default async function PropertyDetailPage({
       ? t('ageYears', { count: raw.buildingAge })
       : t('dash');
 
-  const floorStr =
-    raw.floorType === '全棟出租' && raw.totalFloor
-      ? t('wholeBuildingFloorValue', { totalFloor: raw.totalFloor })
-      : raw.floorType === '多層出租' && typeof raw.floor === 'string' && raw.floor.includes('-')
-        ? (() => {
-            const [from, to] = raw.floor.split('-', 2);
-            return `${from}樓到${to}樓${raw.totalFloor ? `/${raw.totalFloor}樓` : ''}`;
-          })()
-        : raw.floor
-          ? t('floorValue', {
-              floor: raw.floor,
-              total: raw.totalFloor ? `/${raw.totalFloor}` : '',
-            })
-          : t('dash');
+  const floorLine = formatFloorLine(raw.floorType, raw.floor, raw.totalFloor);
+  const floorStr = floorLine || t('dash');
 
   const layoutStr = t('layoutValue', {
     rooms: raw.rooms,
@@ -316,7 +306,7 @@ export default async function PropertyDetailPage({
                     label={t('pets')}
                     value={raw.petsAllowed ? t('cookingYes') : t('cookingNo')}
                   />
-                  <Info label={t('minLease')} value={p.minLease} />
+                  <Info label={t('minLease')} value={formatMinLeaseDisplay(p.minLease) || t('dash')} />
                   <Info label={t('moveIn')} value={moveInDateStr} />
                 </div>
                 {tenantTypes.length > 0 && <Tags label={t('tenantTypes')} items={tenantTypes} />}

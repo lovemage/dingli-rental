@@ -10,10 +10,10 @@ import {
   BUILDING_TYPES,
   EQUIPMENT_OPTIONS,
   FURNITURE_OPTIONS,
-  TENANT_TYPES,
   DEPOSIT_OPTIONS,
   RENT_INCLUDES_OPTIONS,
   MIN_LEASE_OPTIONS,
+  formatCustomLeaseMonths,
   PARKING_OPTIONS,
   DIRECTION_OPTIONS,
   FLOOR_TYPE_OPTIONS,
@@ -124,7 +124,6 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
   const BLD_TYPES    = taxonomies?.buildingTypes        || (BUILDING_TYPES as readonly string[]);
   const EQUIP_OPTS   = taxonomies?.equipment            || (EQUIPMENT_OPTIONS as readonly string[]);
   const FURN_OPTS    = taxonomies?.furniture            || (FURNITURE_OPTIONS as readonly string[]);
-  const TENANT_OPTS  = taxonomies?.tenantTypes          || (TENANT_TYPES as readonly string[]);
   const RENT_INC     = taxonomies?.rentIncludes         || (RENT_INCLUDES_OPTIONS as readonly string[]);
   const POLICY_TAGS  = taxonomies?.policyTags           || (FEATURE_TAGS as readonly string[]);
   const CUSTOM_SUGS  = taxonomies?.customTagSuggestions || (CUSTOM_TAG_SUGGESTIONS as readonly string[]);
@@ -672,40 +671,18 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
           </label>
         </Field>
 
-        {/* 屋齡 */}
+        {/* 朝向 / 坪數 */}
         <div className="grid sm:grid-cols-2 gap-4">
-          <Field label="屋齡">
-            <div className="flex items-center gap-2">
-              <input type="number" min={0} className="input-base !w-32" value={v.buildingAge ?? ''} onChange={(e) => update('buildingAge', e.target.value === '' ? '' : Number(e.target.value))} />
-              <span className="text-sm">年</span>
-              <label className="inline-flex items-center gap-2 text-sm ml-2">
-                <input type="checkbox" checked={v.ageUnknown} onChange={(e) => update('ageUnknown', e.target.checked)} />
-                屋齡不詳
-              </label>
-            </div>
-            <p className="text-xs text-ink-500 mt-1">屋齡一年內請先填入 0</p>
-          </Field>
-
           <Field label="朝向">
             <select className="input-base" value={v.direction || ''} onChange={(e) => update('direction', e.target.value)}>
               <option value="">請選擇</option>
               {DIRECTION_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
           </Field>
-        </div>
 
-        {/* 坪數 */}
-        <div className="grid sm:grid-cols-2 gap-4">
           <Field label="可使用坪數 *" required>
             <div className="flex items-center gap-2">
               <input id="field-usable-area" type="number" step="0.01" min={0} className={inputClass('field-usable-area')} placeholder="請填寫室內實際使用坪數" value={v.usableArea} onChange={(e) => update('usableArea', e.target.value === '' ? '' : Number(e.target.value))} />
-              <span className="text-sm font-bold">坪</span>
-            </div>
-          </Field>
-
-          <Field label="權狀坪數">
-            <div className="flex items-center gap-2">
-              <input type="number" step="0.01" min={0} className="input-base" placeholder="請填寫權狀登載之內容" value={v.registeredArea ?? ''} onChange={(e) => update('registeredArea', e.target.value === '' ? '' : Number(e.target.value))} />
               <span className="text-sm font-bold">坪</span>
             </div>
           </Field>
@@ -741,18 +718,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
           </select>
         </Field>
 
-        {/* 身份 / 規範 */}
-        <Field label="身份要求">
-          <div className="flex flex-wrap gap-3">
-            {TENANT_OPTS.map((t) => (
-              <label key={t} className="inline-flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={v.tenantTypes.includes(t)} onChange={() => toggleArray('tenantTypes', t)} />
-                {t}
-              </label>
-            ))}
-          </div>
-        </Field>
-
+        {/* 規範 */}
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="開伙">
             <div className="flex gap-4 text-sm">
@@ -816,23 +782,56 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
           </div>
         </Field>
 
-        <div className="grid sm:grid-cols-2 gap-4">
-          <Field label="最短租期 *" required>
-            <select className="input-base" value={v.minLease} onChange={(e) => update('minLease', e.target.value)}>
-              {MIN_LEASE_OPTIONS.map((m) => <option key={m} value={m}>{m}</option>)}
-            </select>
-          </Field>
-
-          <Field label="可遷入日">
-            <div className="flex items-center gap-2">
-              <input type="date" className="input-base" value={v.moveInDate || ''} disabled={v.anytimeMoveIn} onChange={(e) => update('moveInDate', e.target.value)} />
-              <label className="inline-flex items-center gap-2 text-sm ml-2">
-                <input type="checkbox" checked={v.anytimeMoveIn} onChange={(e) => update('anytimeMoveIn', e.target.checked)} />
-                隨時可遷入
-              </label>
-            </div>
-          </Field>
-        </div>
+        <Field label="最短租期 *" required>
+          {(() => {
+            const isCustom = typeof v.minLease === 'string' && v.minLease.startsWith('自訂:');
+            const customMonths = isCustom ? v.minLease.slice(3) : '';
+            const selectValue = isCustom ? '自訂' : (v.minLease || '');
+            return (
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  className="input-base !w-32"
+                  value={selectValue}
+                  onChange={(e) => {
+                    const nextVal = e.target.value;
+                    if (nextVal === '自訂') {
+                      update('minLease', isCustom ? v.minLease : '自訂:');
+                    } else {
+                      update('minLease', nextVal);
+                    }
+                  }}
+                >
+                  {MIN_LEASE_OPTIONS.map((m) => <option key={m} value={m}>{m}</option>)}
+                </select>
+                {selectValue === '自訂' && (
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      min={1}
+                      step={1}
+                      className="input-base !w-24"
+                      placeholder="月數"
+                      value={customMonths}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        if (raw === '') {
+                          update('minLease', '自訂:');
+                        } else {
+                          const n = Math.max(1, Math.floor(Number(raw) || 0));
+                          update('minLease', `自訂:${n}`);
+                        }
+                      }}
+                    />
+                    <span className="text-sm font-bold whitespace-nowrap">個月</span>
+                    {customMonths && Number(customMonths) >= 12 && (
+                      <span className="text-xs text-ink-500 ml-1">＝ {formatCustomLeaseMonths(Number(customMonths))}</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </Field>
 
         <Field label="車位 *" required>
           <div className="space-y-2">
