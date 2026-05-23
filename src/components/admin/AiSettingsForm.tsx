@@ -574,11 +574,6 @@ function UsageMeter({
     : isWarn
       ? 'bg-brand-orange-500'
       : 'bg-brand-green-600';
-  const tone = isDanger
-    ? 'border-red-200 bg-red-50 text-red-700'
-    : isWarn
-      ? 'border-brand-orange-200 bg-brand-orange-50 text-brand-orange-700'
-      : 'border-brand-green-200 bg-brand-green-50 text-brand-green-700';
   return (
     <div className="admin-card">
       <div className="flex items-center justify-between mb-3 pb-3 border-b border-line">
@@ -598,16 +593,11 @@ function UsageMeter({
         </button>
       </div>
 
-      <div className="flex items-baseline justify-between gap-2 mb-2">
-        <div className="flex items-baseline gap-1.5">
-          <span className="text-2xl font-black tracking-tight text-ink-900">
-            ${current.toFixed(3)}
-          </span>
-          <span className="text-sm text-ink-500">/ ${total.toFixed(2)} USD</span>
-        </div>
-        <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${tone}`}>
-          {percent.toFixed(1)}%
+      <div className="flex items-baseline gap-1.5 mb-2">
+        <span className="text-2xl font-black tracking-tight text-ink-900">
+          ${current.toFixed(3)}
         </span>
+        <span className="text-sm text-ink-500">/ ${total.toFixed(2)} USD</span>
       </div>
 
       <div
@@ -627,10 +617,6 @@ function UsageMeter({
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-ink-500">
         <span>剩餘額度 <strong className="text-ink-700">${remaining.toFixed(3)} USD</strong></span>
       </div>
-
-      <p className="mt-3 text-xs text-ink-600 bg-brand-orange-50 border border-brand-orange-200 rounded-lg px-3 py-2">
-        💡 提示：使用完畢請聯繫工作室進行儲值
-      </p>
 
       <div className="mt-3">
         <div className="flex items-baseline justify-between mb-1.5">
