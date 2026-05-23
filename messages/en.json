@@ -86,7 +86,8 @@
     "pageSubtitle": "Verified listings across Taipei, New Taipei, and Taoyuan.",
     "noResultsTitle": "No properties match these filters",
     "noResultsHint": "Try adjusting your filters, or talk to a consultant: ",
-    "noResultsContactLink": "Contact us"
+    "noResultsContactLink": "Contact us",
+    "noResultsClear": "Reset filters"
   },
   "propertyCard": {
     "rentSuffix": "/mo",

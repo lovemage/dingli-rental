@@ -86,7 +86,8 @@
     "pageSubtitle": "台北・新北・桃園エリアで厳選した実在物件のみ。担当者が一件ずつ現地確認しています。",
     "noResultsTitle": "条件に合う物件はありません",
     "noResultsHint": "条件を見直すか、担当者へお問い合わせください：",
-    "noResultsContactLink": "お問い合わせ"
+    "noResultsContactLink": "お問い合わせ",
+    "noResultsClear": "条件をリセット"
   },
   "propertyCard": {
     "rentSuffix": "/月",

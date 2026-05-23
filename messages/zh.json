@@ -86,7 +86,8 @@
     "pageSubtitle": "深耕 台北、新北、桃園，嚴選真實在地物件，每一筆都由業務親自確認屋況。",
     "noResultsTitle": "目前沒有符合條件的物件",
     "noResultsHint": "請調整搜尋條件，或聯繫業務專員：",
-    "noResultsContactLink": "聯絡我們"
+    "noResultsContactLink": "聯絡我們",
+    "noResultsClear": "重新篩選"
   },
   "propertyCard": {
     "rentSuffix": "/月",

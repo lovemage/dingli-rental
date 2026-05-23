@@ -149,6 +149,12 @@ export default async function PropertiesPage({
                       {t('noResultsContactLink')}
                     </Link>
                   </p>
+                  <Link
+                    href={lp('/properties')}
+                    className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-brand-green-200 bg-white px-4 py-2 text-sm font-semibold text-brand-green-700 shadow-sm transition hover:border-brand-green-500 hover:bg-brand-green-50"
+                  >
+                    {t('noResultsClear')}
+                  </Link>
                 </div>
               </>
             ) : (
