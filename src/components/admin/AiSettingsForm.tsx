@@ -61,6 +61,30 @@ export default function AiSettingsForm() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
 
+  // === Usage Meter ===
+  type UsageLogRow = { at: string; kind: string; delta: number; balance: number };
+  const [usageTotal, setUsageTotal] = useState(10);
+  const [usageCurrent, setUsageCurrent] = useState(0.52);
+  const [usageLog, setUsageLog] = useState<UsageLogRow[]>([]);
+  const [usageLoading, setUsageLoading] = useState(false);
+
+  async function loadUsage() {
+    setUsageLoading(true);
+    try {
+      const res = await fetch('/api/admin/ai-usage', { cache: 'no-store' });
+      const json = await res.json();
+      if (res.ok) {
+        if (typeof json.totalUsd === 'number') setUsageTotal(json.totalUsd);
+        if (typeof json.currentUsd === 'number') setUsageCurrent(json.currentUsd);
+        if (Array.isArray(json.log)) setUsageLog(json.log as UsageLogRow[]);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setUsageLoading(false);
+    }
+  }
+
   // 初次載入：拿設定 + 若已有 key 自動拉模型
   useEffect(() => {
     (async () => {
@@ -79,6 +103,7 @@ export default function AiSettingsForm() {
             void loadModels();
           }
         }
+        void loadUsage();
       } finally {
         setLoading(false);
       }
@@ -347,6 +372,15 @@ export default function AiSettingsForm() {
         </p>
       </div>
 
+      {/* === Usage Meter === */}
+      <UsageMeter
+        totalUsd={usageTotal}
+        currentUsd={usageCurrent}
+        log={usageLog}
+        loading={usageLoading}
+        onRefresh={loadUsage}
+      />
+
       {/* === Tabs === */}
       <div className="bg-white border border-line rounded-xl p-1 flex gap-1">
         <TabButton active={activeTab === 'ocr'} onClick={() => setActiveTab('ocr')}>
@@ -514,4 +548,141 @@ function TabButton({
       {children}
     </button>
   );
+}
+
+function UsageMeter({
+  totalUsd,
+  currentUsd,
+  log,
+  loading,
+  onRefresh,
+}: {
+  totalUsd: number;
+  currentUsd: number;
+  log: { at: string; kind: string; delta: number; balance: number }[];
+  loading: boolean;
+  onRefresh: () => void;
+}) {
+  const total = totalUsd > 0 ? totalUsd : 10;
+  const current = Math.max(0, Math.min(currentUsd, total));
+  const percent = (current / total) * 100;
+  const remaining = Math.max(0, total - current);
+  const isDanger = percent >= 90;
+  const isWarn = !isDanger && percent >= 70;
+  const barColor = isDanger
+    ? 'bg-red-500'
+    : isWarn
+      ? 'bg-brand-orange-500'
+      : 'bg-brand-green-600';
+  const tone = isDanger
+    ? 'border-red-200 bg-red-50 text-red-700'
+    : isWarn
+      ? 'border-brand-orange-200 bg-brand-orange-50 text-brand-orange-700'
+      : 'border-brand-green-200 bg-brand-green-50 text-brand-green-700';
+  return (
+    <div className="admin-card">
+      <div className="flex items-center justify-between mb-3 pb-3 border-b border-line">
+        <div className="min-w-0">
+          <h2 className="font-bold text-lg">用量表</h2>
+          <p className="text-xs text-ink-500 mt-0.5">
+            每次 AI / LLM 調用後自動累計用量；超過總額度需聯繫工作室加值。
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={loading}
+          className="btn btn-secondary text-xs whitespace-nowrap disabled:opacity-50"
+        >
+          {loading ? '更新中…' : '↻ 重新整理'}
+        </button>
+      </div>
+
+      <div className="flex items-baseline justify-between gap-2 mb-2">
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-2xl font-black tracking-tight text-ink-900">
+            ${current.toFixed(3)}
+          </span>
+          <span className="text-sm text-ink-500">/ ${total.toFixed(2)} USD</span>
+        </div>
+        <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${tone}`}>
+          {percent.toFixed(1)}%
+        </span>
+      </div>
+
+      <div
+        className="relative h-3 w-full overflow-hidden rounded-full bg-paper-2"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={Math.round(total * 1000)}
+        aria-valuenow={Math.round(current * 1000)}
+        aria-label="AI 用量進度"
+      >
+        <div
+          className={`h-full ${barColor} transition-[width] duration-500 ease-out`}
+          style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
+        />
+      </div>
+
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-ink-500">
+        <span>剩餘額度 <strong className="text-ink-700">${remaining.toFixed(3)} USD</strong></span>
+      </div>
+
+      <p className="mt-3 text-xs text-ink-600 bg-brand-orange-50 border border-brand-orange-200 rounded-lg px-3 py-2">
+        💡 提示：使用完畢請聯繫工作室進行儲值
+      </p>
+
+      <div className="mt-3">
+        <div className="flex items-baseline justify-between mb-1.5">
+          <span className="text-xs font-bold text-ink-700">最近調用紀錄</span>
+          <span className="text-[10px] text-ink-400">最新 10 筆</span>
+        </div>
+        {log.length === 0 ? (
+          <p className="text-[11px] text-ink-400 py-2 text-center bg-paper-2 rounded">尚無紀錄</p>
+        ) : (
+          <div className="overflow-x-auto rounded border border-line">
+            <table className="w-full text-[11px] font-mono leading-tight">
+              <thead className="bg-paper-2 text-ink-500">
+                <tr>
+                  <th className="px-2 py-1 text-left font-semibold">時間</th>
+                  <th className="px-2 py-1 text-left font-semibold">類型</th>
+                  <th className="px-2 py-1 text-right font-semibold">用量</th>
+                  <th className="px-2 py-1 text-right font-semibold">累計</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {log.map((row, i) => (
+                  <tr key={`${row.at}-${i}`} className="odd:bg-white even:bg-paper-2/40">
+                    <td className="px-2 py-1 text-ink-700 whitespace-nowrap">{formatLogTime(row.at)}</td>
+                    <td className="px-2 py-1 text-ink-500 whitespace-nowrap">{formatLogKind(row.kind)}</td>
+                    <td className="px-2 py-1 text-right text-ink-700 whitespace-nowrap">+${row.delta.toFixed(4)}</td>
+                    <td className="px-2 py-1 text-right text-ink-900 font-bold whitespace-nowrap">${row.balance.toFixed(4)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function formatLogTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  return `${mm}/${dd} ${hh}:${mi}`;
+}
+
+function formatLogKind(kind: string): string {
+  switch (kind) {
+    case 'ocr': return '物件辨識';
+    case 'translate': return '翻譯';
+    case 'chat': return '客服';
+    default: return '其他';
+  }
 }

@@ -1,4 +1,5 @@
 import { loadAiSettings } from '@/lib/ai-extract';
+import { recordAiUsage } from '@/lib/ai-usage';
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const TRANSLATE_TIMEOUT_MS = Number(process.env.OPENROUTER_TRANSLATE_TIMEOUT_MS || 60000);
@@ -133,6 +134,7 @@ Return ONLY the translated JSON, no markdown fences, no commentary.`;
       if (parsed == null) {
         throw new Error('OpenRouter translate: 回應無法解析為 JSON');
       }
+      void recordAiUsage('translate');
       return parsed;
     } catch (e: any) {
       lastError = e as Error;

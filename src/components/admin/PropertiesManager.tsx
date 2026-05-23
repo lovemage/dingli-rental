@@ -10,8 +10,9 @@ import { LISTING_STATUS_BADGE, type ListingStatus } from '@/lib/property-status'
 const TOOL_BUTTON_CLASS = 'inline-flex items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap transition sm:text-xs';
 const TOOL_BUTTON_NEUTRAL_CLASS = `${TOOL_BUTTON_CLASS} border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700`;
 const ACTION_BUTTON_BASE = 'inline-flex items-center justify-center rounded-full border transition disabled:cursor-not-allowed disabled:opacity-50';
-const ACTION_BUTTON_SIZE_CARD = 'h-9 w-9 sm:h-auto sm:w-auto sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs sm:font-semibold';
-const ACTION_BUTTON_SIZE_COMPACT = 'h-9 w-9 sm:h-8 sm:w-8';
+const ACTION_BUTTON_SIZE_CARD = 'h-7 w-7 sm:h-auto sm:w-auto sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs sm:font-semibold';
+const ACTION_BUTTON_SIZE_COMPACT = 'h-7 w-7 sm:h-8 sm:w-8';
+const ACTION_ICON_CLASS = '!text-base sm:!text-lg';
 const ACTION_BUTTON_TONES = {
   neutral: 'border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700',
   accent: 'border-brand-orange-200 bg-brand-orange-50 text-brand-orange-700 hover:bg-brand-orange-100',
@@ -20,6 +21,7 @@ const ACTION_BUTTON_TONES = {
 } as const;
 const VIEW_TOGGLE_CLASS = 'hidden h-9 w-9 items-center justify-center rounded-xl border border-line bg-white text-ink-700 shadow-sm transition hover:border-brand-green-500 hover:text-brand-green-700 sm:inline-flex';
 const TOP_CONTROL_CLASS = 'inline-flex h-9 items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition';
+const TAB_BUTTON_CLASS = 'inline-flex h-8 shrink-0 items-center justify-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap transition sm:h-9 sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs';
 
 type ViewTab = 'active' | 'inactive' | 'featured' | 'general';
 
@@ -415,22 +417,23 @@ export default function PropertiesManager({
               className="h-9 min-w-0 flex-1 rounded-full border border-line bg-white px-3 text-xs focus:border-brand-green-500 focus:outline-none sm:min-w-[220px] sm:text-sm"
             />
             <input type="hidden" name="month" value={monthStr} />
-            <button
-              type="submit"
-              className={`${TOP_CONTROL_CLASS} border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700`}
-            >
-              <MaterialIcon name="search" className="!text-sm" />
-              搜尋
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="submit"
+                className={`${TOP_CONTROL_CLASS} border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700`}
+              >
+                <MaterialIcon name="search" className="!text-sm" />
+                搜尋
+              </button>
+              <Link
+                href="/admin/properties/new"
+                className={`${TOP_CONTROL_CLASS} border-brand-green-700 bg-brand-green-700 text-white hover:bg-brand-green-900`}
+              >
+                <MaterialIcon name="add" className="!text-sm" />
+                新增物件
+              </Link>
+            </div>
           </form>
-
-          <Link
-            href="/admin/properties/new"
-            className={`${TOP_CONTROL_CLASS} border-brand-green-700 bg-brand-green-700 text-white hover:bg-brand-green-900`}
-          >
-            <MaterialIcon name="add" className="!text-sm" />
-            新增物件
-          </Link>
 
           <button
             type="button"
@@ -441,7 +444,7 @@ export default function PropertiesManager({
           >
             <MaterialIcon
               name={desktopViewMode === 'card' ? 'view_list' : 'grid_view'}
-              className="!text-lg"
+              className={ACTION_ICON_CLASS}
             />
           </button>
         </div>
@@ -449,11 +452,11 @@ export default function PropertiesManager({
 
       <div className="admin-card !p-3 sm:!p-4" ref={listTopRef}>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <div className="-mx-1 flex min-w-0 flex-nowrap items-center gap-1.5 overflow-x-auto px-1 sm:flex-wrap sm:gap-2 [&::-webkit-scrollbar]:hidden">
             <button
               type="button"
               onClick={() => setActiveTab('active')}
-              className={`${TOP_CONTROL_CLASS} px-3 ${
+              className={`${TAB_BUTTON_CLASS} ${
                 activeTab === 'active'
                   ? 'border-brand-green-700 bg-brand-green-700 text-white'
                   : 'border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700'
@@ -464,7 +467,7 @@ export default function PropertiesManager({
             <button
               type="button"
               onClick={() => setActiveTab('inactive')}
-              className={`${TOP_CONTROL_CLASS} px-3 ${
+              className={`${TAB_BUTTON_CLASS} ${
                 activeTab === 'inactive'
                   ? 'border-brand-green-700 bg-brand-green-700 text-white'
                   : 'border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700'
@@ -475,25 +478,25 @@ export default function PropertiesManager({
             <button
               type="button"
               onClick={() => setActiveTab('featured')}
-              className={`${TOP_CONTROL_CLASS} px-3 ${
+              className={`${TAB_BUTTON_CLASS} ${
                 activeTab === 'featured'
                   ? 'border-brand-orange-500 bg-brand-orange-500 text-white'
                   : 'border-brand-orange-200 bg-brand-orange-50 text-brand-orange-700 hover:bg-brand-orange-100'
               }`}
             >
-              <MaterialIcon name="star" className="!text-sm" fill={activeTab === 'featured'} />
+              <MaterialIcon name="star" className="!text-xs sm:!text-sm" fill={activeTab === 'featured'} />
               精選（{featuredItems.length}）
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('general')}
-              className={`${TOP_CONTROL_CLASS} px-3 ${
+              className={`${TAB_BUTTON_CLASS} ${
                 activeTab === 'general'
                   ? 'border-brand-green-700 bg-brand-green-700 text-white'
                   : 'border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700'
               }`}
             >
-              <MaterialIcon name="star_outline" className="!text-sm" />
+              <MaterialIcon name="star_outline" className="!text-xs sm:!text-sm" />
               一般（{generalItems.length}）
             </button>
           </div>
@@ -624,6 +627,17 @@ export default function PropertiesManager({
                         >
                           {fullAddress}
                         </p>
+                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-ink-600 sm:hidden">
+                          <span>{p.rooms} 房 {p.livingRooms} 廳</span>
+                          <span className="text-ink-300">·</span>
+                          <span>{p.usableArea.toLocaleString()} 坪</span>
+                          {p.parkingType && (
+                            <>
+                              <span className="text-ink-300">·</span>
+                              <span>有車位</span>
+                            </>
+                          )}
+                        </div>
                         {!isCompact && (
                           <div className="mt-1.5 hidden flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-ink-600 sm:flex sm:text-xs">
                             <span className="text-base font-black tracking-tight text-brand-green-900 sm:text-lg">
@@ -686,7 +700,7 @@ export default function PropertiesManager({
                         title="編輯"
                         aria-label="編輯"
                       >
-                        <MaterialIcon name="edit" className="!text-lg" />
+                        <MaterialIcon name="edit" className={ACTION_ICON_CLASS} />
                         <span className={actionLabelClass}>編輯</span>
                       </Link>
 
@@ -697,7 +711,7 @@ export default function PropertiesManager({
                         title={copiedShareId === p.id ? '已複製連結' : '分享'}
                         aria-label={copiedShareId === p.id ? '已複製連結' : '分享'}
                       >
-                        <MaterialIcon name={copiedShareId === p.id ? 'check' : 'share'} className="!text-lg" />
+                        <MaterialIcon name={copiedShareId === p.id ? 'check' : 'share'} className={ACTION_ICON_CLASS} />
                         <span className={actionLabelClass}>{copiedShareId === p.id ? '已複製連結' : '分享'}</span>
                       </button>
 
@@ -709,7 +723,7 @@ export default function PropertiesManager({
                         title={p.featured ? '取消精選' : '設為精選'}
                         aria-label={p.featured ? '取消精選' : '設為精選'}
                       >
-                        <MaterialIcon name={p.featured ? 'star' : 'star_outline'} className="!text-lg" fill={p.featured} />
+                        <MaterialIcon name={p.featured ? 'star' : 'star_outline'} className={ACTION_ICON_CLASS} fill={p.featured} />
                         <span className={actionLabelClass}>{p.featured ? '取消精選' : '設為精選'}</span>
                       </button>
 
@@ -722,7 +736,7 @@ export default function PropertiesManager({
                           title="成交下架"
                           aria-label="成交下架"
                         >
-                          <MaterialIcon name="inventory_2" className="!text-lg" />
+                          <MaterialIcon name="inventory_2" className={ACTION_ICON_CLASS} />
                           <span className={actionLabelClass}>成交下架</span>
                         </button>
                       ) : (
@@ -734,7 +748,7 @@ export default function PropertiesManager({
                           title="重新上架"
                           aria-label="重新上架"
                         >
-                          <MaterialIcon name="published_with_changes" className="!text-lg" />
+                          <MaterialIcon name="published_with_changes" className={ACTION_ICON_CLASS} />
                           <span className={actionLabelClass}>重新上架</span>
                         </button>
                       )}

@@ -4,6 +4,7 @@ import {
   type AiExtractedFields,
   type AiSettings,
 } from '@/data/ai-extract-defaults';
+import { recordAiUsage } from '@/lib/ai-usage';
 import {
   EQUIPMENT_OPTIONS,
   FURNITURE_OPTIONS,
@@ -221,6 +222,7 @@ export async function extractFromPhotos(imageUrls: string[]): Promise<AiExtracte
     '';
   if (!text) throw new Error('AI 沒有回傳內容');
 
+  void recordAiUsage('ocr');
   const parsed = parseJsonResponse(text);
   return sanitize(parsed);
 }

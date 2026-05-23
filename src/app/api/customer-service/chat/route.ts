@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { loadAiSettings } from '@/lib/ai-extract';
+import { recordAiUsage } from '@/lib/ai-usage';
 import { FLOATING_CTA_DEFAULTS, type FloatingCtaContent } from '@/data/floating-cta-defaults';
 import { LEGAL_SUMMARY_FOR_AI } from '@/data/legal-content';
 
@@ -165,6 +166,7 @@ ${propertyCatalog}
       return NextResponse.json({ error: '客服無回應' }, { status: 502 });
     }
 
+    void recordAiUsage('chat');
     return NextResponse.json({ reply, lineUrl });
   } catch (e: any) {
     console.error('[customer-service] failed', e?.message);
