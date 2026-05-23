@@ -43,6 +43,7 @@ export type PropertyCardData = {
   rooms: number;
   bathrooms: number;
   livingRooms?: number;
+  openLayout?: boolean | null;
   usableArea: number;
   rent: number;
   imageUrl: string | null;
@@ -199,12 +200,14 @@ export default function PropertyCard({ property: p, maxTags = 3, variant = 'card
           : 'flex flex-wrap gap-x-4 gap-y-2 pt-4 border-t border-line text-xs text-ink-700 mt-auto'}>
           <span className="flex items-center gap-1">
             <SpecIcon type="rooms" />
-            {t('rooms', { count: p.rooms })}{t('livingRooms', { count: p.livingRooms ?? 0 })}
+            {p.openLayout ? '開放式' : `${t('rooms', { count: p.rooms })}${t('livingRooms', { count: p.livingRooms ?? 0 })}`}
           </span>
-          <span className="flex items-center gap-1">
-            <SpecIcon type="bathrooms" />
-            {t('bathrooms', { count: p.bathrooms })}
-          </span>
+          {!p.openLayout && (
+            <span className="flex items-center gap-1">
+              <SpecIcon type="bathrooms" />
+              {t('bathrooms', { count: p.bathrooms })}
+            </span>
+          )}
           <span className="flex items-center gap-1">
             <SpecIcon type="area" />
             {t('ping', { count: p.usableArea })}

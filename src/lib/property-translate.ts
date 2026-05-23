@@ -225,6 +225,7 @@ export function getLocalizedPropertyCards(
       rooms: p.rooms,
       bathrooms: p.bathrooms,
       livingRooms: p.livingRooms,
+      openLayout: p.openLayout ?? false,
       usableArea: p.usableArea,
       rent: p.rent,
       imageUrl: p.images?.[0]?.url ?? null,

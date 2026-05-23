@@ -309,10 +309,10 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
         ? (v.floor && v.floorSub ? `${v.floor}-${v.floorSub}` : (v.floor || ''))
         : (v.floor || ''),
       rent: Number(v.rent),
-      rooms: Number(v.rooms),
-      livingRooms: Number(v.livingRooms),
-      bathrooms: Number(v.bathrooms),
-      balconies: Number(v.balconies),
+      rooms: v.openLayout ? 0 : Number(v.rooms),
+      livingRooms: v.openLayout ? 0 : Number(v.livingRooms),
+      bathrooms: v.openLayout ? 0 : Number(v.bathrooms),
+      balconies: v.openLayout ? 0 : Number(v.balconies),
       usableArea: Number(v.usableArea),
       registeredArea: v.registeredArea === '' ? null : Number(v.registeredArea),
       managementFee: v.managementFee === '' ? null : Number(v.managementFee),
@@ -366,14 +366,16 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
     if (!String(v.totalFloor || '').trim()) {
       fail('請填寫出租總樓層', 'field-total-floor'); return;
     }
-    for (const [key, label, fieldId] of [
-      ['rooms', '房數', 'field-rooms'],
-      ['livingRooms', '廳數', 'field-living-rooms'],
-      ['bathrooms', '衛浴數', 'field-bathrooms'],
-      ['balconies', '陽台數', 'field-balconies'],
-    ] as const) {
-      if (v[key] === '' || Number(v[key]) < 0) {
-        fail(`請填寫格局現況：${label}`, fieldId); return;
+    if (!v.openLayout) {
+      for (const [key, label, fieldId] of [
+        ['rooms', '房數', 'field-rooms'],
+        ['livingRooms', '廳數', 'field-living-rooms'],
+        ['bathrooms', '衛浴數', 'field-bathrooms'],
+        ['balconies', '陽台數', 'field-balconies'],
+      ] as const) {
+        if (v[key] === '' || Number(v[key]) < 0) {
+          fail(`請填寫格局現況：${label}`, fieldId); return;
+        }
       }
     }
     if (v.usableArea === '' || Number(v.usableArea) <= 0) {
@@ -657,8 +659,9 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
                   id={req as string}
                   type="number" min={0}
                   className={inputClass(req as string, '!w-full')}
-                  placeholder="必填"
-                  value={(v as any)[k as string] ?? ''}
+                  placeholder={v.openLayout ? '—' : '必填'}
+                  disabled={v.openLayout}
+                  value={v.openLayout ? '' : ((v as any)[k as string] ?? '')}
                   onChange={(e) => update(k as any, e.target.value === '' ? '' : Number(e.target.value))}
                 />
                 <span className="text-sm font-bold">{suffix as string}</span>
@@ -669,22 +672,25 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
             <input type="checkbox" checked={v.openLayout} onChange={(e) => update('openLayout', e.target.checked)} />
             開放式格局
           </label>
+          {v.openLayout && (
+            <p className="mt-1 text-xs text-ink-500">勾選後將以「開放式」顯示，房／廳／衛／陽台不需填寫。</p>
+          )}
         </Field>
 
-        {/* 朝向 / 坪數 */}
+        {/* 坪數 / 朝向 */}
         <div className="grid sm:grid-cols-2 gap-4">
-          <Field label="朝向">
-            <select className="input-base" value={v.direction || ''} onChange={(e) => update('direction', e.target.value)}>
-              <option value="">請選擇</option>
-              {DIRECTION_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
-            </select>
-          </Field>
-
           <Field label="可使用坪數 *" required>
             <div className="flex items-center gap-2">
               <input id="field-usable-area" type="number" step="0.01" min={0} className={inputClass('field-usable-area')} placeholder="請填寫室內實際使用坪數" value={v.usableArea} onChange={(e) => update('usableArea', e.target.value === '' ? '' : Number(e.target.value))} />
               <span className="text-sm font-bold">坪</span>
             </div>
+          </Field>
+
+          <Field label="朝向">
+            <select className="input-base" value={v.direction || ''} onChange={(e) => update('direction', e.target.value)}>
+              <option value="">請選擇</option>
+              {DIRECTION_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
           </Field>
         </div>
 

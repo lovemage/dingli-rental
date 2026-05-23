@@ -41,6 +41,7 @@ type PropertyItem = {
   usableArea: number;
   rooms: number;
   livingRooms: number;
+  openLayout?: boolean | null;
   parkingType?: string | null;
   managementFee?: number | null;
   noManagementFee?: boolean;
@@ -529,11 +530,6 @@ export default function PropertiesManager({
               const actionBtn = (tone: keyof typeof ACTION_BUTTON_TONES) =>
                 `${ACTION_BUTTON_BASE} ${actionSize} ${ACTION_BUTTON_TONES[tone]}`;
               const actionLabelClass = isCompact ? 'hidden' : 'hidden sm:inline';
-              const mgmtFeeStr = p.noManagementFee
-                ? '無'
-                : p.managementFee
-                  ? `NT$ ${p.managementFee.toLocaleString()}`
-                  : '—';
               const fullAddress = formatFullAddress(p);
 
               return (
@@ -628,7 +624,7 @@ export default function PropertiesManager({
                           {fullAddress}
                         </p>
                         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-ink-600 sm:hidden">
-                          <span>{p.rooms} 房 {p.livingRooms} 廳</span>
+                          <span>{p.openLayout ? '開放式' : `${p.rooms} 房 ${p.livingRooms} 廳`}</span>
                           <span className="text-ink-300">·</span>
                           <span>{p.usableArea.toLocaleString()} 坪</span>
                           {p.parkingType && (
@@ -644,7 +640,7 @@ export default function PropertiesManager({
                               NT$ {p.rent.toLocaleString()}
                             </span>
                             <span>{p.usableArea.toLocaleString()} 坪</span>
-                            <span>{p.rooms} 房 {p.livingRooms} 廳</span>
+                            <span>{p.openLayout ? '開放式' : `${p.rooms} 房 ${p.livingRooms} 廳`}</span>
                             <span>{p.parkingType ? '有車位' : '無車位'}</span>
                           </div>
                         )}
@@ -654,14 +650,19 @@ export default function PropertiesManager({
                     </div>
 
                     {isCompact && (
-                      <div className="hidden items-center gap-x-3 whitespace-nowrap text-[11px] text-ink-600 sm:flex">
-                        <span className="text-xs font-black tracking-tight text-brand-green-900">NT$ {p.rent.toLocaleString()}</span>
-                        <span className="font-medium text-ink-700">管理費 {mgmtFeeStr}</span>
-                        <span>{p.rooms} 房 {p.livingRooms} 廳</span>
-                        <span>{p.parkingType ? '有車位' : '無車位'}</span>
-                        <span>{p.usableArea.toLocaleString()} 坪</span>
-                        <span>瀏覽 {p.monthViews.toLocaleString()} / {p.totalViews.toLocaleString()}</span>
-                        <span>上架 {fmtDate(p.createdAt)}</span>
+                      <div className="hidden flex-col gap-1 text-[11px] text-ink-600 sm:flex">
+                        <div className="flex items-center gap-x-3 whitespace-nowrap">
+                          <span className="text-xs font-black tracking-tight text-brand-green-900">NT$ {p.rent.toLocaleString()}</span>
+                          <span>{p.openLayout ? '開放式' : `${p.rooms} 房 ${p.livingRooms} 廳`}</span>
+                          <span>{p.parkingType ? '有車位' : '無車位'}</span>
+                          <span>{p.usableArea.toLocaleString()} 坪</span>
+                          <span>瀏覽 {p.monthViews.toLocaleString()} / {p.totalViews.toLocaleString()}</span>
+                          <span>上架 {fmtDate(p.createdAt)}</span>
+                        </div>
+                        <div className="truncate text-ink-500" title={fullAddress}>
+                          <MaterialIcon name="location_on" className="!text-sm align-[-2px] mr-0.5" />
+                          {fullAddress}
+                        </div>
                       </div>
                     )}
 
