@@ -39,7 +39,8 @@ export default async function AdminPropertiesList({
   const items = await prisma.property.findMany({
     where,
     include: { images: { orderBy: { order: 'asc' }, take: 1 } },
-    orderBy: { createdAt: 'desc' },
+    // 精選永遠在前；其餘按最近一次更新時間倒序（更新後自動置頂）
+    orderBy: [{ featured: 'desc' }, { updatedAt: 'desc' }],
   });
 
   const viewMonthByProperty = new Map<number, number>();
@@ -80,6 +81,9 @@ export default async function AdminPropertiesList({
     rooms: p.rooms,
     livingRooms: p.livingRooms,
     openLayout: p.openLayout,
+    floorType: p.floorType,
+    floor: p.floor,
+    totalFloor: p.totalFloor,
     parkingType: p.parkingType,
     managementFee: p.managementFee,
     noManagementFee: p.noManagementFee,
@@ -87,6 +91,7 @@ export default async function AdminPropertiesList({
     listingStatus: p.listingStatus,
     featured: p.featured,
     createdAt: p.createdAt.toISOString(),
+    updatedAt: p.updatedAt.toISOString(),
     inactiveAt: p.inactiveAt ? p.inactiveAt.toISOString() : null,
     imageUrl: p.images[0]?.url || null,
     monthViews: viewMonthByProperty.get(p.id) ?? 0,

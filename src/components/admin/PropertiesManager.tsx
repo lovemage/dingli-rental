@@ -6,6 +6,7 @@ import MaterialIcon from '@/components/admin/MaterialIcon';
 import { type AdminPropertySort, sortAdminProperties } from '@/lib/admin-property-sort';
 import { PROPERTY_SORT_OPTIONS } from '@/lib/property-sort';
 import { LISTING_STATUS_BADGE, type ListingStatus } from '@/lib/property-status';
+import { formatFloorLine } from '@/lib/property-floor';
 
 const TOOL_BUTTON_CLASS = 'inline-flex items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap transition sm:text-xs';
 const TOOL_BUTTON_NEUTRAL_CLASS = `${TOOL_BUTTON_CLASS} border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700`;
@@ -42,6 +43,9 @@ type PropertyItem = {
   rooms: number;
   livingRooms: number;
   openLayout?: boolean | null;
+  floorType?: string | null;
+  floor?: string | null;
+  totalFloor?: string | null;
   parkingType?: string | null;
   managementFee?: number | null;
   noManagementFee?: boolean;
@@ -49,6 +53,7 @@ type PropertyItem = {
   listingStatus?: string | null;
   featured: boolean;
   createdAt: string;
+  updatedAt: string;
   inactiveAt?: string | null;
   imageUrl: string | null;
   monthViews: number;
@@ -79,12 +84,18 @@ function getStatusBadge(item: Pick<PropertyItem, 'status' | 'listingStatus'>) {
   return LISTING_STATUS_BADGE.active;
 }
 
-function sortFeaturedDefaultItems(items: PropertyItem[]) {
+/**
+ * 「精選 / 一般」分頁的預設排序：
+ * 1. 上架中（active）優先於下架；
+ * 2. 同狀態內按最近一次更新時間（updatedAt）倒序，
+ *    這樣後台一更新物件就會自動置頂。
+ */
+function sortByActiveThenRecentUpdate(items: PropertyItem[]) {
   return [...items].sort((a, b) => {
     const aActive = a.status === 'active' ? 1 : 0;
     const bActive = b.status === 'active' ? 1 : 0;
     if (aActive !== bActive) return bActive - aActive;
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
   });
 }
 
@@ -149,7 +160,7 @@ export default function PropertiesManager({
   );
 
   const sortedFeaturedDefaultItems = useMemo(
-    () => sortFeaturedDefaultItems(featuredItems),
+    () => sortByActiveThenRecentUpdate(featuredItems),
     [featuredItems],
   );
 
@@ -159,7 +170,7 @@ export default function PropertiesManager({
   );
 
   const sortedGeneralDefaultItems = useMemo(
-    () => sortFeaturedDefaultItems(generalItems),
+    () => sortByActiveThenRecentUpdate(generalItems),
     [generalItems],
   );
 
@@ -531,6 +542,7 @@ export default function PropertiesManager({
                 `${ACTION_BUTTON_BASE} ${actionSize} ${ACTION_BUTTON_TONES[tone]}`;
               const actionLabelClass = isCompact ? 'hidden' : 'hidden sm:inline';
               const fullAddress = formatFullAddress(p);
+              const floorLine = formatFloorLine(p.floorType, p.floor, p.totalFloor);
 
               return (
                 <article
@@ -627,6 +639,12 @@ export default function PropertiesManager({
                           <span>{p.openLayout ? '開放式' : `${p.rooms} 房 ${p.livingRooms} 廳`}</span>
                           <span className="text-ink-300">·</span>
                           <span>{p.usableArea.toLocaleString()} 坪</span>
+                          {floorLine && (
+                            <>
+                              <span className="text-ink-300">·</span>
+                              <span>{floorLine}</span>
+                            </>
+                          )}
                           {p.parkingType && (
                             <>
                               <span className="text-ink-300">·</span>
@@ -641,6 +659,7 @@ export default function PropertiesManager({
                             </span>
                             <span>{p.usableArea.toLocaleString()} 坪</span>
                             <span>{p.openLayout ? '開放式' : `${p.rooms} 房 ${p.livingRooms} 廳`}</span>
+                            {floorLine && <span>{floorLine}</span>}
                             <span>{p.parkingType ? '有車位' : '無車位'}</span>
                           </div>
                         )}
@@ -654,6 +673,7 @@ export default function PropertiesManager({
                         <div className="flex items-center gap-x-3 whitespace-nowrap">
                           <span className="text-xs font-black tracking-tight text-brand-green-900">NT$ {p.rent.toLocaleString()}</span>
                           <span>{p.openLayout ? '開放式' : `${p.rooms} 房 ${p.livingRooms} 廳`}</span>
+                          {floorLine && <span>{floorLine}</span>}
                           <span>{p.parkingType ? '有車位' : '無車位'}</span>
                           <span>{p.usableArea.toLocaleString()} 坪</span>
                           <span>瀏覽 {p.monthViews.toLocaleString()} / {p.totalViews.toLocaleString()}</span>
