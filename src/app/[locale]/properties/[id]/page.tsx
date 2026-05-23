@@ -171,17 +171,13 @@ export default async function PropertyDetailPage({
   const rentIncludes: string[] = (p.rentIncludes as string[]) || [];
   const featureTags: string[] = (p.featureTags as string[]) || [];
 
-  const hideAddress = !!raw.hideAddress;
-  const addressDisplay = hideAddress
-    ? `${p.region}・${p.district}${p.street ? `・${p.street}` : ''}`
-    : `${p.region}・${p.district}${p.street ? `・${p.street}` : ''}${
-        raw.lane ? `${raw.lane}${t('lane')}` : ''
-      }${raw.alley ? `${raw.alley}${t('alley')}` : ''}${raw.number ? `${raw.number}${t('number')}` : ''}${
-        raw.numberSub ? `${t('numberSub')}${raw.numberSub}` : ''
-      }`;
+  // 公開詳情頁強制只顯示「縣市・行政區・路名」三層；
+  // 巷／弄／號／之號為敏感資料，僅限 admin 後台檢視，不論 hideAddress 旗標為何
+  // 都不在公開頁面渲染，避免分享連結外流完整門牌。
+  const addressDisplay = `${p.region}・${p.district}${p.street ? `・${p.street}` : ''}`;
 
   const mapQueryParts = [raw.region, raw.district];
-  if (!hideAddress && raw.street) mapQueryParts.push(raw.street);
+  if (raw.street) mapQueryParts.push(raw.street);
   const mapQuery = mapQueryParts.join(' ');
   const mapSrc = `https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&z=16&output=embed`;
 
