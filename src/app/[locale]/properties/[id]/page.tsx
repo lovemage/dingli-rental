@@ -198,12 +198,14 @@ export default async function PropertyDetailPage({
   const floorLine = formatFloorLine(raw.floorType, raw.floor, raw.totalFloor);
   const floorStr = floorLine || t('dash');
 
-  const layoutStr = t('layoutValue', {
-    rooms: raw.rooms,
-    living: raw.livingRooms,
-    bath: raw.bathrooms,
-    balcony: raw.balconies,
-  });
+  const layoutStr = raw.openLayout
+    ? '開放式'
+    : t('layoutValue', {
+        rooms: raw.rooms,
+        living: raw.livingRooms,
+        bath: raw.bathrooms,
+        balcony: raw.balconies,
+      });
 
   const managementFeeStr = raw.noManagementFee
     ? t('managementFeeNone')
@@ -286,7 +288,6 @@ export default async function PropertyDetailPage({
                     label={t('elevator')}
                     value={raw.hasElevator ? t('elevatorYes') : t('elevatorNo')}
                   />
-                  <Info label={t('openLayout')} value={raw.openLayout ? t('yes') : t('no')} />
                 </div>
 
                 {equipment.length > 0 && <Tags label={t('equipmentLabel')} items={equipment} />}
