@@ -6,7 +6,7 @@ import Header from '@/components/frontend/Header';
 import Footer from '@/components/frontend/Footer';
 import TrackingBeacon from '@/components/frontend/TrackingBeacon';
 import PropertyGallery from '@/components/frontend/PropertyGallery';
-import { formatFloorLine } from '@/components/frontend/PropertyCard';
+import { formatFloorLine } from '@/lib/property-floor';
 import { formatMinLeaseDisplay } from '@/data/taiwan-addresses';
 import { prisma } from '@/lib/prisma';
 import { getCurrentAdmin } from '@/lib/auth';

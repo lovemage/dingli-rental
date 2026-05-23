@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import PropertyForm from '@/components/admin/PropertyForm';
-import { splitMultiFloor } from '@/components/frontend/PropertyCard';
+import { splitMultiFloor } from '@/lib/property-floor';
 import { getTaxonomies } from '@/lib/taxonomies';
 
 export const dynamic = 'force-dynamic';
