@@ -19,7 +19,12 @@
   --line:    #e6e1d4;
 }
 
-html { scroll-behavior: smooth; }
+/* 不在全站套用 smooth scroll：Next.js 路由切換時的 window.scrollTo(0,0)
+   會被此屬性套上動畫，導致點進物件詳情頁／後台編輯頁時看到頁面平滑捲動。
+   保留 `scroll-behavior: auto` 讓頁面切換瞬間落到頂端；如需 smooth，
+   程式碼自行傳入 `behavior: 'smooth'`（如 PropertyForm 滾到錯誤欄位、
+   PropertiesManager.scrollListToTop）即可。 */
+html { scroll-behavior: auto; }
 
 body {
   font-family: "Noto Sans TC", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
