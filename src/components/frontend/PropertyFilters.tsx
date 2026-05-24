@@ -233,23 +233,29 @@ export default function PropertyFilters({
   }
 
   return (
-    <div ref={filtersRef} className="z-20 bg-paper border-b border-line py-4 -mt-4 -mx-6 px-6 shadow-sm md:sticky md:top-16 sm:rounded-none">
+    <div ref={filtersRef} className="z-20 bg-paper border-b border-line py-4 mt-[10px] -mx-6 px-6 shadow-sm md:sticky md:top-16 sm:rounded-none">
       <div className="flex flex-wrap gap-2 items-center">
+        {/* 行動裝置：搜尋輸入框獨占一行；桌機：與其他 chip 同列、flex-1 撐滿剩餘寬度 */}
         <form
-          className="flex-1 min-w-[200px] max-w-md"
+          className="w-full sm:w-auto sm:flex-1 sm:min-w-[200px] sm:max-w-md"
           onSubmit={(e) => {
             e.preventDefault();
             applyDraftFilters();
           }}
         >
-          <div className="flex overflow-hidden rounded-full border border-line bg-white focus-within:border-brand-green-500 focus-within:ring-2 focus-within:ring-brand-green-500/20">
+          <div className="flex items-center overflow-hidden rounded-full border border-line bg-white focus-within:border-brand-green-500 focus-within:ring-2 focus-within:ring-brand-green-500/20">
+            <MaterialIcon
+              name="search"
+              className="ml-3 !text-base text-ink-400"
+              aria-hidden="true"
+            />
             <input
               name="q"
               type="text"
               value={v.q}
               onChange={(e) => updateDraft({ q: e.target.value })}
               placeholder={t('searchPlaceholder')}
-              className="min-w-0 flex-1 bg-white px-3 py-2 text-sm focus:outline-none"
+              className="min-w-0 flex-1 bg-transparent pl-2 pr-3 py-2 text-sm focus:outline-none"
             />
           </div>
           {/* 隱藏 submit 鈕讓使用者在輸入框內按 Enter 仍能送出 */}
@@ -319,11 +325,10 @@ export default function PropertyFilters({
           <button
             type="button"
             onClick={applyDraftFilters}
-            className="inline-flex items-center justify-center gap-1.5 rounded-full bg-brand-orange-500 px-3.5 py-1.5 text-sm font-extrabold text-white shadow-sm transition hover:bg-brand-orange-700 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/30"
+            className="inline-flex items-center justify-center rounded-full bg-brand-orange-500 px-4 py-1.5 text-sm font-extrabold text-white shadow-sm transition hover:bg-brand-orange-700 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/30"
             aria-label={t('searchAria')}
           >
-            <MaterialIcon name="search" className="!text-base" />
-            <span>{t('searchButton')}</span>
+            {t('searchButton')}
           </button>
           <AiChatWidget
             triggerLabel={t('aiButton')}
