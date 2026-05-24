@@ -37,7 +37,11 @@ export function buildPublicPropertyWhere(
   const localeCandidates = locale === 'ja' ? ['ja', 'jp'] : [locale];
   const where: Prisma.PropertyWhereInput = { status: 'active' };
 
-  if (params.region) where.region = params.region;
+  // 地區預設為台北市；客戶端若主動選「不限」會送 region=all，這時才略過地區過濾。
+  const regionParam = (params.region ?? '').trim();
+  if (regionParam !== 'all') {
+    where.region = regionParam || '台北市';
+  }
   if (params.district) where.district = params.district;
 
   const typeFilter = exactOrIn(splitCsv(params.type));

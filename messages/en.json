@@ -121,7 +121,7 @@
     "districtLabel": "District",
     "typeLabel": "Property type",
     "buildingLabel": "Building type",
-    "rentLabel": "Rent (NT$/month)",
+    "rentLabel": "Rent",
     "areaLabel": "Area",
     "roomsLabel": "Rooms",
     "ageLabel": "Building age",

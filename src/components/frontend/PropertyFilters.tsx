@@ -126,7 +126,8 @@ export default function PropertyFilters({
 
   // URL state（route 真正生效的值）
   const urlValue = useMemo<PropertyFiltersValue>(() => ({
-    region: searchParams.get('region') || '',
+    // 預設帶入「台北市」：URL 沒帶 region 就顯示台北；'all' 為「不限」sentinel
+    region: searchParams.get('region') || '台北市',
     district: searchParams.get('district') || '',
     type: searchParams.get('type') || '',
     building: searchParams.get('building') || '',
@@ -203,7 +204,8 @@ export default function PropertyFilters({
 
   const activeCount = useMemo(() => {
     let n = 0;
-    if (v.region) n++;
+    // 預設值 (台北市) 不算「使用者主動套用的篩選」
+    if (v.region && v.region !== '台北市') n++;
     if (v.district) n++;
     if (v.type) n++;
     if (v.building) n++;
@@ -249,23 +251,20 @@ export default function PropertyFilters({
               placeholder={t('searchPlaceholder')}
               className="min-w-0 flex-1 bg-white px-3 py-2 text-sm focus:outline-none"
             />
-            <button
-              type="submit"
-              className="inline-flex items-center justify-center gap-1.5 bg-brand-orange-500 px-3.5 text-sm font-extrabold text-white transition hover:bg-brand-orange-700 focus:outline-none"
-              aria-label={t('searchAria')}
-            >
-              <MaterialIcon name="search" className="!text-base" />
-              <span className="hidden sm:inline">{t('searchButton')}</span>
-            </button>
           </div>
+          {/* 隱藏 submit 鈕讓使用者在輸入框內按 Enter 仍能送出 */}
+          <button type="submit" className="sr-only" tabIndex={-1} aria-hidden="true">
+            {t('searchButton')}
+          </button>
         </form>
 
         <ChipSelect
           label={t('regionLabel')}
           value={v.region}
           options={[
-            { label: t('noLimit'), value: '' },
             ...REGION_OPTIONS.map((r) => ({ label: tRegions(r.labelKey), value: r.value })),
+            // 「不限」以 'all' sentinel 表示，server 端會略過地區過濾
+            { label: t('noLimit'), value: 'all' },
           ]}
           onChange={(val) => updateDraft({ region: val, district: '' })}
         />
@@ -298,24 +297,6 @@ export default function PropertyFilters({
           unitLabel={t('rentUnit')}
         />
 
-        <ChipSelect
-          label={t('roomsLabel')}
-          value={v.rooms}
-          options={ROOMS_PRESETS.map((p) => ({ label: t(p.labelKey), value: p.value }))}
-          onChange={(val) => updateDraft({ rooms: val })}
-        />
-
-        <ChipPreset
-          label={t('areaLabel')}
-          presets={AREA_PRESETS.map((p) => ({ ...p, label: t(p.labelKey) }))}
-          activeIdx={areaPresetIndex(v.minArea, v.maxArea)}
-          currentMin={v.minArea}
-          currentMax={v.maxArea}
-          onPick={(p) => updateDraft({ minArea: p.min || '', maxArea: p.max || '' })}
-          customLabel={t('customRange')}
-          unitLabel={t('areaUnit')}
-        />
-
         <button
           type="button"
           onClick={() => setAdvancedOpen((s) => !s)}
@@ -334,7 +315,16 @@ export default function PropertyFilters({
           </button>
         )}
 
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            type="button"
+            onClick={applyDraftFilters}
+            className="inline-flex items-center justify-center gap-1.5 rounded-full bg-brand-orange-500 px-3.5 py-1.5 text-sm font-extrabold text-white shadow-sm transition hover:bg-brand-orange-700 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/30"
+            aria-label={t('searchAria')}
+          >
+            <MaterialIcon name="search" className="!text-base" />
+            <span>{t('searchButton')}</span>
+          </button>
           <AiChatWidget
             triggerLabel={t('aiButton')}
             triggerClassName="ai-glow-btn text-sm font-extrabold px-3.5 py-1.5 rounded-full bg-brand-green-700 text-white hover:bg-brand-green-900 transition shadow-sm whitespace-nowrap"
@@ -398,6 +388,31 @@ export default function PropertyFilters({
                 selected={buildingArr}
                 onChange={(next) => updateDraft({ building: next.join(',') })}
                 allLabel={t('noLimit')}
+              />
+            </FilterGroup>
+
+            <FilterGroup title={t('roomsLabel')}>
+              <div className="flex flex-wrap gap-2">
+                {ROOMS_PRESETS.map((p) => (
+                  <ToggleChip
+                    key={p.value || 'rooms-any'}
+                    label={t(p.labelKey)}
+                    active={v.rooms === p.value}
+                    onClick={() => updateDraft({ rooms: v.rooms === p.value ? '' : p.value })}
+                  />
+                ))}
+              </div>
+            </FilterGroup>
+
+            <FilterGroup title={t('areaLabel')}>
+              <RangePresetGroup
+                presets={AREA_PRESETS.map((p) => ({ ...p, label: t(p.labelKey) }))}
+                activeIdx={areaPresetIndex(v.minArea, v.maxArea)}
+                currentMin={v.minArea}
+                currentMax={v.maxArea}
+                onPick={(p) => updateDraft({ minArea: p.min || '', maxArea: p.max || '' })}
+                customLabel={t('customRange')}
+                unitLabel={t('areaUnit')}
               />
             </FilterGroup>
 
