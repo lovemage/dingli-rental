@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
-import { after } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentAdmin } from '@/lib/auth';
 import { deleteUpload } from '@/lib/storage';
-import { translateProperty } from '@/lib/property-translate';
 import { isVideoUrl, normalizePropertyMediaOrder } from '@/lib/property-media';
 
 export const dynamic = 'force-dynamic';
@@ -82,12 +80,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       include: { images: true },
     });
 
-    // 在 response 後執行翻譯，避免 serverless request 結束就中斷
-    after(async () => {
-      await translateProperty(updated.id).catch((e) => {
-        console.error(`[after translateProperty:update] ${updated.id}`, (e as Error).message);
-      });
-    });
+    // 翻譯只在首次建立 (POST /api/properties) 時自動執行；
+    // 後續更新一律不重打翻譯 API，避免每次小修改都耗用配額。
+    // 若需要重譯，請走 POST /api/properties/:id/translate（強制重譯）
+    // 或 POST /api/properties/translate-pending（補譯缺漏語系）。
 
     return NextResponse.json(updated);
   } catch (e: any) {

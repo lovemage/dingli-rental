@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { type MouseEvent, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { type MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
 import MaterialIcon from '@/components/admin/MaterialIcon';
 import { type AdminPropertySort, sortAdminProperties } from '@/lib/admin-property-sort';
 import { PROPERTY_SORT_OPTIONS } from '@/lib/property-sort';
@@ -117,8 +118,16 @@ export default function PropertiesManager({
   const FEATURED_PAGE_SIZE = 30;
   const GENERAL_PAGE_SIZE = 30;
 
+  const searchParams = useSearchParams();
+  const initialTab: ViewTab = (() => {
+    const raw = searchParams?.get('tab');
+    return raw === 'inactive' || raw === 'featured' || raw === 'general' || raw === 'active'
+      ? raw
+      : 'active';
+  })();
+
   const [items, setItems] = useState(initialItems);
-  const [activeTab, setActiveTab] = useState<ViewTab>('active');
+  const [activeTab, setActiveTab] = useState<ViewTab>(initialTab);
   const [pending, setPending] = useState<number | null>(null);
   const [activePage, setActivePage] = useState(1);
   const [inactivePage, setInactivePage] = useState(1);
@@ -344,6 +353,16 @@ export default function PropertiesManager({
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
+
+  // 從 PropertyForm 儲存回來時帶有 ?tab=...，自動捲到列表頂端，
+  // 讓剛存好的物件（已位於該分頁第一筆）一進畫面就看得到。
+  useEffect(() => {
+    if (!searchParams?.get('tab')) return;
+    const timer = window.setTimeout(scrollListToTop, 60);
+    return () => window.clearTimeout(timer);
+    // 僅在首次掛載依 tab 滾動，後續使用者手動切分頁不重覆滾動
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function changePage(nextPage: number) {
     if (activeTab === 'active') {

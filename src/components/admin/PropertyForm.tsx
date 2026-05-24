@@ -117,7 +117,16 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
     '最終確認中',
   ];
   const router = useRouter();
-  const [v, setV] = useState<PropertyFormValue>({ ...DEFAULTS, ...(initial as any) });
+  const [v, setV] = useState<PropertyFormValue>(() => {
+    const merged = { ...DEFAULTS, ...(initial as any) } as PropertyFormValue;
+    // 編輯既有物件時，DB 只有 region 沒有 city；
+    // 為了讓「物件分類 → 大分類（縣市）」與「出租地址 → 縣市」共用同一個 v.city，
+    // 在 city 未隨 initial 帶入時，從 region 補回，避免兩個下拉顯示不一致。
+    if (!(initial as any)?.city && (initial as any)?.region) {
+      merged.city = (initial as any).region;
+    }
+    return merged;
+  });
 
   // 動態分類選項（後台「標籤與分類」可編輯，未登入或讀取失敗時 fallback 至 data 預設值）
   const PROP_TYPES   = taxonomies?.propertyTypes        || (PROPERTY_TYPES as readonly string[]);
@@ -337,7 +346,11 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || '儲存失敗');
 
-      router.push('/admin/properties');
+      // 帶上 tab 參數，讓物件管理頁直接切到該物件所屬分頁並捲到列表最頂端，
+      // 配合 server orderBy [featured DESC, updatedAt DESC]，剛存好的物件就會
+      // 出現在「精選」或「一般」分頁的第一筆。
+      const targetTab = v.featured ? 'featured' : 'general';
+      router.push(`/admin/properties?tab=${targetTab}`);
       router.refresh();
     } catch (e: any) {
       setErr(e?.message || '儲存失敗');
