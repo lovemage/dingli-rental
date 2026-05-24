@@ -131,8 +131,10 @@ export default function PropertiesManager({
   const [qInput, setQInput] = useState(q);
   const [minRentInput, setMinRentInput] = useState(minRent);
   const [maxRentInput, setMaxRentInput] = useState(maxRent);
+  const [rentPopoverOpen, setRentPopoverOpen] = useState(false);
   const [, startTransition] = useTransition();
   const filterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rentPopoverRef = useRef<HTMLDivElement | null>(null);
 
   const [items, setItems] = useState(initialItems);
   const [activeTab, setActiveTab] = useState<ViewTab>(initialTab);
@@ -401,6 +403,36 @@ export default function PropertiesManager({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 租金 popover：點外面收起來
+  useEffect(() => {
+    if (!rentPopoverOpen) return;
+    function onPointer(e: PointerEvent) {
+      if (rentPopoverRef.current && !rentPopoverRef.current.contains(e.target as Node)) {
+        setRentPopoverOpen(false);
+      }
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setRentPopoverOpen(false);
+    }
+    document.addEventListener('pointerdown', onPointer);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onPointer);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [rentPopoverOpen]);
+
+  function formatRentButtonLabel(): string {
+    const min = minRentInput.trim();
+    const max = maxRentInput.trim();
+    if (!min && !max) return '租金';
+    const fmt = (v: string) => `NT$${Number(v).toLocaleString()}`;
+    if (min && max) return `${fmt(min)} – ${fmt(max)}`;
+    if (min) return `${fmt(min)} 起`;
+    return `≤ ${fmt(max)}`;
+  }
+  const hasRentFilter = minRentInput.trim() !== '' || maxRentInput.trim() !== '';
+
   function changePage(nextPage: number) {
     if (activeTab === 'active') {
       setActivePage(nextPage);
@@ -456,46 +488,99 @@ export default function PropertiesManager({
         <div className="flex w-full flex-wrap items-center justify-end gap-2 lg:w-auto lg:flex-nowrap">
           {/* 即時篩選：所有輸入框經 350ms debounce 後直接更新 URL */}
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 lg:flex-none">
-            <div className="flex items-center gap-1">
-              <span className="hidden whitespace-nowrap text-xs text-ink-500 sm:inline">租金</span>
-              <input
-                type="number"
-                value={minRentInput}
-                min={0}
-                inputMode="numeric"
-                placeholder="最低"
-                onChange={(e) => setMinRentInput(e.target.value)}
-                onBlur={() => applyFilterNow(qInput, minRentInput, maxRentInput)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') applyFilterNow(qInput, minRentInput, maxRentInput);
-                }}
-                className="h-9 w-[4.5rem] rounded-full border border-line bg-white px-3 text-xs focus:border-brand-green-500 focus:outline-none sm:w-24 sm:text-sm"
-              />
-              <span className="text-ink-400">–</span>
-              <input
-                type="number"
-                value={maxRentInput}
-                min={0}
-                inputMode="numeric"
-                placeholder="最高"
-                onChange={(e) => setMaxRentInput(e.target.value)}
-                onBlur={() => applyFilterNow(qInput, minRentInput, maxRentInput)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') applyFilterNow(qInput, minRentInput, maxRentInput);
-                }}
-                className="h-9 w-[4.5rem] rounded-full border border-line bg-white px-3 text-xs focus:border-brand-green-500 focus:outline-none sm:w-24 sm:text-sm"
-              />
-              {/* 租金範圍要按下「搜尋」才會送出；同時失焦 / Enter 也會立即套用 */}
+            {/* 租金：button 點開 popover 內含「最低 / 最高 / 搜尋」三件套 */}
+            <div ref={rentPopoverRef} className="relative">
               <button
                 type="button"
-                onClick={() => applyFilterNow(qInput, minRentInput, maxRentInput)}
-                className="ml-1 inline-flex h-9 items-center justify-center rounded-full border border-line bg-white px-3 text-xs font-semibold text-ink-700 transition hover:border-brand-green-500 hover:text-brand-green-700 sm:text-sm"
-                aria-label="套用租金範圍"
-                title="套用篩選"
+                onClick={() => setRentPopoverOpen((open) => !open)}
+                aria-haspopup="dialog"
+                aria-expanded={rentPopoverOpen}
+                className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-full border px-3 text-xs font-semibold whitespace-nowrap transition sm:text-sm ${
+                  hasRentFilter
+                    ? 'border-brand-green-700 bg-brand-green-50 text-brand-green-800 hover:border-brand-green-700'
+                    : 'border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700'
+                }`}
               >
-                <MaterialIcon name="search" className="!text-sm" />
-                <span className="ml-1 hidden sm:inline">搜尋</span>
+                <MaterialIcon name="payments" className="!text-sm" />
+                <span>{formatRentButtonLabel()}</span>
+                <MaterialIcon name="expand_more" className={`!text-sm transition ${rentPopoverOpen ? 'rotate-180' : ''}`} />
               </button>
+
+              {rentPopoverOpen && (
+                <div
+                  role="dialog"
+                  aria-label="租金範圍"
+                  className="absolute left-0 z-40 mt-2 w-72 rounded-2xl border border-line bg-white p-4 shadow-lg sm:right-auto"
+                >
+                  <p className="mb-3 text-xs font-semibold text-ink-700 sm:text-sm">租金範圍</p>
+                  <div className="flex items-center gap-2">
+                    <label className="flex-1 min-w-0">
+                      <span className="block text-[10px] text-ink-500 mb-1">最低</span>
+                      <input
+                        type="number"
+                        value={minRentInput}
+                        min={0}
+                        inputMode="numeric"
+                        placeholder="不限"
+                        onChange={(e) => setMinRentInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            applyFilterNow(qInput, minRentInput, maxRentInput);
+                            setRentPopoverOpen(false);
+                          }
+                        }}
+                        className="h-9 w-full rounded-full border border-line bg-white px-3 text-sm focus:border-brand-green-500 focus:outline-none"
+                      />
+                    </label>
+                    <span className="mt-5 text-ink-400">–</span>
+                    <label className="flex-1 min-w-0">
+                      <span className="block text-[10px] text-ink-500 mb-1">最高</span>
+                      <input
+                        type="number"
+                        value={maxRentInput}
+                        min={0}
+                        inputMode="numeric"
+                        placeholder="不限"
+                        onChange={(e) => setMaxRentInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            applyFilterNow(qInput, minRentInput, maxRentInput);
+                            setRentPopoverOpen(false);
+                          }
+                        }}
+                        className="h-9 w-full rounded-full border border-line bg-white px-3 text-sm focus:border-brand-green-500 focus:outline-none"
+                      />
+                    </label>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between gap-2">
+                    {hasRentFilter ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMinRentInput('');
+                          setMaxRentInput('');
+                          applyFilterNow(qInput, '', '');
+                          setRentPopoverOpen(false);
+                        }}
+                        className="text-xs text-ink-500 underline hover:text-brand-green-700"
+                      >
+                        清除
+                      </button>
+                    ) : <span />}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        applyFilterNow(qInput, minRentInput, maxRentInput);
+                        setRentPopoverOpen(false);
+                      }}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-full bg-brand-green-700 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-green-900 sm:text-sm"
+                    >
+                      <MaterialIcon name="search" className="!text-sm" />
+                      搜尋
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
             <input
               type="text"
