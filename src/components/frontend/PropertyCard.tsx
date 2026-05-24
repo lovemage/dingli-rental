@@ -69,6 +69,8 @@ type Props = {
   /** 顯示多少個標籤，預設 3 */
   maxTags?: number;
   variant?: 'card' | 'mobileList';
+  /** 隱藏「中/小分類」與「可開伙/電梯/寵物」這兩列標籤；首頁使用 */
+  hideTags?: boolean;
 };
 
 function localePath(locale: string, path: string) {
@@ -76,7 +78,7 @@ function localePath(locale: string, path: string) {
   return `/${locale}${path === '/' ? '' : path}`;
 }
 
-export default function PropertyCard({ property: p, maxTags = 3, variant = 'card' }: Props) {
+export default function PropertyCard({ property: p, maxTags = 3, variant = 'card', hideTags = false }: Props) {
   const t = useTranslations('propertyCard');
   const locale = useLocale();
   const [copied, setCopied] = useState(false);
@@ -182,7 +184,7 @@ export default function PropertyCard({ property: p, maxTags = 3, variant = 'card
           <span>📍</span>
           <span className="truncate">{locationLine}</span>
         </p>
-        {categoryTags.length > 0 && (
+        {!hideTags && categoryTags.length > 0 && (
           <div className={isMobileList ? 'mb-2 hidden flex-wrap gap-1.5 sm:flex' : 'mb-3 flex flex-wrap gap-1.5'}>
             {categoryTags.map((tag) => (
               <span key={tag} className="text-[11px] font-medium px-2 py-0.5 rounded-full border bg-paper text-ink-700 border-line">
@@ -192,7 +194,7 @@ export default function PropertyCard({ property: p, maxTags = 3, variant = 'card
           </div>
         )}
 
-        {allTags.length > 0 && (
+        {!hideTags && allTags.length > 0 && (
           <TagPills tags={allTags} className={isMobileList ? 'mb-3 hidden sm:flex' : 'mb-4'} />
         )}
 

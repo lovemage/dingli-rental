@@ -262,7 +262,15 @@ export default async function HomePage({
                 <HeroCtaPanel
                   primaryText={hero.primaryCtaText}
                   primaryHref={lp('/properties')}
-                  secondaryText={hero.secondaryCtaText}
+                  // 右側 CTA 強制改為「我要委託」，不再吃 CMS 設定，
+                  // 連結維持原本 hero.secondaryCtaLink（通常指向聯絡 / 委託表單）
+                  secondaryText={
+                    currentLocale === 'en'
+                      ? 'Entrust us'
+                      : currentLocale === 'ja'
+                        ? 'お任せください'
+                        : '我要委託'
+                  }
                   secondaryHref={localizeHref(hero.secondaryCtaLink, currentLocale)}
                 />
               </div>
@@ -301,7 +309,9 @@ export default async function HomePage({
               />
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5 lg:gap-7">
                 {featured.map((p) => (
-                  <PropertyCard key={p.id} property={p} />
+                  // 首頁卡片不顯示「中/小分類」與「可開伙/電梯/寵物」標籤列，
+                  // 排版較精簡；/properties 頁面仍維持完整標籤展示。
+                  <PropertyCard key={p.id} property={p} hideTags />
                 ))}
               </div>
               <div className="text-center mt-12">

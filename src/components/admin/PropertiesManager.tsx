@@ -354,19 +354,28 @@ export default function PropertiesManager({
     void copyShareLink(id);
   }
 
-  // 把目前的篩選條件即時寫進 URL；以 debounce 包起來避免每打一個字就打 server
+  // 立即把目前 (q, minRent, maxRent) 寫進 URL — 給「搜尋」按鈕 / 失焦事件 / 直接呼叫使用
+  function applyFilterNow(nextQ: string, nextMin: string, nextMax: string) {
+    if (filterDebounceRef.current) {
+      clearTimeout(filterDebounceRef.current);
+      filterDebounceRef.current = null;
+    }
+    const params = new URLSearchParams();
+    if (nextQ.trim()) params.set('q', nextQ.trim());
+    if (nextMin.trim()) params.set('minRent', nextMin.trim());
+    if (nextMax.trim()) params.set('maxRent', nextMax.trim());
+    if (monthStr) params.set('month', monthStr);
+    const qs = params.toString();
+    startTransition(() => {
+      router.replace(`/admin/properties${qs ? `?${qs}` : ''}`, { scroll: false });
+    });
+  }
+
+  // 關鍵字 q 用：debounce 後寫進 URL（避免每打一個字就 round-trip server）
   function scheduleFilterApply(nextQ: string, nextMin: string, nextMax: string) {
     if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
     filterDebounceRef.current = setTimeout(() => {
-      const params = new URLSearchParams();
-      if (nextQ.trim()) params.set('q', nextQ.trim());
-      if (nextMin.trim()) params.set('minRent', nextMin.trim());
-      if (nextMax.trim()) params.set('maxRent', nextMax.trim());
-      if (monthStr) params.set('month', monthStr);
-      const qs = params.toString();
-      startTransition(() => {
-        router.replace(`/admin/properties${qs ? `?${qs}` : ''}`, { scroll: false });
-      });
+      applyFilterNow(nextQ, nextMin, nextMax);
     }, 350);
   }
 
@@ -455,10 +464,10 @@ export default function PropertiesManager({
                 min={0}
                 inputMode="numeric"
                 placeholder="最低"
-                onChange={(e) => {
-                  const next = e.target.value;
-                  setMinRentInput(next);
-                  scheduleFilterApply(qInput, next, maxRentInput);
+                onChange={(e) => setMinRentInput(e.target.value)}
+                onBlur={() => applyFilterNow(qInput, minRentInput, maxRentInput)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') applyFilterNow(qInput, minRentInput, maxRentInput);
                 }}
                 className="h-9 w-[4.5rem] rounded-full border border-line bg-white px-3 text-xs focus:border-brand-green-500 focus:outline-none sm:w-24 sm:text-sm"
               />
@@ -469,13 +478,24 @@ export default function PropertiesManager({
                 min={0}
                 inputMode="numeric"
                 placeholder="最高"
-                onChange={(e) => {
-                  const next = e.target.value;
-                  setMaxRentInput(next);
-                  scheduleFilterApply(qInput, minRentInput, next);
+                onChange={(e) => setMaxRentInput(e.target.value)}
+                onBlur={() => applyFilterNow(qInput, minRentInput, maxRentInput)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') applyFilterNow(qInput, minRentInput, maxRentInput);
                 }}
                 className="h-9 w-[4.5rem] rounded-full border border-line bg-white px-3 text-xs focus:border-brand-green-500 focus:outline-none sm:w-24 sm:text-sm"
               />
+              {/* 租金範圍要按下「搜尋」才會送出；同時失焦 / Enter 也會立即套用 */}
+              <button
+                type="button"
+                onClick={() => applyFilterNow(qInput, minRentInput, maxRentInput)}
+                className="ml-1 inline-flex h-9 items-center justify-center rounded-full border border-line bg-white px-3 text-xs font-semibold text-ink-700 transition hover:border-brand-green-500 hover:text-brand-green-700 sm:text-sm"
+                aria-label="套用租金範圍"
+                title="套用篩選"
+              >
+                <MaterialIcon name="search" className="!text-sm" />
+                <span className="ml-1 hidden sm:inline">搜尋</span>
+              </button>
             </div>
             <input
               type="text"
