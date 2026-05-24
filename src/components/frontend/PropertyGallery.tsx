@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isVideoUrl } from '@/lib/property-media';
 
 type GalleryImage = {
@@ -29,33 +29,44 @@ export default function PropertyGallery({
 
   const closeLightbox = useCallback(() => setLightboxOpen(false), []);
 
+  // 主大圖切換：到底就停（不再 % 循環）
   const showPrev = useCallback(() => {
-    if (images.length === 0) return;
-    const next = (selectedIndex - 1 + images.length) % images.length;
-    setSelectedImageId(images[next].id);
+    if (images.length === 0 || selectedIndex <= 0) return;
+    setSelectedImageId(images[selectedIndex - 1].id);
   }, [images, selectedIndex]);
 
   const showNext = useCallback(() => {
-    if (images.length === 0) return;
-    const next = (selectedIndex + 1) % images.length;
-    setSelectedImageId(images[next].id);
+    if (images.length === 0 || selectedIndex >= images.length - 1) return;
+    setSelectedImageId(images[selectedIndex + 1].id);
   }, [images, selectedIndex]);
+
+  const isFirst = selectedIndex <= 0;
+  const isLast = selectedIndex >= images.length - 1;
+
+  const lightboxRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!lightboxOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') closeLightbox();
-      else if (e.key === 'ArrowLeft') showPrev();
-      else if (e.key === 'ArrowRight') showNext();
     };
     window.addEventListener('keydown', onKey);
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+
+    // 打開 lightbox 時，把被點擊的那張圖捲到視窗頂端，
+    // 之後使用者直接往下滑就能看到後續所有圖。
+    const targetId = `lightbox-img-${selectedImage?.id ?? ''}`;
+    const target = document.getElementById(targetId);
+    if (target && lightboxRef.current) {
+      lightboxRef.current.scrollTop = target.offsetTop;
+    }
+
     return () => {
       window.removeEventListener('keydown', onKey);
       document.body.style.overflow = prevOverflow;
     };
-  }, [lightboxOpen, closeLightbox, showPrev, showNext]);
+  }, [lightboxOpen, closeLightbox, selectedImage?.id]);
 
   const canZoom = selectedImage && !isVideoUrl(selectedImage.url);
 
@@ -90,26 +101,30 @@ export default function PropertyGallery({
 
             {images.length > 1 && (
               <>
-                <button
-                  type="button"
-                  onClick={showPrev}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/65 rounded-full w-10 h-10 grid place-items-center leading-none"
-                  aria-label="上一張"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M20 15h-8v3.586a1 1 0 0 1-1.707.707l-6.586-6.586a1 1 0 0 1 0-1.414l6.586-6.586A1 1 0 0 1 12 5.414V9h8a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  onClick={showNext}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/65 rounded-full w-10 h-10 grid place-items-center leading-none"
-                  aria-label="下一張"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M4 9h8V5.414a1 1 0 0 1 1.707-.707l6.586 6.586a1 1 0 0 1 0 1.414l-6.586 6.586A1 1 0 0 1 12 18.586V15H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1" />
-                  </svg>
-                </button>
+                {!isFirst && (
+                  <button
+                    type="button"
+                    onClick={showPrev}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/65 rounded-full w-10 h-10 grid place-items-center leading-none"
+                    aria-label="上一張"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M20 15h-8v3.586a1 1 0 0 1-1.707.707l-6.586-6.586a1 1 0 0 1 0-1.414l6.586-6.586A1 1 0 0 1 12 5.414V9h8a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1" />
+                    </svg>
+                  </button>
+                )}
+                {!isLast && (
+                  <button
+                    type="button"
+                    onClick={showNext}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/65 rounded-full w-10 h-10 grid place-items-center leading-none"
+                    aria-label="下一張"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M4 9h8V5.414a1 1 0 0 1 1.707-.707l6.586 6.586a1 1 0 0 1 0 1.414l-6.586 6.586A1 1 0 0 1 12 18.586V15H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1" />
+                    </svg>
+                  </button>
+                )}
               </>
             )}
           </div>
@@ -170,58 +185,50 @@ export default function PropertyGallery({
 
       {lightboxOpen && canZoom && selectedImage && (
         <div
-          className="fixed inset-0 z-[1000] bg-black/90 flex items-center justify-center p-4 sm:p-8"
+          ref={lightboxRef}
+          className="fixed inset-0 z-[1000] bg-black/95 overflow-y-auto overscroll-contain"
           onClick={closeLightbox}
           role="dialog"
           aria-modal="true"
         >
+          {/* 關閉鈕固定在右上角；其他控制移除，使用者直接以滾動瀏覽所有圖 */}
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); closeLightbox(); }}
-            className="absolute top-4 right-4 text-white/90 hover:text-white bg-black/40 hover:bg-black/60 rounded-full w-10 h-10 grid place-items-center text-2xl leading-none"
+            className="fixed top-4 right-4 z-10 text-white/90 hover:text-white bg-black/50 hover:bg-black/70 rounded-full w-11 h-11 grid place-items-center text-3xl leading-none"
             aria-label="關閉"
           >
             ×
           </button>
 
-          {images.length > 1 && (
-            <>
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); showPrev(); }}
-                className="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 text-white/90 hover:text-white bg-black/40 hover:bg-black/60 rounded-full w-11 h-11 grid place-items-center leading-none"
-                aria-label="上一張"
+          {/* 所有圖／影片一張一張縱向排，使用者往下滑就能看完整輯 */}
+          <div className="flex flex-col items-center gap-3 sm:gap-5 py-6 sm:py-10 px-3 sm:px-8">
+            {images.map((image) => (
+              <div
+                key={`lb-${image.id}`}
+                id={`lightbox-img-${image.id}`}
+                className="w-full max-w-5xl"
+                onClick={(e) => e.stopPropagation()}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M20 15h-8v3.586a1 1 0 0 1-1.707.707l-6.586-6.586a1 1 0 0 1 0-1.414l6.586-6.586A1 1 0 0 1 12 5.414V9h8a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); showNext(); }}
-                className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 text-white/90 hover:text-white bg-black/40 hover:bg-black/60 rounded-full w-11 h-11 grid place-items-center leading-none"
-                aria-label="下一張"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M4 9h8V5.414a1 1 0 0 1 1.707-.707l6.586 6.586a1 1 0 0 1 0 1.414l-6.586 6.586A1 1 0 0 1 12 18.586V15H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1" />
-                </svg>
-              </button>
-            </>
-          )}
-
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={selectedImage.url}
-            alt={title}
-            className="max-w-full max-h-full object-contain select-none"
-            onClick={(e) => e.stopPropagation()}
-          />
-
-          {images.length > 1 && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/80 text-sm bg-black/40 px-3 py-1 rounded-full">
-              {selectedIndex + 1} / {images.length}
-            </div>
-          )}
+                {isVideoUrl(image.url) ? (
+                  <video
+                    src={image.url}
+                    className="block w-full max-h-[90vh] bg-black object-contain"
+                    controls
+                    playsInline
+                    preload="metadata"
+                  />
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={image.url}
+                    alt={title}
+                    className="block w-full max-h-[90vh] object-contain select-none"
+                  />
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </>

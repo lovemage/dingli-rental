@@ -572,12 +572,30 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
             </select>
           </Field>
           <Field label="中分類（類型）">
-            <select className="input-base" value={v.typeMid} onChange={(e) => update('typeMid', e.target.value)}>
+            <select
+              className="input-base"
+              value={v.typeMid}
+              onChange={(e) => {
+                const next = e.target.value;
+                // 中分類選「別墅」時，小分類自動鎖為「透天厝」
+                if (next === '別墅') {
+                  setV((s) => ({ ...s, typeMid: next, buildingType: '透天厝' } as PropertyFormValue));
+                } else {
+                  update('typeMid', next);
+                }
+              }}
+            >
               {PROP_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
           </Field>
           <Field label="小分類（建物）">
-            <select className="input-base" value={v.buildingType} onChange={(e) => update('buildingType', e.target.value)}>
+            <select
+              className="input-base disabled:opacity-60 disabled:cursor-not-allowed"
+              value={v.typeMid === '別墅' ? '透天厝' : v.buildingType}
+              onChange={(e) => update('buildingType', e.target.value)}
+              disabled={v.typeMid === '別墅'}
+              title={v.typeMid === '別墅' ? '別墅自動為透天厝' : undefined}
+            >
               {BLD_TYPES.map((b) => <option key={b} value={b}>{b}</option>)}
             </select>
           </Field>

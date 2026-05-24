@@ -1,56 +1,31 @@
-'use client';
-
 import Link from 'next/link';
-import { useState } from 'react';
-
-type QuickLink = {
-  label: string;
-  href: string;
-};
 
 type Props = {
   primaryText: string;
+  primaryHref: string;
   secondaryText: string;
   secondaryHref: string;
-  quickLinks: QuickLink[];
 };
 
+/**
+ * Hero 區的 CTA 按鈕列。
+ * 之前主按鈕是「展開→四個物件分類短連結」的兩段式互動，
+ * 經產品決定移除延伸選單，主按鈕改為「直接導向物件列表」的一鍵動作。
+ */
 export default function HeroCtaPanel({
   primaryText,
+  primaryHref,
   secondaryText,
   secondaryHref,
-  quickLinks,
 }: Props) {
-  const [expanded, setExpanded] = useState(false);
-
   return (
-    <div className="mb-10">
-      {!expanded && (
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            className="btn btn-primary whitespace-nowrap"
-            onClick={() => setExpanded(true)}
-            aria-expanded={expanded}
-            aria-controls="hero-quick-links"
-          >
-            {primaryText}
-          </button>
-          <Link href={secondaryHref} className="btn btn-secondary whitespace-nowrap">
-            {secondaryText}
-          </Link>
-        </div>
-      )}
-
-      {expanded && quickLinks.length > 0 && (
-        <div id="hero-quick-links" className="mt-4 flex flex-wrap gap-3">
-          {quickLinks.map((item) => (
-            <Link key={`${item.label}-${item.href}`} href={item.href} className="btn btn-secondary whitespace-nowrap">
-              {item.label}
-            </Link>
-          ))}
-        </div>
-      )}
+    <div className="mb-10 flex flex-wrap gap-3">
+      <Link href={primaryHref} className="btn btn-primary whitespace-nowrap">
+        {primaryText}
+      </Link>
+      <Link href={secondaryHref} className="btn btn-secondary whitespace-nowrap">
+        {secondaryText}
+      </Link>
     </div>
   );
 }

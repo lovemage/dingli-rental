@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { type MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { type MouseEvent, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import MaterialIcon from '@/components/admin/MaterialIcon';
 import { type AdminPropertySort, sortAdminProperties } from '@/lib/admin-property-sort';
 import { PROPERTY_SORT_OPTIONS } from '@/lib/property-sort';
@@ -118,6 +118,7 @@ export default function PropertiesManager({
   const FEATURED_PAGE_SIZE = 30;
   const GENERAL_PAGE_SIZE = 30;
 
+  const router = useRouter();
   const searchParams = useSearchParams();
   const initialTab: ViewTab = (() => {
     const raw = searchParams?.get('tab');
@@ -125,6 +126,13 @@ export default function PropertiesManager({
       ? raw
       : 'active';
   })();
+
+  // 即時篩選用的本地 controlled state（取代原本的 form submit 流程）
+  const [qInput, setQInput] = useState(q);
+  const [minRentInput, setMinRentInput] = useState(minRent);
+  const [maxRentInput, setMaxRentInput] = useState(maxRent);
+  const [, startTransition] = useTransition();
+  const filterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [items, setItems] = useState(initialItems);
   const [activeTab, setActiveTab] = useState<ViewTab>(initialTab);
@@ -346,6 +354,22 @@ export default function PropertiesManager({
     void copyShareLink(id);
   }
 
+  // 把目前的篩選條件即時寫進 URL；以 debounce 包起來避免每打一個字就打 server
+  function scheduleFilterApply(nextQ: string, nextMin: string, nextMax: string) {
+    if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
+    filterDebounceRef.current = setTimeout(() => {
+      const params = new URLSearchParams();
+      if (nextQ.trim()) params.set('q', nextQ.trim());
+      if (nextMin.trim()) params.set('minRent', nextMin.trim());
+      if (nextMax.trim()) params.set('maxRent', nextMax.trim());
+      if (monthStr) params.set('month', monthStr);
+      const qs = params.toString();
+      startTransition(() => {
+        router.replace(`/admin/properties${qs ? `?${qs}` : ''}`, { scroll: false });
+      });
+    }, 350);
+  }
+
   function scrollListToTop() {
     if (typeof window === 'undefined') return;
     const target = listTopRef.current;
@@ -421,54 +445,58 @@ export default function PropertiesManager({
         </div>
 
         <div className="flex w-full flex-wrap items-center justify-end gap-2 lg:w-auto lg:flex-nowrap">
-          <form action="/admin/properties" method="get" className="flex min-w-0 flex-1 flex-wrap items-center gap-2 lg:flex-none">
+          {/* 即時篩選：所有輸入框經 350ms debounce 後直接更新 URL */}
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 lg:flex-none">
             <div className="flex items-center gap-1">
               <span className="hidden whitespace-nowrap text-xs text-ink-500 sm:inline">租金</span>
               <input
                 type="number"
-                name="minRent"
-                defaultValue={minRent}
-                min="0"
+                value={minRentInput}
+                min={0}
                 inputMode="numeric"
                 placeholder="最低"
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setMinRentInput(next);
+                  scheduleFilterApply(qInput, next, maxRentInput);
+                }}
                 className="h-9 w-[4.5rem] rounded-full border border-line bg-white px-3 text-xs focus:border-brand-green-500 focus:outline-none sm:w-24 sm:text-sm"
               />
               <span className="text-ink-400">–</span>
               <input
                 type="number"
-                name="maxRent"
-                defaultValue={maxRent}
-                min="0"
+                value={maxRentInput}
+                min={0}
                 inputMode="numeric"
                 placeholder="最高"
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setMaxRentInput(next);
+                  scheduleFilterApply(qInput, minRentInput, next);
+                }}
                 className="h-9 w-[4.5rem] rounded-full border border-line bg-white px-3 text-xs focus:border-brand-green-500 focus:outline-none sm:w-24 sm:text-sm"
               />
             </div>
             <input
               type="text"
-              name="q"
-              defaultValue={q}
+              value={qInput}
               placeholder="編號 / 標題 / 區域 / 路名"
+              onChange={(e) => {
+                const next = e.target.value;
+                setQInput(next);
+                scheduleFilterApply(next, minRentInput, maxRentInput);
+              }}
               className="h-9 min-w-0 flex-1 rounded-full border border-line bg-white px-3 text-xs focus:border-brand-green-500 focus:outline-none sm:min-w-[220px] sm:text-sm"
             />
-            <input type="hidden" name="month" value={monthStr} />
-            <div className="flex items-center gap-2">
-              <button
-                type="submit"
-                className={`${TOP_CONTROL_CLASS} border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700`}
-              >
-                <MaterialIcon name="search" className="!text-sm" />
-                搜尋
-              </button>
-              <Link
-                href="/admin/properties/new"
-                className={`${TOP_CONTROL_CLASS} border-brand-green-700 bg-brand-green-700 text-white hover:bg-brand-green-900`}
-              >
-                <MaterialIcon name="add" className="!text-sm" />
-                新增物件
-              </Link>
-            </div>
-          </form>
+            {/* 行動裝置隱藏「新增物件」，桌機才顯示；側邊欄仍有相同入口 */}
+            <Link
+              href="/admin/properties/new"
+              className={`${TOP_CONTROL_CLASS} border-brand-green-700 bg-brand-green-700 text-white hover:bg-brand-green-900 hidden sm:inline-flex`}
+            >
+              <MaterialIcon name="add" className="!text-sm" />
+              新增物件
+            </Link>
+          </div>
 
           <button
             type="button"

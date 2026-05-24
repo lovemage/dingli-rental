@@ -4,12 +4,10 @@ import Header from '@/components/frontend/Header';
 import Footer from '@/components/frontend/Footer';
 import TrackingBeacon from '@/components/frontend/TrackingBeacon';
 import HeroCarousel, { HeroSlide as HeroSlideType } from '@/components/frontend/HeroCarousel';
-import PropertyFilters from '@/components/frontend/PropertyFilters';
 import HeroCtaPanel from '@/components/frontend/HeroCtaPanel';
 import PropertyCard, { type PropertyCardData } from '@/components/frontend/PropertyCard';
 import MaterialIcon from '@/components/MaterialIcon';
 import { prisma } from '@/lib/prisma';
-import { getTaxonomies } from '@/lib/taxonomies';
 import {
   HERO_DEFAULTS,
   CATEGORIES_DEFAULTS,
@@ -69,29 +67,6 @@ const HOMEPAGE_HERO_BY_LOCALE: Record<string, Partial<HeroContent>> = {
   },
 };
 
-const PROPERTY_TYPE_LABELS: Record<string, Record<string, string>> = {
-  en: {
-    套房: 'Studio',
-    整層住家: 'Whole-floor home',
-    別墅: 'Villa',
-    店面: 'Storefront',
-    辦公室: 'Office',
-    其他: 'Other',
-  },
-  ja: {
-    套房: 'ワンルーム',
-    整層住家: '住居フロア',
-    別墅: 'ヴィラ',
-    店面: '店舗',
-    辦公室: 'オフィス',
-    其他: 'その他',
-  },
-};
-
-function localizePropertyType(type: string, locale: string): string {
-  return PROPERTY_TYPE_LABELS[locale]?.[type] || type;
-}
-
 const FALLBACK_SLIDES: HeroSlideType[] = [
   { id: 1, imageUrl: '/images/hero.webp', title: '溫馨明亮的家', subtitle: '精選雙北桃園優質物件' },
   { id: 2, imageUrl: '/images/residential.webp', title: '日系臥室套房', subtitle: '通勤便利・採光絕佳' },
@@ -150,14 +125,6 @@ async function getFeaturedProperties(locale: string): Promise<PropertyCardData[]
     return getLocalizedPropertyCards(selectHomepageFeaturedItems(items, HOMEPAGE_FEATURED_LIMIT), locale);
   } catch {
     return [];
-  }
-}
-
-async function getActivePropertyCount(): Promise<number> {
-  try {
-    return await prisma.property.count({ where: { status: 'active' } });
-  } catch {
-    return 0;
   }
 }
 
@@ -248,18 +215,12 @@ export default async function HomePage({
   const currentLocale = await getLocale();
   const lp = (p: string) => (currentLocale === 'zh' ? p : `/${currentLocale}${p}`);
 
-  const [{ slides, intervalSec }, testimonials, featured, { hero, categories, services }, taxonomies, propertyTotal] = await Promise.all([
+  const [{ slides, intervalSec }, testimonials, featured, { hero, categories, services }] = await Promise.all([
     getHero(),
     getTestimonials(locale),
     getFeaturedProperties(locale),
     getHomepageContent(locale),
-    getTaxonomies(),
-    getActivePropertyCount(),
   ]);
-  const heroQuickLinks = taxonomies.propertyTypes.slice(0, 4).map((type) => ({
-    label: localizePropertyType(type, currentLocale),
-    href: localizeHref(`/properties?type=${encodeURIComponent(type)}`, currentLocale),
-  }));
 
   return (
     <>
@@ -300,19 +261,14 @@ export default async function HomePage({
                 </p>
                 <HeroCtaPanel
                   primaryText={hero.primaryCtaText}
+                  primaryHref={lp('/properties')}
                   secondaryText={hero.secondaryCtaText}
                   secondaryHref={localizeHref(hero.secondaryCtaLink, currentLocale)}
-                  quickLinks={heroQuickLinks}
                 />
               </div>
             </div>
           </div>
 
-          <div className="container-page relative z-30 pb-16">
-            <div className="-mt-10 max-w-5xl mx-auto">
-              <PropertyFilters total={propertyTotal} taxonomies={taxonomies} />
-            </div>
-          </div>
         </section>
 
         {/* 物件分類 */}
