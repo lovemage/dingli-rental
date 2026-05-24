@@ -24,7 +24,8 @@ export default function PropertyResults({ cards, total, taxonomies }: Props) {
       />
 
       <div
-        className={`grid sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-7 mt-8 ${
+        id="properties-grid"
+        className={`scroll-mt-24 grid sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-7 mt-8 ${
           mobileViewMode === 'single' ? 'grid-cols-1 gap-3' : 'grid-cols-1 gap-0'
         }`}
       >

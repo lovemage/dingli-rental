@@ -41,18 +41,24 @@ export const REGION_OPTIONS: { value: string; labelKey: string }[] = [
 
 // 中分類（admin 可在 /admin/taxonomy 增刪；下方 TYPE_MID_LETTERS 是編號字母對應）
 export const PROPERTY_TYPES = [
-  '套房', '整層住家', '別墅', '店面', '辦公室', '其他',
+  '雅房', '分租套房', '獨立套房', '整層住家', '別墅', '辦公', '住辦', '店面',
 ] as const;
 
 // 中分類 → 物件編號字母前綴
 // admin 之後在 taxonomy 加新類型時若沒在這 mapping 裡，會 fallback 為 'X'
+// 保留 '套房' / '辦公室' / '其他' 的舊字母對應，以利歷史資料的物件編號維持穩定
 export const TYPE_MID_LETTERS: Record<string, string> = {
-  '套房': 'T',
+  '雅房': 'Y',
+  '分租套房': 'F',
+  '獨立套房': 'D',
+  '套房': 'T',          // legacy
   '整層住家': 'W',
   '別墅': 'H',
+  '辦公': 'O',
+  '辦公室': 'O',        // legacy alias
+  '住辦': 'J',
   '店面': 'S',
-  '辦公室': 'O',
-  '其他': 'X',
+  '其他': 'X',          // legacy
 };
 
 // 小分類（建物結構；別墅已移至中分類）

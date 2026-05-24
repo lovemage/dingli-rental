@@ -203,7 +203,10 @@ function Pagination({
       if (val) params.set(k, String(val));
     });
     params.set('page', String(page));
-    return `${basePath}?${params.toString()}`;
+    // hash 對應 PropertyResults 內 #properties-grid，
+    // Next.js Link 預設會把 hash anchor 滾入視窗，所以換頁後使用者直接看到第一筆物件，
+    // 不會還停在頁面底部的分頁按鈕。
+    return `${basePath}?${params.toString()}#properties-grid`;
   };
 
   const baseBtn =

@@ -183,16 +183,29 @@ export default function PropertyFilters({
     setDraft((prev) => ({ ...prev, ...next }));
   }
 
-  function applyDraftFilters() {
+  // 共用：把 draft 寫進 URL（主列 chip 即時呼叫；進階面板按「搜尋」時呼叫）
+  function commitDraftToUrl(source: PropertyFiltersValue, opts?: { closeAdvanced?: boolean }) {
     const params = new URLSearchParams();
-    (Object.keys(draft) as (keyof PropertyFiltersValue)[]).forEach((k) => {
-      if (draft[k]) params.set(k, draft[k]);
+    (Object.keys(source) as (keyof PropertyFiltersValue)[]).forEach((k) => {
+      if (source[k]) params.set(k, source[k]);
     });
     params.delete('page');
-    setAdvancedOpen(false);
+    if (opts?.closeAdvanced) setAdvancedOpen(false);
     startTransition(() => {
       router.replace(`${propertiesPath}${params.toString() ? `?${params.toString()}` : ''}`, { scroll: false });
     });
+  }
+
+  // 主列 chip 用：更新 draft 並立即套用到 URL（即時篩選）
+  function applyDraftPartial(partial: Partial<PropertyFiltersValue>) {
+    const nextDraft = { ...draft, ...partial };
+    setDraft(nextDraft);
+    commitDraftToUrl(nextDraft);
+  }
+
+  // 進階面板「搜尋」按鈕 / 輸入框按 Enter：把當前 draft 一次套用、並關閉進階面板
+  function applyDraftFilters() {
+    commitDraftToUrl(draft, { closeAdvanced: true });
   }
 
   function reset() {
@@ -272,7 +285,7 @@ export default function PropertyFilters({
             // 「不限」以 'all' sentinel 表示，server 端會略過地區過濾
             { label: t('noLimit'), value: 'all' },
           ]}
-          onChange={(val) => updateDraft({ region: val, district: '' })}
+          onChange={(val) => applyDraftPartial({ region: val, district: '' })}
         />
 
         {v.region && districts.length > 0 && (
@@ -280,7 +293,7 @@ export default function PropertyFilters({
             label={t('districtLabel')}
             value={v.district}
             options={[{ label: t('noLimit'), value: '' }, ...districts.map((d) => ({ label: d, value: d }))]}
-            onChange={(val) => updateDraft({ district: val })}
+            onChange={(val) => applyDraftPartial({ district: val })}
           />
         )}
 
@@ -288,7 +301,7 @@ export default function PropertyFilters({
           label={t('typeLabel')}
           options={TYPES.map((tp) => ({ label: tp, value: tp }))}
           selected={typeArr}
-          onChange={(arr) => updateDraft({ type: arr.join(',') })}
+          onChange={(arr) => applyDraftPartial({ type: arr.join(',') })}
           allLabel={t('noLimit')}
         />
 
@@ -298,7 +311,7 @@ export default function PropertyFilters({
           activeIdx={rentPresetIndex(v.minRent, v.maxRent)}
           currentMin={v.minRent}
           currentMax={v.maxRent}
-          onPick={(p) => updateDraft({ minRent: p.min || '', maxRent: p.max || '' })}
+          onPick={(p) => applyDraftPartial({ minRent: p.min || '', maxRent: p.max || '' })}
           customLabel={t('customRange')}
           unitLabel={t('rentUnit')}
         />
@@ -321,15 +334,7 @@ export default function PropertyFilters({
           </button>
         )}
 
-        <div className="ml-auto flex items-center gap-2">
-          <button
-            type="button"
-            onClick={applyDraftFilters}
-            className="inline-flex items-center justify-center rounded-full bg-brand-orange-500 px-4 py-1.5 text-sm font-extrabold text-white shadow-sm transition hover:bg-brand-orange-700 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/30"
-            aria-label={t('searchAria')}
-          >
-            {t('searchButton')}
-          </button>
+        <div className="ml-auto">
           <AiChatWidget
             triggerLabel={t('aiButton')}
             triggerClassName="ai-glow-btn text-sm font-extrabold px-3.5 py-1.5 rounded-full bg-brand-green-700 text-white hover:bg-brand-green-900 transition shadow-sm whitespace-nowrap"

@@ -145,7 +145,11 @@ export default function PropertiesManager({
   const activeItems = useMemo(() => items.filter((x) => x.status === 'active'), [items]);
   const inactiveItems = useMemo(() => items.filter((x) => x.status !== 'active'), [items]);
   const featuredItems = useMemo(() => items.filter((x) => x.featured), [items]);
-  const generalItems = useMemo(() => items.filter((x) => !x.featured), [items]);
+  // 「一般」分頁僅顯示上架中的非精選物件；已下架的會出現在「下架」分頁。
+  const generalItems = useMemo(
+    () => items.filter((x) => !x.featured && x.status === 'active'),
+    [items],
+  );
 
   const sortedActiveItems = useMemo(
     () => (activeSort ? sortAdminProperties(activeItems, activeSort) : activeItems),
