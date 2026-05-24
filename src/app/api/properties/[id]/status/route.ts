@@ -47,10 +47,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       data: {
         status: nextStatus,
         inactiveAt: inactiveAtPatch,
+        // 下架同時把精選旗標清掉：物件移出展示，就不該再佔精選版位
+        ...(nextStatus === 'inactive' ? { featured: false } : {}),
         ...(nextStatus === 'active' && existing.status !== 'active' ? { createdAt: new Date() } : {}),
         ...(nextListingStatus ? { listingStatus: nextListingStatus } : {}),
       },
-      select: { id: true, status: true, inactiveAt: true, listingStatus: true, createdAt: true },
+      select: { id: true, status: true, inactiveAt: true, listingStatus: true, createdAt: true, featured: true },
     });
 
     return NextResponse.json(updated);

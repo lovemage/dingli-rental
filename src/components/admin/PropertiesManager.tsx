@@ -290,6 +290,8 @@ export default function PropertiesManager({
                 listingStatus: data.listingStatus ?? it.listingStatus,
                 inactiveAt: data.inactiveAt ? new Date(data.inactiveAt).toISOString() : null,
                 createdAt: data.createdAt ? new Date(data.createdAt).toISOString() : it.createdAt,
+                // 下架時 server 會把 featured 設為 false，這裡同步本地狀態
+                featured: typeof data.featured === 'boolean' ? data.featured : it.featured,
               }
             : it
         ));
