@@ -5,6 +5,7 @@ import Header from '@/components/frontend/Header';
 import Footer from '@/components/frontend/Footer';
 import PropertyFilters from '@/components/frontend/PropertyFilters';
 import PropertyResults from '@/components/frontend/PropertyResults';
+import MaterialIcon from '@/components/MaterialIcon';
 import { prisma } from '@/lib/prisma';
 import { getLocalizedPropertyCards } from '@/lib/property-translate';
 import { isPropertyCode, normalizePropertyCode } from '@/lib/property-code';
@@ -183,25 +184,72 @@ function Pagination({
   sp: SearchParams;
   basePath: string;
 }) {
+  if (total <= 1) return null;
+
+  const WINDOW = 5;
+  // 最多顯示 5 顆頁碼：先以 current 為中心取 ±2，再夾到 [1, total] 區間
+  let start = Math.max(1, current - Math.floor(WINDOW / 2));
+  let end = Math.min(total, start + WINDOW - 1);
+  if (end - start + 1 < WINDOW) {
+    start = Math.max(1, end - WINDOW + 1);
+  }
+
+  const pages: number[] = [];
+  for (let p = start; p <= end; p++) pages.push(p);
+
+  const buildHref = (page: number) => {
+    const params = new URLSearchParams();
+    Object.entries(sp).forEach(([k, val]) => {
+      if (val) params.set(k, String(val));
+    });
+    params.set('page', String(page));
+    return `${basePath}?${params.toString()}`;
+  };
+
+  const baseBtn =
+    'w-10 h-10 grid place-items-center rounded-full text-sm font-medium transition border';
+  const activeBtn = 'bg-brand-green-700 text-white border-brand-green-700';
+  const idleBtn = 'bg-white border-line text-ink-700 hover:border-brand-green-500';
+  const arrowIdle = `${baseBtn} ${idleBtn}`;
+  const arrowDisabled = `${baseBtn} bg-paper-2 border-line text-ink-300 cursor-not-allowed`;
+
+  const prevPage = current - 1;
+  const nextPage = current + 1;
+  const prevDisabled = current <= 1;
+  const nextDisabled = current >= total;
+
   return (
-    <div className="flex justify-center gap-2 mt-12">
-      {Array.from({ length: total }).map((_, i) => {
-        const n = i + 1;
-        const params = new URLSearchParams();
-        Object.entries(sp).forEach(([k, val]) => {
-          if (val) params.set(k, String(val));
-        });
-        params.set('page', String(n));
-        return (
-          <Link
-            key={n}
-            href={`${basePath}?${params.toString()}`}
-            className={`w-10 h-10 grid place-items-center rounded-full text-sm font-medium transition ${n === current ? 'bg-brand-green-700 text-white' : 'bg-white border border-line text-ink-700 hover:border-brand-green-500'}`}
-          >
-            {n}
-          </Link>
-        );
-      })}
-    </div>
+    <nav aria-label="Pagination" className="flex justify-center items-center gap-2 mt-12">
+      {prevDisabled ? (
+        <span className={arrowDisabled} aria-disabled="true">
+          <MaterialIcon name="chevron_left" className="!text-lg" />
+        </span>
+      ) : (
+        <Link href={buildHref(prevPage)} className={arrowIdle} aria-label="Previous page">
+          <MaterialIcon name="chevron_left" className="!text-lg" />
+        </Link>
+      )}
+
+      {pages.map((n) => (
+        <Link
+          key={n}
+          href={buildHref(n)}
+          aria-current={n === current ? 'page' : undefined}
+          className={`${baseBtn} ${n === current ? activeBtn : idleBtn}`}
+        >
+          {n}
+        </Link>
+      ))}
+
+      {nextDisabled ? (
+        <span className={arrowDisabled} aria-disabled="true">
+          <MaterialIcon name="chevron_right" className="!text-lg" />
+        </span>
+      ) : (
+        <Link href={buildHref(nextPage)} className={arrowIdle} aria-label="Next page">
+          <MaterialIcon name="chevron_right" className="!text-lg" />
+        </Link>
+      )}
+    </nav>
   );
 }
