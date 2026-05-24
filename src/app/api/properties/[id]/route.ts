@@ -28,9 +28,26 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
   try {
     const body = await req.json();
-    // 編號 (code) 建立後 immutable，從 update payload 移除避免 admin 表單誤覆寫
-    const { images = [], code: _droppedCode, ...data } = body;
+    // 從 update payload 剝除以下兩類欄位：
+    //   1. immutable / 系統管理：id / code / createdAt / updatedAt / inactiveAt
+    //      —— 特別是 updatedAt，編輯表單載入時會帶入 DB 既有值，若不剝掉
+    //      Prisma 會把舊字串寫回去，壓掉 @updatedAt 的自動 bump，導致
+    //      orderBy [featured DESC, updatedAt DESC] 認不出這筆剛被更新。
+    //   2. images 另外走 deleteMany + create 流程
+    const {
+      images = [],
+      id: _droppedId,
+      code: _droppedCode,
+      createdAt: _droppedCreatedAt,
+      updatedAt: _droppedUpdatedAt,
+      inactiveAt: _droppedInactiveAt,
+      ...data
+    } = body;
+    void _droppedId;
     void _droppedCode;
+    void _droppedCreatedAt;
+    void _droppedUpdatedAt;
+    void _droppedInactiveAt;
     const rawMedia = Array.isArray(images) ? images : [];
     const orderedMedia = normalizePropertyMediaOrder(rawMedia);
     if (rawMedia.length > 0 && orderedMedia.length === 0) {
