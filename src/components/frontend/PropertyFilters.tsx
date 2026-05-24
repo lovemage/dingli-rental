@@ -360,7 +360,7 @@ export default function PropertyFilters({
                 aria-label={t('singleColumnLabel')}
                 aria-pressed={mobileViewMode === 'single'}
               >
-                <MaterialIcon name="view_agenda" className="!text-base" />
+                <MaterialIcon name="grid_view" className="!text-base" />
               </button>
               <button
                 type="button"
@@ -369,7 +369,7 @@ export default function PropertyFilters({
                 aria-label={t('doubleColumnLabel')}
                 aria-pressed={mobileViewMode === 'double'}
               >
-                <MaterialIcon name="grid_view" className="!text-base" />
+                <MaterialIcon name="view_agenda" className="!text-base" />
               </button>
             </div>
           )}

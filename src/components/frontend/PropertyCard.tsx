@@ -221,7 +221,7 @@ export default function PropertyCard({ property: p, maxTags = 3, variant = 'card
           )}
           {p.floor && (
             <span className="flex items-center gap-1">
-              <SpecIcon type="area" />
+              <SpecIcon type="floor" />
               {formatFloorLine(p.floorType, p.floor, p.totalFloor)}
             </span>
           )}
@@ -236,7 +236,7 @@ export default function PropertyCard({ property: p, maxTags = 3, variant = 'card
 // 此處保留 re-export 以維持既有外部呼叫端的相容性。
 export { formatFloorLine, splitMultiFloor } from '@/lib/property-floor';
 
-function SpecIcon({ type }: { type: 'rooms' | 'bathrooms' | 'area' | 'parking' }) {
+function SpecIcon({ type }: { type: 'rooms' | 'bathrooms' | 'area' | 'parking' | 'floor' }) {
   if (type === 'rooms') {
     return (
       <svg className="h-4 w-4 shrink-0 text-ink-700" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
@@ -262,6 +262,22 @@ function SpecIcon({ type }: { type: 'rooms' | 'bathrooms' | 'area' | 'parking' }
       <svg className="h-4 w-4 shrink-0 text-ink-700" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M4 11v8a1 1 0 0 0 1 1h8M4 6V5a1 1 0 0 1 1-1h1m5 0h2m5 0h1a1 1 0 0 1 1 1v1m0 5v2m0 5v1a1 1 0 0 1-1 1h-1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         <path d="M4 12h7a1 1 0 0 1 1 1v7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  if (type === 'floor') {
+    // 樓高/樓層 icon：兩棟並排的窗格大樓
+    return (
+      <svg
+        className="h-4 w-4 shrink-0 text-ink-700"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path
+          fill="currentColor"
+          d="M3 21V7h4V3h10v8h4v10h-8v-4h-2v4zm2-2h2v-2H5zm0-4h2v-2H5zm0-4h2V9H5zm4 4h2v-2H9zm0-4h2V9H9zm0-4h2V5H9zm4 8h2v-2h-2zm0-4h2V9h-2zm0-4h2V5h-2zm4 12h2v-2h-2zm0-4h2v-2h-2z"
+        />
       </svg>
     );
   }
