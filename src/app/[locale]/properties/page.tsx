@@ -187,16 +187,12 @@ function Pagination({
 }) {
   if (total <= 1) return null;
 
-  const WINDOW = 5;
-  // 最多顯示 5 顆頁碼：先以 current 為中心取 ±2，再夾到 [1, total] 區間
-  let start = Math.max(1, current - Math.floor(WINDOW / 2));
-  let end = Math.min(total, start + WINDOW - 1);
-  if (end - start + 1 < WINDOW) {
-    start = Math.max(1, end - WINDOW + 1);
-  }
-
+  const maxVisible = 10;
+  const end = Math.min(maxVisible, total);
   const pages: number[] = [];
-  for (let p = start; p <= end; p++) pages.push(p);
+  for (let p = 1; p <= end; p++) pages.push(p);
+  const showEllipsis = total > maxVisible + 1;
+  const showLastPage = total > maxVisible;
 
   const buildHref = (page: number) => {
     const params = new URLSearchParams();
@@ -204,18 +200,18 @@ function Pagination({
       if (val) params.set(k, String(val));
     });
     params.set('page', String(page));
-    // hash 對應 PropertyResults 內 #properties-grid，
-    // Next.js Link 預設會把 hash anchor 滾入視窗，所以換頁後使用者直接看到第一筆物件，
-    // 不會還停在頁面底部的分頁按鈕。
     return `${basePath}?${params.toString()}#properties-grid`;
   };
 
   const baseBtn =
-    'w-10 h-10 grid place-items-center rounded-full text-sm font-medium transition border';
+    'inline-flex items-center justify-center gap-1.5 rounded-full border text-[11px] font-semibold whitespace-nowrap transition sm:text-xs';
+  const sizeSquare = 'w-10 h-10';
+  const sizePill = 'px-3 py-1.5';
   const activeBtn = 'bg-brand-green-700 text-white border-brand-green-700';
   const idleBtn = 'bg-white border-line text-ink-700 hover:border-brand-green-500';
-  const arrowIdle = `${baseBtn} ${idleBtn}`;
-  const arrowDisabled = `${baseBtn} bg-paper-2 border-line text-ink-300 cursor-not-allowed`;
+  const squareIdle = `${baseBtn} ${sizeSquare} ${idleBtn}`;
+  const pillIdle = `${baseBtn} ${sizePill} ${idleBtn}`;
+  const disabled = `${baseBtn} ${sizeSquare} bg-paper-2 border-line text-ink-300 cursor-not-allowed`;
 
   const prevPage = current - 1;
   const nextPage = current + 1;
@@ -223,37 +219,88 @@ function Pagination({
   const nextDisabled = current >= total;
 
   return (
-    <nav aria-label="Pagination" className="flex justify-center items-center gap-2 mt-12">
-      {prevDisabled ? (
-        <span className={arrowDisabled} aria-disabled="true">
-          <MaterialIcon name="chevron_left" className="!text-lg" />
+    <nav aria-label="Pagination" className="mt-12">
+      {/* Mobile: simple prev / indicator / next */}
+      <div className="flex items-center justify-center gap-3 sm:hidden">
+        {prevDisabled ? (
+          <span className={disabled} aria-disabled="true">
+            <MaterialIcon name="chevron_left" className="!text-lg" />
+          </span>
+        ) : (
+          <Link href={buildHref(prevPage)} className={squareIdle} aria-label="Previous page">
+            <MaterialIcon name="chevron_left" className="!text-lg" />
+          </Link>
+        )}
+        <span className="text-sm text-ink-500">
+          {current} / {total}
         </span>
-      ) : (
-        <Link href={buildHref(prevPage)} className={arrowIdle} aria-label="Previous page">
-          <MaterialIcon name="chevron_left" className="!text-lg" />
-        </Link>
-      )}
+        {nextDisabled ? (
+          <span className={disabled} aria-disabled="true">
+            <MaterialIcon name="chevron_right" className="!text-lg" />
+          </span>
+        ) : (
+          <Link href={buildHref(nextPage)} className={squareIdle} aria-label="Next page">
+            <MaterialIcon name="chevron_right" className="!text-lg" />
+          </Link>
+        )}
+      </div>
 
-      {pages.map((n) => (
-        <Link
-          key={n}
-          href={buildHref(n)}
-          aria-current={n === current ? 'page' : undefined}
-          className={`${baseBtn} ${n === current ? activeBtn : idleBtn}`}
-        >
-          {n}
-        </Link>
-      ))}
+      {/* PC: full pagination with page numbers */}
+      <div className="hidden sm:flex sm:flex-wrap sm:items-center sm:justify-center sm:gap-2">
+        {prevDisabled ? (
+          <span className={`${pillIdle} opacity-50 cursor-not-allowed`}>首頁</span>
+        ) : (
+          <Link href={buildHref(1)} className={pillIdle}>首頁</Link>
+        )}
+        {prevDisabled ? (
+          <span className={disabled} aria-disabled="true">
+            <MaterialIcon name="chevron_left" className="!text-lg" />
+          </span>
+        ) : (
+          <Link href={buildHref(prevPage)} className={squareIdle} aria-label="Previous page">
+            <MaterialIcon name="chevron_left" className="!text-lg" />
+          </Link>
+        )}
 
-      {nextDisabled ? (
-        <span className={arrowDisabled} aria-disabled="true">
-          <MaterialIcon name="chevron_right" className="!text-lg" />
-        </span>
-      ) : (
-        <Link href={buildHref(nextPage)} className={arrowIdle} aria-label="Next page">
-          <MaterialIcon name="chevron_right" className="!text-lg" />
-        </Link>
-      )}
+        {pages.map((n) => (
+          <Link
+            key={n}
+            href={buildHref(n)}
+            aria-current={n === current ? 'page' : undefined}
+            className={n === current ? `${baseBtn} ${sizeSquare} ${activeBtn}` : squareIdle}
+          >
+            {n}
+          </Link>
+        ))}
+
+        {showEllipsis && (
+          <span className="px-1 text-xs text-ink-400">...</span>
+        )}
+        {showLastPage && (
+          <Link
+            href={buildHref(total)}
+            aria-current={total === current ? 'page' : undefined}
+            className={total === current ? `${baseBtn} ${sizeSquare} ${activeBtn}` : squareIdle}
+          >
+            {total}
+          </Link>
+        )}
+
+        {nextDisabled ? (
+          <span className={disabled} aria-disabled="true">
+            <MaterialIcon name="chevron_right" className="!text-lg" />
+          </span>
+        ) : (
+          <Link href={buildHref(nextPage)} className={squareIdle} aria-label="Next page">
+            <MaterialIcon name="chevron_right" className="!text-lg" />
+          </Link>
+        )}
+        {nextDisabled ? (
+          <span className={`${pillIdle} opacity-50 cursor-not-allowed`}>末頁</span>
+        ) : (
+          <Link href={buildHref(total)} className={pillIdle}>末頁</Link>
+        )}
+      </div>
     </nav>
   );
 }

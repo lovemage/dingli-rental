@@ -1011,36 +1011,22 @@ type PageEntry = {
 };
 
 function getPageNumbers(current: number, total: number): PageEntry[] {
-  if (total <= 7) {
-    return Array.from({ length: total }, (_, i) => ({
-      value: i + 1,
-      hideOnMobile: false,
-    }));
-  }
-
   const entries: PageEntry[] = [];
-  const push = (v: number | '...', hideOnMobile: boolean) => entries.push({ value: v, hideOnMobile });
+  const maxVisible = 10;
+  const end = Math.min(maxVisible, total);
 
-  push(1, false);
-
-  let start = Math.max(2, current - 1);
-  let end = Math.min(total - 1, current + 1);
-
-  if (current <= 3) {
-    start = 2;
-    end = 5;
-  } else if (current >= total - 2) {
-    start = total - 4;
-    end = total - 1;
+  for (let i = 1; i <= end; i++) {
+    entries.push({ value: i, hideOnMobile: false });
   }
 
-  if (start > 2) push('...', false);
-  for (let i = start; i <= end; i++) {
-    push(i, Math.abs(i - current) > 1);
+  if (total > maxVisible + 1) {
+    entries.push({ value: '...', hideOnMobile: false });
   }
-  if (end < total - 1) push('...', Math.abs(end - current) > 1);
 
-  push(total, false);
+  if (total > maxVisible) {
+    entries.push({ value: total, hideOnMobile: false });
+  }
+
   return entries;
 }
 
@@ -1049,46 +1035,85 @@ function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) 
 
   return (
     <div className="mt-4 flex flex-wrap items-center justify-center gap-2 border-t border-line pt-4">
-      <button
-        type="button"
-        onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-        className={PAGE_BUTTON_CLASS}
-      >
-        上一頁
-      </button>
+      {/* Mobile: simple prev / indicator / next */}
+      <div className="flex items-center gap-2 sm:hidden">
+        <button
+          type="button"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className={PAGE_BUTTON_CLASS}
+        >
+          上一頁
+        </button>
+        <span className="text-xs text-ink-500">
+          {currentPage} / {totalPages}
+        </span>
+        <button
+          type="button"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className={PAGE_BUTTON_CLASS}
+        >
+          下一頁
+        </button>
+      </div>
 
-      {pages.map((entry, idx) => {
-        if (entry.value === '...') {
+      {/* PC: full pagination with page numbers */}
+      <div className="hidden sm:flex sm:flex-wrap sm:items-center sm:justify-center sm:gap-2">
+        <button
+          type="button"
+          onClick={() => onPageChange(1)}
+          disabled={currentPage === 1}
+          className={PAGE_BUTTON_CLASS}
+        >
+          首頁
+        </button>
+        <button
+          type="button"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className={PAGE_BUTTON_CLASS}
+        >
+          上一頁
+        </button>
+
+        {pages.map((entry, idx) => {
+          if (entry.value === '...') {
+            return (
+              <span key={`dot-${idx}`} className="px-1 text-xs text-ink-400">
+                ...
+              </span>
+            );
+          }
           return (
-            <span
-              key={`dot-${idx}`}
-              className={`px-1 text-xs text-ink-400${entry.hideOnMobile ? ' hidden sm:inline' : ''}`}
+            <button
+              key={entry.value}
+              type="button"
+              onClick={() => onPageChange(entry.value as number)}
+              className={entry.value === currentPage ? PAGE_BUTTON_ACTIVE_CLASS : PAGE_BUTTON_CLASS}
             >
-              ...
-            </span>
+              {entry.value}
+            </button>
           );
-        }
-        return (
-          <button
-            key={entry.value}
-            type="button"
-            onClick={() => onPageChange(entry.value as number)}
-            className={`${entry.value === currentPage ? PAGE_BUTTON_ACTIVE_CLASS : PAGE_BUTTON_CLASS}${entry.hideOnMobile ? ' hidden sm:inline-flex' : ''}`}
-          >
-            {entry.value}
-          </button>
-        );
-      })}
+        })}
 
-      <button
-        type="button"
-        onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        className={PAGE_BUTTON_CLASS}
-      >
-        下一頁
-      </button>
+        <button
+          type="button"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className={PAGE_BUTTON_CLASS}
+        >
+          下一頁
+        </button>
+        <button
+          type="button"
+          onClick={() => onPageChange(totalPages)}
+          disabled={currentPage === totalPages}
+          className={PAGE_BUTTON_CLASS}
+        >
+          末頁
+        </button>
+      </div>
     </div>
   );
 }
