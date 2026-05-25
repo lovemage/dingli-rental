@@ -137,6 +137,17 @@ export default function PropertiesManager({
   const rentPopoverRef = useRef<HTMLDivElement | null>(null);
 
   const [items, setItems] = useState(initialItems);
+  // initialItems 來自 server，router.replace 後會帶回新一輪結果。
+  // 用 React 官方的「Adjusting state when prop changes」render-phase pattern
+  // 把 server 資料同步進 items state，避免租金 popover 套用後畫面仍卡在舊清單。
+  // 注意：toggleFeatured / updateStatus 的 optimistic update 之後，server response
+  // 也會走進 setItems()，下次 router.refresh 帶回的 initialItems 會跟它一致，
+  // 因此這個 sync 不會把 optimistic 更新蓋掉。
+  const [trackedInitial, setTrackedInitial] = useState(initialItems);
+  if (trackedInitial !== initialItems) {
+    setTrackedInitial(initialItems);
+    setItems(initialItems);
+  }
   const [activeTab, setActiveTab] = useState<ViewTab>(initialTab);
   const [pending, setPending] = useState<number | null>(null);
   const [activePage, setActivePage] = useState(1);
@@ -636,17 +647,6 @@ export default function PropertiesManager({
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab('inactive')}
-              className={`${TAB_BUTTON_CLASS} ${
-                activeTab === 'inactive'
-                  ? 'border-brand-green-700 bg-brand-green-700 text-white'
-                  : 'border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700'
-              }`}
-            >
-              已下架（{inactiveItems.length}）
-            </button>
-            <button
-              type="button"
               onClick={() => setActiveTab('featured')}
               className={`${TAB_BUTTON_CLASS} ${
                 activeTab === 'featured'
@@ -656,6 +656,17 @@ export default function PropertiesManager({
             >
               <MaterialIcon name="star" className="!text-xs sm:!text-sm" fill={activeTab === 'featured'} />
               精選（{featuredItems.length}）
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('inactive')}
+              className={`${TAB_BUTTON_CLASS} ${
+                activeTab === 'inactive'
+                  ? 'border-brand-green-700 bg-brand-green-700 text-white'
+                  : 'border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700'
+              }`}
+            >
+              已下架（{inactiveItems.length}）
             </button>
             <button
               type="button"

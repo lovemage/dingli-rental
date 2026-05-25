@@ -440,7 +440,8 @@ export default function PropertyFilters({
 
             <FilterGroup title={t('amenitiesLabel')}>
               <div className="flex flex-wrap gap-2">
-                <ToggleChip label={t('elevatorLabel')} active={v.elevator === '1'} onClick={() => updateDraft({ elevator: v.elevator === '1' ? '' : '1' })} />
+                {/* 電梯 chip 已移除；如需重啟，恢復這行即可。
+                <ToggleChip label={t('elevatorLabel')} active={v.elevator === '1'} onClick={() => updateDraft({ elevator: v.elevator === '1' ? '' : '1' })} /> */}
                 <ToggleChip label={t('petsLabel')} active={v.pets === '1'} onClick={() => updateDraft({ pets: v.pets === '1' ? '' : '1' })} />
                 <ToggleChip label={t('cookingLabel')} active={v.cooking === '1'} onClick={() => updateDraft({ cooking: v.cooking === '1' ? '' : '1' })} />
               </div>
