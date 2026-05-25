@@ -180,8 +180,12 @@ export default function PropertiesManager({
 
   const activeItems = useMemo(() => items.filter((x) => x.status === 'active'), [items]);
   const inactiveItems = useMemo(() => items.filter((x) => x.status !== 'active'), [items]);
-  const featuredItems = useMemo(
+  const featuredTabItems = useMemo(
     () => items.filter((x) => x.status === 'active'),
+    [items],
+  );
+  const featuredOnlyCount = useMemo(
+    () => items.filter((x) => x.featured).length,
     [items],
   );
   // 「一般」分頁僅顯示上架中的非精選物件；已下架的會出現在「下架」分頁。
@@ -212,8 +216,8 @@ export default function PropertiesManager({
   );
 
   const sortedFeaturedDefaultItems = useMemo(
-    () => sortByFeaturedThenUpdatedAt(featuredItems),
-    [featuredItems],
+    () => sortByFeaturedThenUpdatedAt(featuredTabItems),
+    [featuredTabItems],
   );
 
   const sortedFeaturedItems = useMemo(
@@ -319,7 +323,7 @@ export default function PropertiesManager({
                 listingStatus: data.listingStatus ?? it.listingStatus,
                 inactiveAt: data.inactiveAt ? new Date(data.inactiveAt).toISOString() : null,
                 createdAt: data.createdAt ? new Date(data.createdAt).toISOString() : it.createdAt,
-                updatedAt: data.updatedAt ? new Date(data.updatedAt).toISOString() : it.updatedAt,
+                updatedAt: data.updatedAt ? new Date(data.updatedAt).toISOString() : new Date().toISOString(),
                 // 下架時 server 會把 featured 設為 false，這裡同步本地狀態
                 featured: typeof data.featured === 'boolean' ? data.featured : it.featured,
               }
@@ -522,7 +526,7 @@ export default function PropertiesManager({
         <div className="min-w-0">
           <h1 className="mb-1 text-xl font-black sm:text-2xl">物件管理</h1>
           <p className="text-xs text-ink-500 sm:text-sm">
-            上架中 {activeItems.length} 筆 / 已下架 {inactiveItems.length} 筆 / 精選 {featuredItems.length} 筆 / 一般 {generalItems.length} 筆
+            上架中 {activeItems.length} 筆 / 已下架 {inactiveItems.length} 筆 / 精選 {featuredOnlyCount} 筆 / 一般 {generalItems.length} 筆
           </p>
         </div>
 
@@ -683,7 +687,7 @@ export default function PropertiesManager({
               }`}
             >
               <MaterialIcon name="star" className="!text-xs sm:!text-sm" fill={activeTab === 'featured'} />
-              精選（{featuredItems.length}）
+              精選（{featuredOnlyCount}）
             </button>
             <button
               type="button"
@@ -1001,12 +1005,23 @@ type PaginationProps = {
 const PAGE_BUTTON_CLASS = `${TOOL_BUTTON_CLASS} border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700`;
 const PAGE_BUTTON_ACTIVE_CLASS = `${TOOL_BUTTON_CLASS} border-brand-green-500 bg-brand-green-50 text-brand-green-700 font-bold`;
 
-function getPageNumbers(current: number, total: number): (number | '...')[] {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+type PageEntry = {
+  value: number | '...';
+  hideOnMobile: boolean;
+};
 
-  const pages: (number | '...')[] = [];
+function getPageNumbers(current: number, total: number): PageEntry[] {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => ({
+      value: i + 1,
+      hideOnMobile: false,
+    }));
+  }
 
-  pages.push(1);
+  const entries: PageEntry[] = [];
+  const push = (v: number | '...', hideOnMobile: boolean) => entries.push({ value: v, hideOnMobile });
+
+  push(1, false);
 
   let start = Math.max(2, current - 1);
   let end = Math.min(total - 1, current + 1);
@@ -1019,19 +1034,14 @@ function getPageNumbers(current: number, total: number): (number | '...')[] {
     end = total - 1;
   }
 
-  if (start > 2) pages.push('...');
-  for (let i = start; i <= end; i++) pages.push(i);
-  if (end < total - 1) pages.push('...');
+  if (start > 2) push('...', false);
+  for (let i = start; i <= end; i++) {
+    push(i, Math.abs(i - current) > 1);
+  }
+  if (end < total - 1) push('...', Math.abs(end - current) > 1);
 
-  pages.push(total);
-  return pages;
-}
-
-function isCorePage(page: number | '...', current: number, total: number): boolean {
-  if (page === '...') return true;
-  if (page === 1 || page === total) return true;
-  if (Math.abs(page - current) <= 1) return true;
-  return false;
+  push(total, false);
+  return entries;
 }
 
 function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
@@ -1048,13 +1058,12 @@ function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) 
         上一頁
       </button>
 
-      {pages.map((page, idx) => {
-        const isCore = isCorePage(page, currentPage, totalPages);
-        if (page === '...') {
+      {pages.map((entry, idx) => {
+        if (entry.value === '...') {
           return (
             <span
               key={`dot-${idx}`}
-              className={`px-1 text-xs text-ink-400 ${isCore ? '' : 'hidden sm:inline'}`}
+              className={`px-1 text-xs text-ink-400${entry.hideOnMobile ? ' hidden sm:inline' : ''}`}
             >
               ...
             </span>
@@ -1062,12 +1071,12 @@ function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) 
         }
         return (
           <button
-            key={page}
+            key={entry.value}
             type="button"
-            onClick={() => onPageChange(page)}
-            className={`${page === currentPage ? PAGE_BUTTON_ACTIVE_CLASS : PAGE_BUTTON_CLASS}${isCore ? '' : ' hidden sm:inline-flex'}`}
+            onClick={() => onPageChange(entry.value as number)}
+            className={`${entry.value === currentPage ? PAGE_BUTTON_ACTIVE_CLASS : PAGE_BUTTON_CLASS}${entry.hideOnMobile ? ' hidden sm:inline-flex' : ''}`}
           >
-            {page}
+            {entry.value}
           </button>
         );
       })}
