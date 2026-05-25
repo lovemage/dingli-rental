@@ -206,11 +206,9 @@ function Pagination({
   const baseBtn =
     'inline-flex items-center justify-center gap-1.5 rounded-full border text-[11px] font-semibold whitespace-nowrap transition sm:text-xs';
   const sizeSquare = 'w-10 h-10';
-  const sizePill = 'px-3 py-1.5';
   const activeBtn = 'bg-brand-green-700 text-white border-brand-green-700';
   const idleBtn = 'bg-white border-line text-ink-700 hover:border-brand-green-500';
   const squareIdle = `${baseBtn} ${sizeSquare} ${idleBtn}`;
-  const pillIdle = `${baseBtn} ${sizePill} ${idleBtn}`;
   const disabled = `${baseBtn} ${sizeSquare} bg-paper-2 border-line text-ink-300 cursor-not-allowed`;
 
   const prevPage = current - 1;
@@ -220,8 +218,8 @@ function Pagination({
 
   return (
     <nav aria-label="Pagination" className="mt-12">
-      {/* Mobile: simple prev / indicator / next */}
-      <div className="flex items-center justify-center gap-3 sm:hidden">
+      {/* Mobile: prev / page numbers / next */}
+      <div className="flex items-center justify-center gap-1 sm:hidden">
         {prevDisabled ? (
           <span className={disabled} aria-disabled="true">
             <MaterialIcon name="chevron_left" className="!text-lg" />
@@ -231,9 +229,28 @@ function Pagination({
             <MaterialIcon name="chevron_left" className="!text-lg" />
           </Link>
         )}
-        <span className="text-sm text-ink-500">
-          {current} / {total}
-        </span>
+        {pages.slice(0, 5).map((n) => (
+          <Link
+            key={n}
+            href={buildHref(n)}
+            aria-current={n === current ? 'page' : undefined}
+            className={n === current ? `${baseBtn} ${sizeSquare} ${activeBtn}` : squareIdle}
+          >
+            {n}
+          </Link>
+        ))}
+        {total > 6 && (
+          <>
+            <span className="px-0.5 text-xs text-ink-400">...</span>
+            <Link
+              href={buildHref(total)}
+              aria-current={total === current ? 'page' : undefined}
+              className={total === current ? `${baseBtn} ${sizeSquare} ${activeBtn}` : squareIdle}
+            >
+              {total}
+            </Link>
+          </>
+        )}
         {nextDisabled ? (
           <span className={disabled} aria-disabled="true">
             <MaterialIcon name="chevron_right" className="!text-lg" />
@@ -247,11 +264,6 @@ function Pagination({
 
       {/* PC: full pagination with page numbers */}
       <div className="hidden sm:flex sm:flex-wrap sm:items-center sm:justify-center sm:gap-2">
-        {prevDisabled ? (
-          <span className={`${pillIdle} opacity-50 cursor-not-allowed`}>首頁</span>
-        ) : (
-          <Link href={buildHref(1)} className={pillIdle}>首頁</Link>
-        )}
         {prevDisabled ? (
           <span className={disabled} aria-disabled="true">
             <MaterialIcon name="chevron_left" className="!text-lg" />
@@ -294,11 +306,6 @@ function Pagination({
           <Link href={buildHref(nextPage)} className={squareIdle} aria-label="Next page">
             <MaterialIcon name="chevron_right" className="!text-lg" />
           </Link>
-        )}
-        {nextDisabled ? (
-          <span className={`${pillIdle} opacity-50 cursor-not-allowed`}>末頁</span>
-        ) : (
-          <Link href={buildHref(total)} className={pillIdle}>末頁</Link>
         )}
       </div>
     </nav>

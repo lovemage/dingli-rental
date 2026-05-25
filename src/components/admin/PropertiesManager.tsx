@@ -1016,7 +1016,7 @@ function getPageNumbers(current: number, total: number): PageEntry[] {
   const end = Math.min(maxVisible, total);
 
   for (let i = 1; i <= end; i++) {
-    entries.push({ value: i, hideOnMobile: false });
+    entries.push({ value: i, hideOnMobile: i > 5 && i !== total });
   }
 
   if (total > maxVisible + 1) {
@@ -1033,10 +1033,16 @@ function getPageNumbers(current: number, total: number): PageEntry[] {
 function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
   const pages = getPageNumbers(currentPage, totalPages);
 
+  const mobileVisiblePages = pages.filter(
+    (e) => e.value !== '...' && (e.value as number) <= 5
+  );
+  const showMobileEllipsis = totalPages > 6;
+  const mobileLastPage = totalPages > 6 ? totalPages : null;
+
   return (
     <div className="mt-4 flex flex-wrap items-center justify-center gap-2 border-t border-line pt-4">
-      {/* Mobile: simple prev / indicator / next */}
-      <div className="flex items-center gap-2 sm:hidden">
+      {/* Mobile: prev / page numbers / next */}
+      <div className="flex items-center gap-1 sm:hidden">
         <button
           type="button"
           onClick={() => onPageChange(currentPage - 1)}
@@ -1045,9 +1051,28 @@ function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) 
         >
           上一頁
         </button>
-        <span className="text-xs text-ink-500">
-          {currentPage} / {totalPages}
-        </span>
+        {mobileVisiblePages.map((entry) => (
+          <button
+            key={entry.value}
+            type="button"
+            onClick={() => onPageChange(entry.value as number)}
+            className={entry.value === currentPage ? PAGE_BUTTON_ACTIVE_CLASS : PAGE_BUTTON_CLASS}
+          >
+            {entry.value}
+          </button>
+        ))}
+        {showMobileEllipsis && (
+          <>
+            <span className="px-0.5 text-xs text-ink-400">...</span>
+            <button
+              type="button"
+              onClick={() => onPageChange(mobileLastPage!)}
+              className={mobileLastPage === currentPage ? PAGE_BUTTON_ACTIVE_CLASS : PAGE_BUTTON_CLASS}
+            >
+              {mobileLastPage}
+            </button>
+          </>
+        )}
         <button
           type="button"
           onClick={() => onPageChange(currentPage + 1)}
@@ -1062,14 +1087,6 @@ function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) 
       <div className="hidden sm:flex sm:flex-wrap sm:items-center sm:justify-center sm:gap-2">
         <button
           type="button"
-          onClick={() => onPageChange(1)}
-          disabled={currentPage === 1}
-          className={PAGE_BUTTON_CLASS}
-        >
-          首頁
-        </button>
-        <button
-          type="button"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
           className={PAGE_BUTTON_CLASS}
@@ -1080,7 +1097,7 @@ function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) 
         {pages.map((entry, idx) => {
           if (entry.value === '...') {
             return (
-              <span key={`dot-${idx}`} className="px-1 text-xs text-ink-400">
+              <span key={`dot-${idx}`} className={`px-1 text-xs text-ink-400${entry.hideOnMobile ? ' hidden sm:inline' : ''}`}>
                 ...
               </span>
             );
@@ -1090,7 +1107,7 @@ function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) 
               key={entry.value}
               type="button"
               onClick={() => onPageChange(entry.value as number)}
-              className={entry.value === currentPage ? PAGE_BUTTON_ACTIVE_CLASS : PAGE_BUTTON_CLASS}
+              className={`${entry.value === currentPage ? PAGE_BUTTON_ACTIVE_CLASS : PAGE_BUTTON_CLASS}${entry.hideOnMobile ? ' hidden sm:inline-flex' : ''}`}
             >
               {entry.value}
             </button>
@@ -1104,14 +1121,6 @@ function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) 
           className={PAGE_BUTTON_CLASS}
         >
           下一頁
-        </button>
-        <button
-          type="button"
-          onClick={() => onPageChange(totalPages)}
-          disabled={currentPage === totalPages}
-          className={PAGE_BUTTON_CLASS}
-        >
-          末頁
         </button>
       </div>
     </div>
