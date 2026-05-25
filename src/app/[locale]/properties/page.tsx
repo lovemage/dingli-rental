@@ -31,6 +31,7 @@ type SearchParams = {
   elevator?: string;
   pets?: string;
   cooking?: string;
+  parking?: string;
   tags?: string;
   equipment?: string;
   sort?: string;

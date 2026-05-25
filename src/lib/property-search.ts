@@ -16,6 +16,7 @@ export type PublicPropertySearchParams = {
   elevator?: string;
   pets?: string;
   cooking?: string;
+  parking?: string;
   tags?: string;
   equipment?: string;
 };
@@ -89,6 +90,7 @@ export function buildPublicPropertyWhere(
   if (params.elevator === '1') where.hasElevator = true;
   if (params.pets === '1') where.petsAllowed = true;
   if (params.cooking === '1') where.cookingAllowed = true;
+  if (params.parking === '1') where.parkingType = { not: null };
 
   const tagsList = splitCsv(params.tags);
   if (tagsList.length) {

@@ -19,7 +19,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const updated = await prisma.property.update({
       where: { id },
       data: { featured },
-      select: { id: true, featured: true },
+      select: { id: true, featured: true, updatedAt: true },
     });
 
     return NextResponse.json(updated);

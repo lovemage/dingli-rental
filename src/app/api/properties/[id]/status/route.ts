@@ -52,7 +52,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         ...(nextStatus === 'active' && existing.status !== 'active' ? { createdAt: new Date() } : {}),
         ...(nextListingStatus ? { listingStatus: nextListingStatus } : {}),
       },
-      select: { id: true, status: true, inactiveAt: true, listingStatus: true, createdAt: true, featured: true },
+      select: { id: true, status: true, inactiveAt: true, listingStatus: true, createdAt: true, featured: true, updatedAt: true },
     });
 
     return NextResponse.json(updated);

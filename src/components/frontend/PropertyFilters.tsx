@@ -68,6 +68,7 @@ export type PropertyFiltersValue = {
   elevator: string;
   pets: string;
   cooking: string;
+  parking: string;
   tags: string;
   equipment: string;
   q: string;
@@ -78,7 +79,7 @@ export const EMPTY_FILTERS: PropertyFiltersValue = {
   region: '', district: '', type: '', building: '',
   minRent: '', maxRent: '', minArea: '', maxArea: '',
   rooms: '', minAge: '', ageMax: '',
-  elevator: '', pets: '', cooking: '',
+  elevator: '', pets: '', cooking: '', parking: '',
   tags: '', equipment: '',
   q: '', sort: '',
 };
@@ -141,6 +142,7 @@ export default function PropertyFilters({
     elevator: searchParams.get('elevator') || '',
     pets: searchParams.get('pets') || '',
     cooking: searchParams.get('cooking') || '',
+    parking: searchParams.get('parking') || '',
     tags: searchParams.get('tags') || '',
     equipment: searchParams.get('equipment') || '',
     q: searchParams.get('q') || '',
@@ -442,6 +444,7 @@ export default function PropertyFilters({
               <div className="flex flex-wrap gap-2">
                 {/* 電梯 chip 已移除；如需重啟，恢復這行即可。
                 <ToggleChip label={t('elevatorLabel')} active={v.elevator === '1'} onClick={() => updateDraft({ elevator: v.elevator === '1' ? '' : '1' })} /> */}
+                <ToggleChip label={t('parkingLabel')} active={v.parking === '1'} onClick={() => updateDraft({ parking: v.parking === '1' ? '' : '1' })} />
                 <ToggleChip label={t('petsLabel')} active={v.pets === '1'} onClick={() => updateDraft({ pets: v.pets === '1' ? '' : '1' })} />
                 <ToggleChip label={t('cookingLabel')} active={v.cooking === '1'} onClick={() => updateDraft({ cooking: v.cooking === '1' ? '' : '1' })} />
               </div>

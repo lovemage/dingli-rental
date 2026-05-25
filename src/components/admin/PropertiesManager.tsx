@@ -75,14 +75,29 @@ function formatFullAddress(p: Pick<PropertyItem, 'region' | 'district' | 'street
 }
 
 function getStatusBadge(item: Pick<PropertyItem, 'status' | 'listingStatus'>) {
+  if (item.status !== 'active') {
+    return { label: '已下架', className: 'bg-paper-2 text-ink-700' };
+  }
   const status = item.listingStatus;
   if (status === 'rented' || status === 'sold' || status === 'closed') {
     return LISTING_STATUS_BADGE[status as ListingStatus];
   }
-  if (item.status !== 'active') {
-    return { label: '已下架', className: 'bg-paper-2 text-ink-700' };
-  }
   return LISTING_STATUS_BADGE.active;
+}
+
+/**
+ * 「精選」分頁的預設排序：
+ * 1. 精選物件優先；
+ * 2. 同類別內按最近一次更新時間（updatedAt）倒序，
+ *    這樣後台一更新物件就會自動置頂。
+ */
+function sortByFeaturedThenUpdatedAt(items: PropertyItem[]) {
+  return [...items].sort((a, b) => {
+    const aFeatured = a.featured ? 1 : 0;
+    const bFeatured = b.featured ? 1 : 0;
+    if (aFeatured !== bFeatured) return bFeatured - aFeatured;
+    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+  });
 }
 
 /**
@@ -165,7 +180,10 @@ export default function PropertiesManager({
 
   const activeItems = useMemo(() => items.filter((x) => x.status === 'active'), [items]);
   const inactiveItems = useMemo(() => items.filter((x) => x.status !== 'active'), [items]);
-  const featuredItems = useMemo(() => items.filter((x) => x.featured), [items]);
+  const featuredItems = useMemo(
+    () => items.filter((x) => x.status === 'active'),
+    [items],
+  );
   // 「一般」分頁僅顯示上架中的非精選物件；已下架的會出現在「下架」分頁。
   const generalItems = useMemo(
     () => items.filter((x) => !x.featured && x.status === 'active'),
@@ -194,7 +212,7 @@ export default function PropertiesManager({
   );
 
   const sortedFeaturedDefaultItems = useMemo(
-    () => sortByActiveThenRecentUpdate(featuredItems),
+    () => sortByFeaturedThenUpdatedAt(featuredItems),
     [featuredItems],
   );
 
@@ -301,6 +319,7 @@ export default function PropertiesManager({
                 listingStatus: data.listingStatus ?? it.listingStatus,
                 inactiveAt: data.inactiveAt ? new Date(data.inactiveAt).toISOString() : null,
                 createdAt: data.createdAt ? new Date(data.createdAt).toISOString() : it.createdAt,
+                updatedAt: data.updatedAt ? new Date(data.updatedAt).toISOString() : it.updatedAt,
                 // 下架時 server 會把 featured 設為 false，這裡同步本地狀態
                 featured: typeof data.featured === 'boolean' ? data.featured : it.featured,
               }
@@ -325,7 +344,16 @@ export default function PropertiesManager({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || '設定精選失敗');
-      setItems((prev) => prev.map((it) => (it.id === id ? { ...it, featured: Boolean(data.featured) } : it)));
+      setItems((prev) =>
+        prev.map((it) =>
+          it.id === id
+            ? { ...it, featured: Boolean(data.featured), updatedAt: data.updatedAt || new Date().toISOString() }
+            : it,
+        ),
+      );
+      if (!currentFeatured) {
+        setFeaturedPage(1);
+      }
     } catch (error: any) {
       alert(error?.message || '設定精選失敗');
     } finally {
@@ -953,29 +981,105 @@ export default function PropertiesManager({
         )}
 
         {rows.length > 0 && totalPages > 1 && (
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 border-t border-line pt-4">
-            <button
-              type="button"
-              onClick={() => changePage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              className={TOOL_BUTTON_NEUTRAL_CLASS}
-            >
-              上一頁
-            </button>
-            <span className="text-xs text-ink-500">
-              第 {currentPage} / {totalPages} 頁
-            </span>
-            <button
-              type="button"
-              onClick={() => changePage(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage === totalPages}
-              className={TOOL_BUTTON_NEUTRAL_CLASS}
-            >
-              下一頁
-            </button>
-          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={changePage}
+          />
         )}
       </div>
+    </div>
+  );
+}
+
+type PaginationProps = {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+};
+
+const PAGE_BUTTON_CLASS = `${TOOL_BUTTON_CLASS} border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700`;
+const PAGE_BUTTON_ACTIVE_CLASS = `${TOOL_BUTTON_CLASS} border-brand-green-500 bg-brand-green-50 text-brand-green-700 font-bold`;
+
+function getPageNumbers(current: number, total: number): (number | '...')[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+
+  const pages: (number | '...')[] = [];
+
+  pages.push(1);
+
+  let start = Math.max(2, current - 1);
+  let end = Math.min(total - 1, current + 1);
+
+  if (current <= 3) {
+    start = 2;
+    end = 5;
+  } else if (current >= total - 2) {
+    start = total - 4;
+    end = total - 1;
+  }
+
+  if (start > 2) pages.push('...');
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (end < total - 1) pages.push('...');
+
+  pages.push(total);
+  return pages;
+}
+
+function isCorePage(page: number | '...', current: number, total: number): boolean {
+  if (page === '...') return true;
+  if (page === 1 || page === total) return true;
+  if (Math.abs(page - current) <= 1) return true;
+  return false;
+}
+
+function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
+  const pages = getPageNumbers(currentPage, totalPages);
+
+  return (
+    <div className="mt-4 flex flex-wrap items-center justify-center gap-2 border-t border-line pt-4">
+      <button
+        type="button"
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+        className={PAGE_BUTTON_CLASS}
+      >
+        上一頁
+      </button>
+
+      {pages.map((page, idx) => {
+        const isCore = isCorePage(page, currentPage, totalPages);
+        if (page === '...') {
+          return (
+            <span
+              key={`dot-${idx}`}
+              className={`px-1 text-xs text-ink-400 ${isCore ? '' : 'hidden sm:inline'}`}
+            >
+              ...
+            </span>
+          );
+        }
+        return (
+          <button
+            key={page}
+            type="button"
+            onClick={() => onPageChange(page)}
+            className={`${page === currentPage ? PAGE_BUTTON_ACTIVE_CLASS : PAGE_BUTTON_CLASS}${isCore ? '' : ' hidden sm:inline-flex'}`}
+          >
+            {page}
+          </button>
+        );
+      })}
+
+      <button
+        type="button"
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        className={PAGE_BUTTON_CLASS}
+      >
+        下一頁
+      </button>
     </div>
   );
 }
