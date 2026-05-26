@@ -381,7 +381,7 @@ export default function PropertyFilters({
           <select
             className="bg-white border border-line rounded-full px-3 py-1.5 text-sm focus:outline-none focus:border-brand-green-500"
             value={v.sort}
-            onChange={(e) => updateDraft({ sort: e.target.value })}
+            onChange={(e) => applyDraftPartial({ sort: e.target.value })}
           >
             <option value="">{t('sortSelect')}</option>
             {PROPERTY_SORT_OPTIONS.map((s) => (

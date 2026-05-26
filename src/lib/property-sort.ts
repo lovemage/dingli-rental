@@ -19,22 +19,21 @@ export const PROPERTY_SORT_OPTIONS: { labelKey: string; value: Exclude<PropertyS
 ];
 
 export function buildPropertyOrderBy(sort?: string): Prisma.PropertyOrderByWithRelationInput[] {
-  const featuredFirst: Prisma.PropertyOrderByWithRelationInput[] = [{ featured: 'desc' }];
   switch (sort) {
     case 'created_desc':
     case 'newest':
-      return [...featuredFirst, { createdAt: 'desc' }];
+      return [{ createdAt: 'desc' }];
     case 'created_asc':
-      return [...featuredFirst, { createdAt: 'asc' }];
+      return [{ createdAt: 'asc' }];
     case 'rent_asc':
-      return [...featuredFirst, { rent: 'asc' }];
+      return [{ rent: 'asc' }];
     case 'rent_desc':
-      return [...featuredFirst, { rent: 'desc' }];
+      return [{ rent: 'desc' }];
     case 'area_desc':
-      return [...featuredFirst, { usableArea: 'desc' }];
+      return [{ usableArea: 'desc' }];
     case 'area_asc':
-      return [...featuredFirst, { usableArea: 'asc' }];
+      return [{ usableArea: 'asc' }];
     default:
-      return featuredFirst;
+      return [{ createdAt: 'desc' }];
   }
 }
