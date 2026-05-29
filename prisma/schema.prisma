@@ -144,6 +144,9 @@ model Property {
   // 上下架
   status          String   @default("active") // active / inactive / pending
   inactiveAt      DateTime?
+  // 最近一次「重新上架」時間（曾下架後又重新上架）；null = 從未重新上架。
+  // 後台依此把「重新上架」物件排在精選/一般之前。
+  relistedAt      DateTime?
   featured        Boolean  @default(false)
 
   // 物件刊登狀態（顯示在卡片左上角的 badge）

@@ -56,6 +56,7 @@ type PropertyItem = {
   createdAt: string;
   updatedAt: string;
   inactiveAt?: string | null;
+  relistedAt?: string | null;
   imageUrl: string | null;
   monthViews: number;
   totalViews: number;
@@ -85,32 +86,42 @@ function getStatusBadge(item: Pick<PropertyItem, 'status' | 'listingStatus'>) {
   return LISTING_STATUS_BADGE.active;
 }
 
+// 「重新上架」判定：目前上架中、且帶有重新上架時間（曾下架後又重新上架）。
+// status route 在重新上架時寫入 relistedAt，正是為了讓這裡認得出重新上架物件。
+function isRelisted(item: PropertyItem) {
+  return item.status === 'active' && Boolean(item.relistedAt);
+}
+
 /**
- * 「精選」分頁的預設排序：
- * 1. 精選物件優先；
- * 2. 同類別內按最近一次更新時間（updatedAt）倒序，
- *    這樣後台一更新物件就會自動置頂。
+ * 「已上架」分頁的預設排序（四級）：
+ * 1. 精選且重新上架；2. 精選；3. 一般重新上架；4. 一般。
+ * 同級內按最近一次更新時間（updatedAt）倒序，後台一更新就自動置頂。
  */
-function sortByFeaturedThenUpdatedAt(items: PropertyItem[]) {
+function sortActiveByBuckets(items: PropertyItem[]) {
+  const rank = (it: PropertyItem) => {
+    const relisted = isRelisted(it);
+    if (it.featured && relisted) return 0;
+    if (it.featured) return 1;
+    if (relisted) return 2;
+    return 3;
+  };
   return [...items].sort((a, b) => {
-    const aFeatured = a.featured ? 1 : 0;
-    const bFeatured = b.featured ? 1 : 0;
-    if (aFeatured !== bFeatured) return bFeatured - aFeatured;
+    const diff = rank(a) - rank(b);
+    if (diff !== 0) return diff;
     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
   });
 }
 
 /**
- * 「精選 / 一般」分頁的預設排序：
- * 1. 上架中（active）優先於下架；
- * 2. 同狀態內按最近一次更新時間（updatedAt）倒序，
- *    這樣後台一更新物件就會自動置頂。
+ * 「精選 / 一般」分頁的預設排序（兩級）：
+ * 1. 重新上架優先；2. 其餘。
+ * 同級內按最近一次更新時間（updatedAt）倒序。
  */
-function sortByActiveThenRecentUpdate(items: PropertyItem[]) {
+function sortByRelistedThenUpdatedAt(items: PropertyItem[]) {
   return [...items].sort((a, b) => {
-    const aActive = a.status === 'active' ? 1 : 0;
-    const bActive = b.status === 'active' ? 1 : 0;
-    if (aActive !== bActive) return bActive - aActive;
+    const aRelisted = isRelisted(a) ? 0 : 1;
+    const bRelisted = isRelisted(b) ? 0 : 1;
+    if (aRelisted !== bRelisted) return aRelisted - bRelisted;
     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
   });
 }
@@ -180,23 +191,26 @@ export default function PropertiesManager({
 
   const activeItems = useMemo(() => items.filter((x) => x.status === 'active'), [items]);
   const inactiveItems = useMemo(() => items.filter((x) => x.status !== 'active'), [items]);
+  // 「精選」分頁只顯示上架中的精選物件（下架會自動取消精選）。
   const featuredTabItems = useMemo(
-    () => items.filter((x) => x.status === 'active'),
+    () => items.filter((x) => x.featured && x.status === 'active'),
     [items],
   );
-  const featuredOnlyCount = useMemo(
-    () => items.filter((x) => x.featured).length,
-    [items],
-  );
+  const featuredOnlyCount = featuredTabItems.length;
   // 「一般」分頁僅顯示上架中的非精選物件；已下架的會出現在「下架」分頁。
   const generalItems = useMemo(
     () => items.filter((x) => !x.featured && x.status === 'active'),
     [items],
   );
 
+  const sortedActiveDefaultItems = useMemo(
+    () => sortActiveByBuckets(activeItems),
+    [activeItems],
+  );
+
   const sortedActiveItems = useMemo(
-    () => (activeSort ? sortAdminProperties(activeItems, activeSort) : activeItems),
-    [activeItems, activeSort],
+    () => (activeSort ? sortAdminProperties(sortedActiveDefaultItems, activeSort) : sortedActiveDefaultItems),
+    [activeSort, sortedActiveDefaultItems],
   );
 
   const sortedInactiveDefaultItems = useMemo(() => {
@@ -216,7 +230,7 @@ export default function PropertiesManager({
   );
 
   const sortedFeaturedDefaultItems = useMemo(
-    () => sortByFeaturedThenUpdatedAt(featuredTabItems),
+    () => sortByRelistedThenUpdatedAt(featuredTabItems),
     [featuredTabItems],
   );
 
@@ -226,7 +240,7 @@ export default function PropertiesManager({
   );
 
   const sortedGeneralDefaultItems = useMemo(
-    () => sortByActiveThenRecentUpdate(generalItems),
+    () => sortByRelistedThenUpdatedAt(generalItems),
     [generalItems],
   );
 
@@ -322,6 +336,7 @@ export default function PropertiesManager({
                 status: data.status,
                 listingStatus: data.listingStatus ?? it.listingStatus,
                 inactiveAt: data.inactiveAt ? new Date(data.inactiveAt).toISOString() : null,
+                relistedAt: data.relistedAt ? new Date(data.relistedAt).toISOString() : null,
                 createdAt: data.createdAt ? new Date(data.createdAt).toISOString() : it.createdAt,
                 updatedAt: data.updatedAt ? new Date(data.updatedAt).toISOString() : new Date().toISOString(),
                 // 下架時 server 會把 featured 設為 false，這裡同步本地狀態
@@ -339,6 +354,14 @@ export default function PropertiesManager({
   }
 
   async function toggleFeatured(id: number, currentFeatured: boolean) {
+    // 已下架物件不可設為精選：必須先重新上架。取消精選（currentFeatured=true）不受限。
+    if (!currentFeatured) {
+      const target = items.find((it) => it.id === id);
+      if (target && target.status !== 'active') {
+        alert('請將物件上架後再進行物件精選');
+        return;
+      }
+    }
     setPending(id);
     try {
       const res = await fetch(`/api/properties/${id}/featured`, {

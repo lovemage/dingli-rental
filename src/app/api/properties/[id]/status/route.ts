@@ -33,26 +33,23 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     });
     if (!existing) return NextResponse.json({ error: 'not found' }, { status: 404 });
 
-    let inactiveAtPatch: Date | null | undefined;
-    if (nextStatus === 'inactive') {
-      // 第一次下架（或歷史資料還沒帶到 inactiveAt）才寫入時間
-      inactiveAtPatch = existing.inactiveAt ?? new Date();
-    } else {
-      // 重新上架或轉 pending，清掉下架時間
-      inactiveAtPatch = null;
-    }
+    // 從下架 / pending 轉回上架，視為「重新上架」
+    const isRelisting = nextStatus === 'active' && existing.status !== 'active';
 
     const updated = await prisma.property.update({
       where: { id },
       data: {
         status: nextStatus,
-        inactiveAt: inactiveAtPatch,
-        // 下架同時把精選旗標清掉：物件移出展示，就不該再佔精選版位
+        // 下架：記錄下架時間（沿用既有值避免覆蓋），並清掉精選旗標 —— 物件移出展示就自動轉為一般。
+        // 重新上架 / 轉 pending：清掉下架時間。
+        inactiveAt: nextStatus === 'inactive' ? (existing.inactiveAt ?? new Date()) : null,
         ...(nextStatus === 'inactive' ? { featured: false } : {}),
-        ...(nextStatus === 'active' && existing.status !== 'active' ? { createdAt: new Date() } : {}),
+        // 重新上架：記錄重新上架時間（後台據此把重新上架物件排在精選/一般之前），
+        // 並重置 createdAt 讓前台視為新上架。
+        ...(isRelisting ? { relistedAt: new Date(), createdAt: new Date() } : {}),
         ...(nextListingStatus ? { listingStatus: nextListingStatus } : {}),
       },
-      select: { id: true, status: true, inactiveAt: true, listingStatus: true, createdAt: true, featured: true, updatedAt: true },
+      select: { id: true, status: true, inactiveAt: true, relistedAt: true, listingStatus: true, createdAt: true, featured: true, updatedAt: true },
     });
 
     return NextResponse.json(updated);

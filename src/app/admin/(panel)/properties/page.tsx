@@ -93,6 +93,7 @@ export default async function AdminPropertiesList({
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
     inactiveAt: p.inactiveAt ? p.inactiveAt.toISOString() : null,
+    relistedAt: p.relistedAt ? p.relistedAt.toISOString() : null,
     imageUrl: p.images[0]?.url || null,
     monthViews: viewMonthByProperty.get(p.id) ?? 0,
     totalViews: viewTotalByProperty.get(p.id) ?? 0,
