@@ -522,7 +522,7 @@ export default function PropertiesManager({
         <div className="min-w-0">
           <h1 className="mb-1 text-xl font-black sm:text-2xl">物件管理</h1>
           <p className="text-xs text-ink-500 sm:text-sm">
-            上架中 {activeItems.length} 筆 / 已下架 {inactiveItems.length} 筆 / 精選 {featuredOnlyCount} 筆 / 一般 {generalItems.length} 筆
+            上架中 {activeItems.length} 筆 / 精選 {featuredOnlyCount} 筆 / 一般 {generalItems.length} 筆 / 已下架 {inactiveItems.length} 筆
           </p>
         </div>
 
@@ -687,17 +687,6 @@ export default function PropertiesManager({
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab('inactive')}
-              className={`${TAB_BUTTON_CLASS} ${
-                activeTab === 'inactive'
-                  ? 'border-brand-green-700 bg-brand-green-700 text-white'
-                  : 'border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700'
-              }`}
-            >
-              已下架（{inactiveItems.length}）
-            </button>
-            <button
-              type="button"
               onClick={() => setActiveTab('general')}
               className={`${TAB_BUTTON_CLASS} ${
                 activeTab === 'general'
@@ -707,6 +696,17 @@ export default function PropertiesManager({
             >
               <MaterialIcon name="star_outline" className="!text-xs sm:!text-sm" />
               一般（{generalItems.length}）
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('inactive')}
+              className={`${TAB_BUTTON_CLASS} ${
+                activeTab === 'inactive'
+                  ? 'border-brand-green-700 bg-brand-green-700 text-white'
+                  : 'border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700'
+              }`}
+            >
+              已下架（{inactiveItems.length}）
             </button>
           </div>
 
