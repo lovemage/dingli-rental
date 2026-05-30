@@ -86,44 +86,26 @@ function getStatusBadge(item: Pick<PropertyItem, 'status' | 'listingStatus'>) {
   return LISTING_STATUS_BADGE.active;
 }
 
-// 「重新上架」判定：目前上架中、且帶有重新上架時間（曾下架後又重新上架）。
-// status route 在重新上架時寫入 relistedAt，正是為了讓這裡認得出重新上架物件。
-function isRelisted(item: PropertyItem) {
-  return item.status === 'active' && Boolean(item.relistedAt);
-}
-
 /**
- * 「已上架」分頁的預設排序（四級）：
- * 1. 精選且重新上架；2. 精選；3. 一般重新上架；4. 一般。
- * 同級內按最近一次更新時間（updatedAt）倒序，後台一更新就自動置頂。
+ * 「已上架」分頁的預設排序（兩格）：
+ * 1. 精選；2. 一般。
+ * 同格內純粹按最近一次動作時間（updatedAt）倒序——上架/重新上架/儲存修改
+ * 都會刷新 updatedAt，自動把該物件推到所在格的最頂端。
  */
 function sortActiveByBuckets(items: PropertyItem[]) {
-  const rank = (it: PropertyItem) => {
-    const relisted = isRelisted(it);
-    if (it.featured && relisted) return 0;
-    if (it.featured) return 1;
-    if (relisted) return 2;
-    return 3;
-  };
   return [...items].sort((a, b) => {
-    const diff = rank(a) - rank(b);
-    if (diff !== 0) return diff;
+    const aFeatured = a.featured ? 0 : 1;
+    const bFeatured = b.featured ? 0 : 1;
+    if (aFeatured !== bFeatured) return aFeatured - bFeatured;
     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
   });
 }
 
 /**
- * 「精選 / 一般」分頁的預設排序（兩級）：
- * 1. 重新上架優先；2. 其餘。
- * 同級內按最近一次更新時間（updatedAt）倒序。
+ * 「精選 / 一般」分頁的預設排序：純粹按最近一次動作時間（updatedAt）倒序。
  */
-function sortByRelistedThenUpdatedAt(items: PropertyItem[]) {
-  return [...items].sort((a, b) => {
-    const aRelisted = isRelisted(a) ? 0 : 1;
-    const bRelisted = isRelisted(b) ? 0 : 1;
-    if (aRelisted !== bRelisted) return aRelisted - bRelisted;
-    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-  });
+function sortByUpdatedAtDesc(items: PropertyItem[]) {
+  return [...items].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 }
 
 export default function PropertiesManager({
@@ -180,10 +162,8 @@ export default function PropertiesManager({
   const [inactivePage, setInactivePage] = useState(1);
   const [featuredPage, setFeaturedPage] = useState(1);
   const [generalPage, setGeneralPage] = useState(1);
-  const [activeSort, setActiveSort] = useState<AdminPropertySort | ''>('');
-  const [inactiveSort, setInactiveSort] = useState<AdminPropertySort | ''>('');
-  const [featuredSort, setFeaturedSort] = useState<AdminPropertySort | ''>('');
-  const [generalSort, setGeneralSort] = useState<AdminPropertySort | ''>('');
+  // 排序與租金篩選一樣，四個 tab 共用同一個 state，避免切 tab 時被重設成預設。
+  const [sort, setSort] = useState<AdminPropertySort | ''>('');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [copiedShareId, setCopiedShareId] = useState<number | null>(null);
   const [desktopViewMode, setDesktopViewMode] = useState<'card' | 'compact'>('compact');
@@ -209,44 +189,41 @@ export default function PropertiesManager({
   );
 
   const sortedActiveItems = useMemo(
-    () => (activeSort ? sortAdminProperties(sortedActiveDefaultItems, activeSort) : sortedActiveDefaultItems),
-    [activeSort, sortedActiveDefaultItems],
+    () => (sort ? sortAdminProperties(sortedActiveDefaultItems, sort) : sortedActiveDefaultItems),
+    [sort, sortedActiveDefaultItems],
   );
 
+  // 已下架預設排序：剛下架的在最上面（依 inactiveAt 倒序）。
+  // 沒有 inactiveAt 時退回 updatedAt，再退回 createdAt，避免歷史資料排到最後。
   const sortedInactiveDefaultItems = useMemo(() => {
-    const priority = (item: PropertyItem) => (item.listingStatus === 'sold' ? 0 : 1);
-    return [...inactiveItems].sort((a, b) => {
-      const priorityDiff = priority(a) - priority(b);
-      if (priorityDiff !== 0) return priorityDiff;
-      const aInactiveAt = new Date(a.inactiveAt || a.createdAt).getTime();
-      const bInactiveAt = new Date(b.inactiveAt || b.createdAt).getTime();
-      return bInactiveAt - aInactiveAt;
-    });
+    const archivedAt = (item: PropertyItem) =>
+      new Date(item.inactiveAt || item.updatedAt || item.createdAt).getTime();
+    return [...inactiveItems].sort((a, b) => archivedAt(b) - archivedAt(a));
   }, [inactiveItems]);
 
   const sortedInactiveItems = useMemo(
-    () => (inactiveSort ? sortAdminProperties(sortedInactiveDefaultItems, inactiveSort) : sortedInactiveDefaultItems),
-    [inactiveSort, sortedInactiveDefaultItems],
+    () => (sort ? sortAdminProperties(sortedInactiveDefaultItems, sort) : sortedInactiveDefaultItems),
+    [sort, sortedInactiveDefaultItems],
   );
 
   const sortedFeaturedDefaultItems = useMemo(
-    () => sortByRelistedThenUpdatedAt(featuredTabItems),
+    () => sortByUpdatedAtDesc(featuredTabItems),
     [featuredTabItems],
   );
 
   const sortedFeaturedItems = useMemo(
-    () => (featuredSort ? sortAdminProperties(sortedFeaturedDefaultItems, featuredSort) : sortedFeaturedDefaultItems),
-    [featuredSort, sortedFeaturedDefaultItems],
+    () => (sort ? sortAdminProperties(sortedFeaturedDefaultItems, sort) : sortedFeaturedDefaultItems),
+    [sort, sortedFeaturedDefaultItems],
   );
 
   const sortedGeneralDefaultItems = useMemo(
-    () => sortByRelistedThenUpdatedAt(generalItems),
+    () => sortByUpdatedAtDesc(generalItems),
     [generalItems],
   );
 
   const sortedGeneralItems = useMemo(
-    () => (generalSort ? sortAdminProperties(sortedGeneralDefaultItems, generalSort) : sortedGeneralDefaultItems),
-    [generalSort, sortedGeneralDefaultItems],
+    () => (sort ? sortAdminProperties(sortedGeneralDefaultItems, sort) : sortedGeneralDefaultItems),
+    [sort, sortedGeneralDefaultItems],
   );
 
   const activeTotalPages = Math.max(1, Math.ceil(sortedActiveItems.length / ACTIVE_PAGE_SIZE));
@@ -287,14 +264,7 @@ export default function PropertiesManager({
           ? pagedFeaturedItems
           : pagedGeneralItems;
 
-  const currentSort =
-    activeTab === 'active'
-      ? activeSort
-      : activeTab === 'inactive'
-        ? inactiveSort
-        : activeTab === 'featured'
-          ? featuredSort
-          : generalSort;
+  const currentSort = sort;
 
   const currentPage =
     activeTab === 'active'
@@ -514,23 +484,13 @@ export default function PropertiesManager({
     scrollListToTop();
   }
 
+  // 排序為四個 tab 共用 state；換排序時把每個 tab 的頁碼都重設成第 1 頁，
+  // 避免使用者切換過去看到的還是舊頁碼但已套用新排序的中間結果。
   function changeSort(next: AdminPropertySort | '') {
-    if (activeTab === 'active') {
-      setActiveSort(next);
-      setActivePage(1);
-      return;
-    }
-    if (activeTab === 'inactive') {
-      setInactiveSort(next);
-      setInactivePage(1);
-      return;
-    }
-    if (activeTab === 'featured') {
-      setFeaturedSort(next);
-      setFeaturedPage(1);
-      return;
-    }
-    setGeneralSort(next);
+    setSort(next);
+    setActivePage(1);
+    setInactivePage(1);
+    setFeaturedPage(1);
     setGeneralPage(1);
   }
 
@@ -542,6 +502,19 @@ export default function PropertiesManager({
         : activeTab === 'featured'
           ? '目前沒有精選物件'
           : '目前沒有一般物件';
+
+  // 帶到編輯頁的「from」URL：把目前 tab 與已套用的篩選一起記住，
+  // PropertyForm 儲存成功後會回到這個 URL，避免使用者一進編輯一回來就丟失原本的篩選 / 分頁。
+  function buildListingUrl() {
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    if (minRent) params.set('minRent', minRent);
+    if (maxRent) params.set('maxRent', maxRent);
+    if (monthStr) params.set('month', monthStr);
+    params.set('tab', activeTab);
+    const qs = params.toString();
+    return `/admin/properties${qs ? `?${qs}` : ''}`;
+  }
 
   return (
     <div className="space-y-4">
@@ -940,7 +913,7 @@ export default function PropertiesManager({
 
                     <div className={`mt-2 flex flex-wrap items-center gap-1.5 border-t border-line pt-2 sm:mt-3 sm:gap-2 sm:pt-3 ${isCompact ? 'sm:mt-0 sm:shrink-0 sm:flex-nowrap sm:justify-end sm:border-t-0 sm:pt-0' : ''}`}>
                       <Link
-                        href={`/admin/properties/${p.id}/edit`}
+                        href={`/admin/properties/${p.id}/edit?from=${encodeURIComponent(buildListingUrl())}`}
                         className={actionBtn('neutral')}
                         title="編輯"
                         aria-label="編輯"

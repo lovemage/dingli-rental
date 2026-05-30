@@ -7,10 +7,21 @@ import { getTaxonomies } from '@/lib/taxonomies';
 
 export const dynamic = 'force-dynamic';
 
-export default async function EditPropertyPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EditPropertyPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ from?: string }>;
+}) {
   const { id: rawId } = await params;
   const id = Number(rawId);
   if (!id) notFound();
+
+  const sp = await searchParams;
+  // 只接受以 /admin/properties 開頭的 from，避免被當成開放重新導向利用
+  const fromRaw = (sp.from || '').trim();
+  const fromParam = fromRaw.startsWith('/admin/properties') ? fromRaw : '';
 
   const [property, taxonomies] = await Promise.all([
     prisma.property.findUnique({
@@ -73,7 +84,7 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
           </Link>
         </div>
       </div>
-      <PropertyForm initial={initial} propertyId={id} taxonomies={taxonomies} />
+      <PropertyForm initial={initial} propertyId={id} taxonomies={taxonomies} from={fromParam} />
     </div>
   );
 }

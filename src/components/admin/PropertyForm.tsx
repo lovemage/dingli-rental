@@ -101,9 +101,15 @@ type Props = {
   initial?: Partial<PropertyFormValue>;
   propertyId?: number;
   taxonomies?: Taxonomies;
+  /**
+   * 編輯流程的「來源 URL」：使用者從列表頁點編輯時帶過來的
+   * /admin/properties?... 字串，儲存成功後會回到這個 URL，
+   * 讓使用者原本的 tab / 篩選 / 月份保留不變。
+   */
+  from?: string;
 };
 
-export default function PropertyForm({ initial, propertyId, taxonomies }: Props) {
+export default function PropertyForm({ initial, propertyId, taxonomies, from }: Props) {
   const SAVE_PROGRESS_MESSAGES = [
     '逐字稿生成中',
     '物件翻譯中',
@@ -346,11 +352,15 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || '儲存失敗');
 
-      // 帶上 tab 參數，讓物件管理頁直接切到該物件所屬分頁並捲到列表最頂端，
-      // 配合 server orderBy [featured DESC, updatedAt DESC]，剛存好的物件就會
-      // 出現在「精選」或「一般」分頁的第一筆。
-      const targetTab = v.featured ? 'featured' : 'general';
-      router.push(`/admin/properties?tab=${targetTab}`);
+      // 編輯流程：若從列表頁帶了 from URL，回到原本的 tab + 篩選 + 月份；
+      // 新上架或缺少 from 時，仍按物件精選/一般跳到對應 tab 讓使用者立刻看到。
+      const safeFrom = propertyId && from && from.startsWith('/admin/properties') ? from : '';
+      if (safeFrom) {
+        router.push(safeFrom);
+      } else {
+        const targetTab = v.featured ? 'featured' : 'general';
+        router.push(`/admin/properties?tab=${targetTab}`);
+      }
       router.refresh();
     } catch (e: any) {
       setErr(e?.message || '儲存失敗');
@@ -989,7 +999,13 @@ export default function PropertyForm({ initial, propertyId, taxonomies }: Props)
       {/* 底部固定送出列 */}
       <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-white border-t border-line px-4 py-2.5 z-20">
         <div className="max-w-[1200px] mx-auto flex justify-end gap-2">
-          <button type="button" onClick={() => router.push('/admin/properties')} className="btn btn-secondary">取消</button>
+          <button
+            type="button"
+            onClick={() => router.push(from && from.startsWith('/admin/properties') ? from : '/admin/properties')}
+            className="btn btn-secondary"
+          >
+            取消
+          </button>
           <button type="submit" disabled={saving} className="btn btn-primary">
             {saving
               ? saveStage === 'translating'
