@@ -7,6 +7,11 @@ const secretKey = new TextEncoder().encode(JWT_SECRET);
 
 export const SESSION_COOKIE = 'dingli_admin_session';
 const SESSION_TTL_HOURS = 12;
+const SESSION_TTL_REMEMBER_DAYS = 30;
+
+function sessionTtlSeconds(remember: boolean): number {
+  return remember ? SESSION_TTL_REMEMBER_DAYS * 24 * 3600 : SESSION_TTL_HOURS * 3600;
+}
 
 export type AdminPayload = {
   id: number;
@@ -21,12 +26,12 @@ export async function verifyPassword(plain: string, hash: string): Promise<boole
   return bcrypt.compare(plain, hash);
 }
 
-export async function createSessionToken(payload: AdminPayload): Promise<string> {
+export async function createSessionToken(payload: AdminPayload, remember = false): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt(now)
-    .setExpirationTime(now + SESSION_TTL_HOURS * 3600)
+    .setExpirationTime(now + sessionTtlSeconds(remember))
     .sign(secretKey);
 }
 
@@ -49,10 +54,12 @@ export async function getCurrentAdmin(): Promise<AdminPayload | null> {
   return readSessionToken(token);
 }
 
-export const sessionCookieOptions = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax' as const,
-  path: '/',
-  maxAge: SESSION_TTL_HOURS * 3600,
-};
+export function buildSessionCookieOptions(remember: boolean) {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax' as const,
+    path: '/',
+    maxAge: sessionTtlSeconds(remember),
+  };
+}

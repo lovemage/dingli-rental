@@ -18,6 +18,7 @@ function LoginInner() {
   const next = search.get('next') || '/admin';
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(false);
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -29,7 +30,7 @@ function LoginInner() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password, remember }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -70,8 +71,18 @@ function LoginInner() {
           autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="input-base mb-2"
+          className="input-base mb-3"
         />
+
+        <label className="flex items-center gap-2 text-sm text-ink-700 select-none cursor-pointer">
+          <input
+            type="checkbox"
+            checked={remember}
+            onChange={(e) => setRemember(e.target.checked)}
+            className="h-4 w-4"
+          />
+          記住我（30 天）
+        </label>
 
         {err && <p className="text-sm text-red-600 mt-2">{err}</p>}
 
