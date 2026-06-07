@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import MaterialIcon from '@/components/admin/MaterialIcon';
 import {
@@ -152,6 +152,9 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from }: 
   const [aiPhotos, setAiPhotos] = useState<string[]>([]);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const htmlDragIndexRef = useRef<number | null>(null);
+  const pointerDragRef = useRef<{ from: number; pointerId: number; startX: number; startY: number; active: boolean } | null>(null);
+  const pointerOverIndexRef = useRef<number | null>(null);
   const [aiMsg, setAiMsg] = useState('');
   const [aiAppliedKeys, setAiAppliedKeys] = useState<string[]>([]);
   const [fieldErrorId, setFieldErrorId] = useState<string>('');
@@ -221,11 +224,28 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from }: 
   }
 
   function moveImage(from: number, to: number) {
-    if (from === to || from < 0 || to < 0 || from >= v.images.length || to >= v.images.length) return;
-    const next = [...v.images];
-    const [picked] = next.splice(from, 1);
-    next.splice(to, 0, picked);
-    update('images', next);
+    setV((s) => {
+      if (from === to || from < 0 || to < 0 || from >= s.images.length || to >= s.images.length) return s;
+      const next = [...s.images];
+      const [picked] = next.splice(from, 1);
+      next.splice(to, 0, picked);
+      return { ...s, images: next };
+    });
+  }
+
+  function photoIndexFromPoint(clientX: number, clientY: number) {
+    const el = document.elementFromPoint(clientX, clientY)?.closest<HTMLElement>('[data-photo-index]');
+    if (!el) return null;
+    const idx = Number(el.dataset.photoIndex);
+    return Number.isInteger(idx) ? idx : null;
+  }
+
+  function resetDragState() {
+    htmlDragIndexRef.current = null;
+    pointerDragRef.current = null;
+    pointerOverIndexRef.current = null;
+    setDragIndex(null);
+    setDragOverIndex(null);
   }
 
   // ===== AI 辨識 =====
@@ -248,6 +268,43 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from }: 
     }, 5000);
     return () => clearInterval(timer);
   }, [saving, SAVE_PROGRESS_MESSAGES.length]);
+
+  useEffect(() => {
+    function onPointerMove(e: PointerEvent) {
+      const drag = pointerDragRef.current;
+      if (!drag || e.pointerId !== drag.pointerId) return;
+
+      const moved = Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY);
+      if (!drag.active) {
+        if (moved < 6) return;
+        drag.active = true;
+        setDragIndex(drag.from);
+      }
+
+      e.preventDefault();
+      const over = photoIndexFromPoint(e.clientX, e.clientY);
+      pointerOverIndexRef.current = over;
+      setDragOverIndex(over);
+    }
+
+    function onPointerUp(e: PointerEvent) {
+      const drag = pointerDragRef.current;
+      if (!drag || e.pointerId !== drag.pointerId) return;
+      if (drag.active && pointerOverIndexRef.current != null) {
+        moveImage(drag.from, pointerOverIndexRef.current);
+      }
+      resetDragState();
+    }
+
+    window.addEventListener('pointermove', onPointerMove, { passive: false });
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', resetDragState);
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', resetDragState);
+    };
+  }, []);
 
   async function aiUpload(files: FileList | null) {
     if (!files?.length) return;
@@ -532,30 +589,39 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from }: 
             {v.images.map((url, i) => (
               <div
                 key={url}
+                data-photo-index={i}
                 className={`relative group ${dragIndex === i ? 'opacity-60' : ''} ${dragOverIndex === i ? 'ring-2 ring-brand-green-500 rounded-lg' : ''}`}
                 draggable
+                onPointerDown={(e) => {
+                  if ((e.target as HTMLElement).closest('button')) return;
+                  pointerDragRef.current = { from: i, pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, active: false };
+                  pointerOverIndexRef.current = i;
+                  e.currentTarget.setPointerCapture?.(e.pointerId);
+                }}
                 onDragStart={(e) => {
+                  htmlDragIndexRef.current = i;
                   setDragIndex(i);
                   e.dataTransfer.effectAllowed = 'move';
+                  e.dataTransfer.setData('text/plain', String(i));
                 }}
                 onDragOver={(e) => {
                   e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
                   setDragOverIndex(i);
                 }}
                 onDrop={(e) => {
                   e.preventDefault();
-                  if (dragIndex == null) return;
-                  moveImage(dragIndex, i);
-                  setDragIndex(null);
-                  setDragOverIndex(null);
+                  const from = htmlDragIndexRef.current ?? Number(e.dataTransfer.getData('text/plain'));
+                  if (!Number.isInteger(from)) return;
+                  moveImage(from, i);
+                  resetDragState();
                 }}
                 onDragEnd={() => {
-                  setDragIndex(null);
-                  setDragOverIndex(null);
+                  resetDragState();
                 }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt="" className="w-full aspect-square object-cover rounded-lg border border-line" />
+                <img src={url} alt="" draggable={false} className="w-full aspect-square object-cover rounded-lg border border-line select-none" />
                 <button type="button" onClick={() => removeImage(url)} className="absolute top-1 right-1 bg-white/95 rounded-full w-7 h-7 grid place-items-center text-sm border border-line shadow-sm opacity-0 group-hover:opacity-100 transition">
                   <MaterialIcon name="close" className="text-base" />
                 </button>
