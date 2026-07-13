@@ -2,6 +2,9 @@ import sharp from 'sharp';
 import crypto from 'crypto';
 import { v2 as cloudinary, type UploadApiResponse } from 'cloudinary';
 
+const MAX_IMAGE_INPUT_PIXELS = 40_000_000;
+sharp.concurrency(1);
+
 // Cloudinary SDK 自動讀取 CLOUDINARY_URL 環境變數
 // 格式：CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name>
 
@@ -30,7 +33,7 @@ export async function saveImageAsWebp(
   const subdir = (opts.subdir || '').replace(/^\/+|\/+$/g, '');
 
   // 先用 sharp 處理（旋轉 / 縮圖 / WebP 轉檔）— 控制品質與檔案大小
-  let image = sharp(buffer, { failOn: 'none' }).rotate();
+  let image = sharp(buffer, { failOn: 'none', limitInputPixels: MAX_IMAGE_INPUT_PIXELS }).rotate();
   const meta = await image.metadata();
   if (meta.width && meta.width > maxWidth) {
     image = image.resize({ width: maxWidth, withoutEnlargement: true });

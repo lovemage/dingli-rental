@@ -84,6 +84,23 @@ export async function POST(req: Request) {
     // 已出租 / 售出 / 結束 / 下架 / 審核中 等狀態都不會出現在 AI 的可推薦清單中
     const properties = await prisma.property.findMany({
       where: { status: 'active', listingStatus: 'active' },
+      select: {
+        id: true,
+        code: true,
+        region: true,
+        district: true,
+        typeMid: true,
+        buildingType: true,
+        rooms: true,
+        livingRooms: true,
+        bathrooms: true,
+        usableArea: true,
+        rent: true,
+        hasElevator: true,
+        petsAllowed: true,
+        featureTags: true,
+        title: true,
+      },
       orderBy: [{ featured: 'desc' }, { createdAt: 'desc' }],
       take: MAX_PROPERTIES_IN_CONTEXT,
     }).catch(() => [] as any[]);
