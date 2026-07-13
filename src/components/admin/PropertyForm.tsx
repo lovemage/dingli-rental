@@ -24,6 +24,25 @@ import type { Taxonomies } from '@/lib/taxonomies-shared';
 import { LISTING_STATUS_OPTIONS } from '@/components/frontend/PropertyCard';
 
 const OCR_MAX_PHOTOS = 3;
+const MAX_PROPERTY_IMAGES = 20;
+const MAX_IMAGE_UPLOAD_BYTES = 8 * 1024 * 1024;
+
+function formatUploadMb(bytes: number): string {
+  return `${Math.round(bytes / 1024 / 1024)}MB`;
+}
+
+function imageUploadError(files: File[], availableSlots: number): string | null {
+  if (files.length > availableSlots) {
+    return `最多還能上傳 ${availableSlots} 張照片，請先移除多餘照片`;
+  }
+  const invalid = files.find((file) => !file.type.startsWith('image/'));
+  if (invalid) return `「${invalid.name}」不是支援的圖片格式`;
+  const oversized = files.find((file) => file.size > MAX_IMAGE_UPLOAD_BYTES);
+  if (oversized) {
+    return `「${oversized.name}」超過 ${formatUploadMb(MAX_IMAGE_UPLOAD_BYTES)}，請先壓縮後再上傳`;
+  }
+  return null;
+}
 
 export type PropertyFormValue = {
   region: string;
@@ -201,17 +220,27 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from }: 
 
   async function uploadFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
+    const picked = Array.from(files);
+    const error = imageUploadError(picked, MAX_PROPERTY_IMAGES - v.images.length);
+    if (error) {
+      setErr(error);
+      return;
+    }
     setUploading(true);
     setErr('');
     try {
       const fd = new FormData();
-      for (const f of Array.from(files)) fd.append('files', f);
+      for (const f of picked) fd.append('files', f);
       const res = await fetch('/api/upload?subdir=properties', { method: 'POST', body: fd });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || '上傳失敗');
       const uploaded = ((data.files as any[]) || []).filter((f) => f.mediaType === 'image');
       const newUrls = uploaded.map((f) => f.url).filter(Boolean);
-      update('images', [...v.images, ...newUrls].slice(0, 20));
+      if (newUrls.length === 0) throw new Error(data?.errors?.[0]?.error || '沒有成功上傳的圖片');
+      update('images', [...v.images, ...newUrls].slice(0, MAX_PROPERTY_IMAGES));
+      if (data?.errors?.length) {
+        setErr(`部分照片未上傳：${data.errors.map((e: any) => e.name).join('、')}`);
+      }
     } catch (e: any) {
       setErr(e?.message || '上傳失敗');
     } finally {
@@ -308,20 +337,26 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from }: 
 
   async function aiUpload(files: FileList | null) {
     if (!files?.length) return;
-    if (aiPhotos.length + files.length > OCR_MAX_PHOTOS) {
-      setAiMsg(`OCR 辨識圖片最多可上傳 ${OCR_MAX_PHOTOS} 張，請先移除多餘圖片後再新增`);
+    const picked = Array.from(files);
+    const error = imageUploadError(picked, OCR_MAX_PHOTOS - aiPhotos.length);
+    if (error) {
+      setAiMsg(error);
       return;
     }
     setAiUploading(true); setAiMsg('');
     try {
       const fd = new FormData();
-      for (const f of Array.from(files)) fd.append('files', f);
+      for (const f of picked) fd.append('files', f);
       const res = await fetch('/api/upload?subdir=properties', { method: 'POST', body: fd });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || '上傳失敗');
       const newUrls = (data.files as any[]).map((f) => f.url);
+      if (newUrls.length === 0) throw new Error(data?.errors?.[0]?.error || '沒有成功上傳的圖片');
       const merged = [...aiPhotos, ...newUrls].slice(0, OCR_MAX_PHOTOS);
       setAiPhotos(merged);
+      if (data?.errors?.length) {
+        setAiMsg(`部分 OCR 圖片未上傳：${data.errors.map((e: any) => e.name).join('、')}`);
+      }
     } catch (e: any) {
       setAiMsg(e?.message || '上傳失敗');
     } finally {
@@ -509,7 +544,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from }: 
 
         <div className="mt-4 border-t border-brand-orange-300/50 pt-4">
           <p className="text-xs text-ink-500 mb-3 leading-relaxed">
-            可上傳最多 {OCR_MAX_PHOTOS} 張 OCR 辨識圖片（例如網路截圖、廣告傳單、看板、門牌或物件介紹紙本），AI 會自動辨識並填入欄位。
+            可上傳最多 {OCR_MAX_PHOTOS} 張 OCR 辨識圖片，單張上限 {formatUploadMb(MAX_IMAGE_UPLOAD_BYTES)}（例如網路截圖、廣告傳單、看板、門牌或物件介紹紙本），AI 會自動辨識並填入欄位。
             這裡的圖片僅供 OCR 辨識協助上架，<span className="font-bold text-ink-700">不等於下方「物件圖片」上傳，也不會自動加入物件圖庫。</span>
             <br />
             <span className="font-bold">A 類（看得到就填）</span>
@@ -571,7 +606,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from }: 
       </details>
 
       {/* === 照片（放在 OCR 區塊下方） === */}
-      <Card title="照片（最多 20 張）">
+      <Card title={`照片（最多 ${MAX_PROPERTY_IMAGES} 張）`}>
         <label className={`btn btn-orange w-full justify-center cursor-pointer sm:w-auto ${uploading ? 'opacity-60 pointer-events-none' : ''}`}>
           <MaterialIcon name="cloud_upload" className="!text-xl mr-1" />
           {uploading ? '上傳中...' : '上傳照片'}
@@ -583,6 +618,9 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from }: 
             onChange={(e) => { uploadFiles(e.target.files); e.target.value = ''; }}
           />
         </label>
+        <p className="text-xs text-ink-500 mt-2">
+          單張圖片上限 {formatUploadMb(MAX_IMAGE_UPLOAD_BYTES)}，還可上傳 {Math.max(0, MAX_PROPERTY_IMAGES - v.images.length)} 張。
+        </p>
         {uploading && <p className="text-sm text-brand-orange-700 mt-2">上傳中...</p>}
         {v.images.length > 0 && (
           <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3 mt-4">

@@ -43,6 +43,7 @@ export async function POST(req: Request) {
     name: string;
     mediaType: 'image' | 'video';
   }[] = [];
+  const errors: { name: string; error: string }[] = [];
   for (const file of files) {
     if (!(file instanceof File)) continue;
     try {
@@ -66,10 +67,18 @@ export async function POST(req: Request) {
         results.push({ ...r, name: file.name, mediaType: 'image' });
       }
     } catch (e: any) {
-      // 忽略單檔錯誤，繼續處理其他
-      console.error('upload failed', file.name, e?.message);
+      const message = e?.message || '上傳失敗';
+      errors.push({ name: file.name, error: message });
+      console.error('upload failed', file.name, message);
     }
   }
 
-  return NextResponse.json({ files: results });
+  if (results.length === 0 && errors.length > 0) {
+    return NextResponse.json(
+      { error: errors[0].error, errors },
+      { status: 413 },
+    );
+  }
+
+  return NextResponse.json({ files: results, errors });
 }
