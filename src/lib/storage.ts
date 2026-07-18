@@ -4,6 +4,7 @@ import { v2 as cloudinary, type UploadApiResponse } from 'cloudinary';
 
 const MAX_IMAGE_INPUT_PIXELS = 40_000_000;
 sharp.concurrency(1);
+sharp.cache(false);
 
 // Cloudinary SDK 自動讀取 CLOUDINARY_URL 環境變數
 // 格式：CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name>
