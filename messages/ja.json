@@ -168,7 +168,8 @@
     "rooms_1": "1部屋",
     "rooms_2": "2部屋",
     "rooms_3": "3部屋",
-    "rooms_4plus": "4部屋以上",
+    "rooms_4": "4部屋",
+    "rooms_5plus": "5部屋以上",
     "age_le_3": "3年以内",
     "age_le_10": "10年以内",
     "age_le_20": "20年以内"
@@ -220,7 +221,9 @@
     "formAny": "指定なし",
     "formSubmitting": "送信中...",
     "formSubmitFailed": "送信に失敗しました。時間を置いて再度お試しいただくか、お電話ください。",
-    "formSuccessTitle": "送信しました"
+    "formSuccessTitle": "送信しました",
+    "formSuccessLineHint": "より早いご返信をご希望の場合は、鼎立の公式LINEを追加して担当者と直接やり取りできます。",
+    "formSuccessLineCta": "公式LINEを追加して相談"
   },
   "propertyDetail": {
     "backToList": "← 物件一覧に戻る",

@@ -10,6 +10,7 @@ import {
   CITY_DISTRICTS,
   EQUIPMENT_OPTIONS,
   FEATURE_TAGS,
+  formatRegionLabel,
 } from '@/data/taiwan-addresses';
 import type { Taxonomies } from '@/lib/taxonomies-shared';
 import { PROPERTY_SORT_OPTIONS } from '@/lib/property-sort';
@@ -37,12 +38,15 @@ const AREA_PRESETS: { labelKey: string; min?: string; max?: string }[] = [
   { labelKey: 'area_ge_50', min: '50' },
 ];
 
+// 房間數：1~4 為精確房數，最後一項 '5' 代表「5 房以上」（後端會轉成 gte: 5）。
+// 門檻值與 property-search.ts 的 ROOMS_OPEN_ENDED_FROM 必須一致。
 const ROOMS_PRESETS = [
   { labelKey: 'noLimit', value: '' },
   { labelKey: 'rooms_1', value: '1' },
   { labelKey: 'rooms_2', value: '2' },
   { labelKey: 'rooms_3', value: '3' },
-  { labelKey: 'rooms_4plus', value: '4' },
+  { labelKey: 'rooms_4', value: '4' },
+  { labelKey: 'rooms_5plus', value: '5' },
 ];
 
 // 屋齡：max-only 區間（min 維持 0），custom 模式由 minAge/maxAge 兩個欄位精確控制
@@ -283,7 +287,10 @@ export default function PropertyFilters({
           label={t('regionLabel')}
           value={v.region}
           options={[
-            ...REGION_OPTIONS.map((r) => ({ label: tRegions(r.labelKey), value: r.value })),
+            ...REGION_OPTIONS.map((r) => ({
+              label: formatRegionLabel(tRegions(r.labelKey), r.en, locale),
+              value: r.value,
+            })),
             // 「不限」以 'all' sentinel 表示，server 端會略過地區過濾
             { label: t('noLimit'), value: 'all' },
           ]}
@@ -305,6 +312,14 @@ export default function PropertyFilters({
           selected={typeArr}
           onChange={(arr) => applyDraftPartial({ type: arr.join(',') })}
           allLabel={t('noLimit')}
+        />
+
+        {/* 房間數：單選，預設「不限」（rooms 為空字串即不限） */}
+        <ChipRadioSelect
+          label={t('roomsLabel')}
+          value={v.rooms}
+          options={ROOMS_PRESETS.map((p) => ({ label: t(p.labelKey), value: p.value }))}
+          onChange={(val) => applyDraftPartial({ rooms: val })}
         />
 
         <ChipPreset
@@ -403,18 +418,7 @@ export default function PropertyFilters({
               />
             </FilterGroup>
 
-            <FilterGroup title={t('roomsLabel')}>
-              <div className="flex flex-wrap gap-2">
-                {ROOMS_PRESETS.map((p) => (
-                  <ToggleChip
-                    key={p.value || 'rooms-any'}
-                    label={t(p.labelKey)}
-                    active={v.rooms === p.value}
-                    onClick={() => updateDraft({ rooms: v.rooms === p.value ? '' : p.value })}
-                  />
-                ))}
-              </div>
-            </FilterGroup>
+            {/* 房間數已移到主篩選列的 chip（即時套用），此處不再重複 */}
 
             <FilterGroup title={t('areaLabel')}>
               <RangePresetGroup
@@ -520,6 +524,65 @@ function ChipSelect({
         ))}
       </select>
       <span className={`pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs ${active ? 'text-white' : 'text-ink-500'}`}>▾</span>
+    </div>
+  );
+}
+
+// 主篩選列用的「單選 chip」：未選時顯示欄位名稱（如「房間數」），選了才顯示選項文字。
+// 不用 ChipSelect（原生 select）的原因：原生 select 在值為空字串時會直接顯示
+// 「不限」那個選項的文字，多個篩選器同時未選就會出現好幾個一樣的「不限」chip，
+// 使用者分不出哪個是哪個。外觀與 ChipMultiSelect 一致。
+function ChipRadioSelect({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: Option[]; // 第一項為「不限」（value 為空字串）
+  onChange: (v: string) => void;
+}) {
+  const active = !!value;
+  const ref = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    function onClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [open]);
+
+  const display = active ? (options.find((o) => o.value === value)?.label ?? label) : label;
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((s) => !s)}
+        className={`inline-flex items-center gap-1 px-3.5 py-1.5 text-sm font-medium rounded-full border transition ${active ? 'bg-brand-green-700 text-white border-brand-green-700' : 'bg-white text-ink-700 border-line hover:border-brand-green-500'}`}
+      >
+        {display}
+        <span className="text-xs">▾</span>
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-2 bg-white border border-line rounded-xl shadow-lg p-1.5 z-50 min-w-[140px]">
+          {options.map((o) => (
+            <button
+              key={o.value || 'any'}
+              type="button"
+              onClick={() => { onChange(o.value); setOpen(false); }}
+              className={`flex items-center justify-between w-full text-left px-3 py-1.5 text-sm rounded-lg ${o.value === value ? 'bg-brand-green-50 text-brand-green-900 font-medium' : 'hover:bg-paper-2'}`}
+            >
+              <span>{o.label}</span>
+              {o.value === value && <span className="text-brand-green-700">✓</span>}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

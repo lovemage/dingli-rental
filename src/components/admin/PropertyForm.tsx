@@ -18,7 +18,6 @@ import {
   DIRECTION_OPTIONS,
   FLOOR_TYPE_OPTIONS,
   FEATURE_TAGS,
-  CUSTOM_TAG_SUGGESTIONS,
 } from '@/data/taiwan-addresses';
 import type { Taxonomies } from '@/lib/taxonomies-shared';
 import { LISTING_STATUS_OPTIONS } from '@/components/frontend/PropertyCard';
@@ -160,7 +159,6 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from }: 
   const FURN_OPTS    = taxonomies?.furniture            || (FURNITURE_OPTIONS as readonly string[]);
   const RENT_INC     = taxonomies?.rentIncludes         || (RENT_INCLUDES_OPTIONS as readonly string[]);
   const POLICY_TAGS  = taxonomies?.policyTags           || (FEATURE_TAGS as readonly string[]);
-  const CUSTOM_SUGS  = taxonomies?.customTagSuggestions || (CUSTOM_TAG_SUGGESTIONS as readonly string[]);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveStage, setSaveStage] = useState<'saving' | 'translating' | ''>('');
@@ -387,6 +385,17 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from }: 
         for (const [k, val] of Object.entries(fields)) {
           if (val === undefined || val === null) continue;
           if (Array.isArray(val) && val.length === 0) continue;
+          // 自由特色標籤已從表單移除，AI 辨識出的行銷短語不再寫入 featureTags，
+          // 只保留制度型標籤；否則會產生後台看不到、前台卻會顯示的隱形標籤。
+          if (k === 'featureTags') {
+            const policyOnly = Array.isArray(val)
+              ? (val as unknown[]).filter((x): x is string => typeof x === 'string' && POLICY_TAGS.includes(x))
+              : [];
+            if (!policyOnly.length) continue;
+            next.featureTags = policyOnly;
+            appliedKeys.push(k);
+            continue;
+          }
           // 字串型且當前已有非預設值 → 保留使用者輸入（避免覆蓋）
           // 簡單策略：所有 AI 欄位都覆寫，由使用者再修改
           (next as any)[k] = val;
@@ -1054,20 +1063,6 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from }: 
           <p className="text-xs text-ink-500 mt-2">屬於政府或公信力認證的標籤，前台會以綠色顯示。</p>
         </Field>
 
-        <Field label="自由特色標籤">
-          <CustomTagsInput
-            value={v.featureTags.filter((t) => !POLICY_TAGS.includes(t))}
-            onChange={(customs) => {
-              const policy = v.featureTags.filter((t) => POLICY_TAGS.includes(t));
-              update('featureTags', [...policy, ...customs]);
-            }}
-            suggestions={CUSTOM_SUGS}
-          />
-          <p className="text-xs text-ink-500 mt-2">
-            描述物件的賣點（採光、近捷運、邊間…），前台會以橘色顯示。可從建議點選或自由輸入。
-          </p>
-        </Field>
-
         <Field label="現況特色描述">
           <textarea
             className="input-base resize-y min-h-[160px]"
@@ -1197,101 +1192,6 @@ function Field({ label, required, children }: { label: string; required?: boolea
         {label}
       </label>
       {children}
-    </div>
-  );
-}
-
-function CustomTagsInput({
-  value,
-  onChange,
-  suggestions,
-}: {
-  value: string[];
-  onChange: (next: string[]) => void;
-  suggestions: readonly string[];
-}) {
-  const [input, setInput] = useState('');
-
-  function addTag(raw: string) {
-    const t = raw.trim();
-    if (!t) return;
-    if (value.includes(t)) return;
-    onChange([...value, t]);
-    setInput('');
-  }
-
-  function removeTag(t: string) {
-    onChange(value.filter((x) => x !== t));
-  }
-
-  const unused = suggestions.filter((s) => !value.includes(s));
-
-  return (
-    <div>
-      <div className="flex flex-wrap gap-1.5 mb-2 min-h-[36px] px-2 py-2 rounded-lg border border-line bg-paper">
-        {value.length === 0 && (
-          <span className="text-xs text-ink-300 px-1">尚未加入特色標籤</span>
-        )}
-        {value.map((t) => (
-          <span
-            key={t}
-            className="inline-flex items-center gap-1 bg-brand-orange-50 text-brand-orange-700 text-xs px-2.5 py-1 rounded-full border border-brand-orange-300/40"
-          >
-            {t}
-            <button
-              type="button"
-              onClick={() => removeTag(t)}
-              className="hover:text-brand-orange-900"
-              aria-label={`移除 ${t}`}
-            >
-              ×
-            </button>
-          </span>
-        ))}
-      </div>
-
-      <div className="flex gap-2">
-        <input
-          type="text"
-          data-allow-enter="1"
-          className="input-base flex-1"
-          placeholder="輸入後按 Enter 加入新標籤"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ',') {
-              e.preventDefault();
-              addTag(input);
-            }
-          }}
-        />
-        <button
-          type="button"
-          onClick={() => addTag(input)}
-          disabled={!input.trim()}
-          className="btn btn-secondary text-sm whitespace-nowrap disabled:opacity-50"
-        >
-          加入
-        </button>
-      </div>
-
-      {unused.length > 0 && (
-        <div className="mt-2.5">
-          <p className="text-xs text-ink-500 mb-1">建議標籤：</p>
-          <div className="flex flex-wrap gap-1.5">
-            {unused.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => addTag(s)}
-                className="text-xs text-ink-700 px-2.5 py-1 rounded-full bg-paper-2 border border-line hover:bg-brand-orange-50 hover:border-brand-orange-300 hover:text-brand-orange-700 transition"
-              >
-                + {s}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

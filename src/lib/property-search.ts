@@ -31,6 +31,13 @@ function exactOrIn(values: string[]): string | Prisma.StringFilter | undefined {
   return undefined;
 }
 
+/**
+ * 房間數篩選的「以上」門檻：小於此值 = 精確房數，大於等於此值 = N 房以上。
+ * 前台選項（PropertyFilters 的 ROOMS_PRESETS）最後一項必須用同一個數字，
+ * 否則會出現「選 5 房以上卻查到 4 房」這種對不上的結果。
+ */
+const ROOMS_OPEN_ENDED_FROM = 5;
+
 export function buildPublicPropertyWhere(
   params: PublicPropertySearchParams,
   locale: string
@@ -64,7 +71,7 @@ export function buildPublicPropertyWhere(
   if (params.rooms) {
     const rooms = Number(params.rooms);
     if (Number.isFinite(rooms) && rooms > 0) {
-      where.rooms = rooms >= 4 ? { gte: 4 } : rooms;
+      where.rooms = rooms >= ROOMS_OPEN_ENDED_FROM ? { gte: ROOMS_OPEN_ENDED_FROM } : rooms;
     }
   }
 

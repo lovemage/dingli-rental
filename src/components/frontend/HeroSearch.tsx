@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import AiChatWidget from '@/components/frontend/AiChatWidget';
 import MaterialIcon from '@/components/MaterialIcon';
-import { REGION_OPTIONS } from '@/data/taiwan-addresses';
+import { REGION_OPTIONS, formatRegionLabel } from '@/data/taiwan-addresses';
 
 const DEFAULT_TYPE_OPTIONS = ['套房', '整層住家', '別墅', '店面', '辦公室', '其他'];
 
@@ -78,7 +78,7 @@ export default function HeroSearch({ propertyTypes }: Props = {}) {
             <option value="">{t('regionAll')}</option>
             {REGION_OPTIONS.map((r) => (
               <option key={r.value} value={r.value}>
-                {tRegions(r.labelKey)}
+                {formatRegionLabel(tRegions(r.labelKey), r.en, locale)}
               </option>
             ))}
           </select>

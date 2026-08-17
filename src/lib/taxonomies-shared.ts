@@ -32,6 +32,10 @@ export const TAXONOMY_LABELS: Record<TaxonomyKey, { title: string; hint: string 
   customTagSuggestions: { title: '自由特色標籤建議',   hint: '近捷運 / 採光佳 / 邊間 等行銷標籤' },
 };
 
+// 後台「標籤與分類」實際顯示／可編輯的項目順序。
+// customTagSuggestions 已不在清單內：物件表單的「自由特色標籤」欄位已移除，
+// 這份建議清單沒有任何地方會讀，留在後台只會讓人以為改了有效。
+// 型別與預設值仍保留，未來要恢復自由標籤時把 key 加回這個陣列即可。
 export const TAXONOMY_KEYS: TaxonomyKey[] = [
   'propertyTypes',
   'buildingTypes',
@@ -40,7 +44,6 @@ export const TAXONOMY_KEYS: TaxonomyKey[] = [
   'tenantTypes',
   'rentIncludes',
   'policyTags',
-  'customTagSuggestions',
 ];
 
 const DEFAULTS: Taxonomies = {

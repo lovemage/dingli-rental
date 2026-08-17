@@ -2,7 +2,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { getTranslations, getLocale } from 'next-intl/server';
 import { prisma } from '@/lib/prisma';
-import { CONTACT_DEFAULTS, type ContactContent, type ContactSocial } from '@/data/contact-defaults';
+import {
+  CONTACT_DEFAULTS,
+  OFFICIAL_LINE_URL,
+  type ContactContent,
+  type ContactSocial,
+} from '@/data/contact-defaults';
 import { getTaxonomies } from '@/lib/taxonomies';
 
 const FOOTER_PROPERTY_TYPES_LIMIT = 6;
@@ -37,7 +42,7 @@ const SOCIAL_META: Array<{
 const OFFICIAL_LINE_LINK = {
   label: 'LINE',
   icon: '/social-icons/LINE.svg',
-  url: 'https://line.me/R/ti/p/@526ddrhk',
+  url: OFFICIAL_LINE_URL,
 };
 
 // 只放行 http(s) 絕對網址，過濾掉 admin 打錯 (facebook.com/... 沒前綴)、

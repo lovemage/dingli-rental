@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
-import { CITY_DISTRICTS, REGION_OPTIONS } from '@/data/taiwan-addresses';
+import { useLocale, useTranslations } from 'next-intl';
+import { CITY_DISTRICTS, REGION_OPTIONS, formatRegionLabel } from '@/data/taiwan-addresses';
+import { OFFICIAL_LINE_URL } from '@/data/contact-defaults';
 
 type Props = {
   title?: string;
@@ -19,6 +20,7 @@ export default function ContactForm({
 }: Props) {
   const t = useTranslations('contact');
   const tRegions = useTranslations('regions');
+  const locale = useLocale();
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -72,6 +74,22 @@ export default function ContactForm({
         </div>
         <h2 className="text-xl font-black mb-2">{t('formSuccessTitle')}</h2>
         <p className="text-ink-700">{successMessage}</p>
+
+        {/* 送出後把詢問導進官方 LINE：LINE 平台不允許網頁代替使用者加好友，
+            只能提供加好友連結，由使用者點擊完成（點擊屬使用者手勢，不會被瀏覽器攔擋）。 */}
+        <div className="mt-6 pt-6 border-t border-line">
+          <p className="text-sm text-ink-700 mb-3">{t('formSuccessLineHint')}</p>
+          <a
+            href={OFFICIAL_LINE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full bg-[#06C755] px-6 py-3 font-extrabold text-white shadow-sm transition hover:brightness-95"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/social-icons/LINE.svg" alt="" className="w-6 h-6" />
+            {t('formSuccessLineCta')}
+          </a>
+        </div>
       </div>
     );
   }
@@ -140,7 +158,9 @@ export default function ContactForm({
           >
             <option value="不限">{t('formAny')}</option>
             {REGION_OPTIONS.map((r) => (
-              <option key={r.value} value={r.value}>{tRegions(r.labelKey)}</option>
+              <option key={r.value} value={r.value}>
+                {formatRegionLabel(tRegions(r.labelKey), r.en, locale)}
+              </option>
             ))}
           </select>
         </div>

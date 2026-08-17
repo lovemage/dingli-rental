@@ -29,15 +29,26 @@ export const REGIONS = ['台北市', '新北市', '桃園市'] as const;
  * - `value` 是中文字串：URL query string 與 DB region 欄位的穩定識別，不可改。
  * - `labelKey` 對應 `messages/<locale>.json` 的 `regions.<key>`，
  *   由 `useTranslations('regions')(labelKey)` 取得在地化文字。
+ * - `en` 是英文正式名稱，供選單顯示「台北市 Taipei City」這種雙語標籤用
+ *   （外籍租客看得懂，中文使用者也不會被干擾）。
  *
  * 前台縣市選單（HeroSearch、PropertyFilters、ContactForm）都應從這裡讀，
  * 避免硬編碼中文字串造成 en/ja 路由失守。
  */
-export const REGION_OPTIONS: { value: string; labelKey: string }[] = [
-  { value: '台北市', labelKey: 'taipei' },
-  { value: '新北市', labelKey: 'new_taipei' },
-  { value: '桃園市', labelKey: 'taoyuan' },
+export const REGION_OPTIONS: { value: string; labelKey: string; en: string }[] = [
+  { value: '台北市', labelKey: 'taipei', en: 'Taipei City' },
+  { value: '新北市', labelKey: 'new_taipei', en: 'New Taipei City' },
+  { value: '桃園市', labelKey: 'taoyuan', en: 'Taoyuan City' },
 ];
+
+/**
+ * 縣市選單顯示文字：在地化名稱後面附英文，例：「台北市 Taipei City」。
+ * en locale 只回英文，避免出現「Taipei Taipei City」這種重複。
+ */
+export function formatRegionLabel(localizedName: string, englishName: string, locale: string): string {
+  if (locale === 'en') return englishName;
+  return `${localizedName} ${englishName}`;
+}
 
 // 中分類（admin 可在 /admin/taxonomy 增刪；下方 TYPE_MID_LETTERS 是編號字母對應）
 export const PROPERTY_TYPES = [
@@ -114,12 +125,14 @@ export function formatMinLeaseDisplay(value?: string | null): string {
   return trimmed;
 }
 
-// 車位
+// 車位（字串同時是 DB 儲存值，逗號一律用半角，勿改動既有項目以免舊資料對不上選項）
 export const PARKING_OPTIONS = [
   '平面式,已含租金內',
   '平面式,費用另計',
   '機械式,已含租金內',
   '機械式,費用另計',
+  '機械+平面,已含租金內',
+  '機械+平面,費用另計',
 ] as const;
 
 // 朝向
@@ -133,7 +146,7 @@ export const FLOOR_TYPE_OPTIONS = ['出租單層', '全棟出租', '多層出租
 
 // 制度型特色標籤（固定，前台用綠色 badge 強化公信力）
 export const FEATURE_TAGS = [
-  '社會住宅', '租金補貼', '高齡友善', '可報稅', '可入籍',
+  '社會住宅', '租金補貼', '高齡友善', '可報稅', '可入籍', '可租補',
 ] as const;
 
 function uniqueStrings(items: readonly string[]): string[] {

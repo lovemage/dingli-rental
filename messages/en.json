@@ -168,7 +168,8 @@
     "rooms_1": "1 BR",
     "rooms_2": "2 BR",
     "rooms_3": "3 BR",
-    "rooms_4plus": "4+ BR",
+    "rooms_4": "4 BR",
+    "rooms_5plus": "5+ BR",
     "age_le_3": "Within 3 yrs",
     "age_le_10": "Within 10 yrs",
     "age_le_20": "Within 20 yrs"
@@ -220,7 +221,9 @@
     "formAny": "Any",
     "formSubmitting": "Submitting...",
     "formSubmitFailed": "Submission failed. Please try again later or call us.",
-    "formSuccessTitle": "Submitted!"
+    "formSuccessTitle": "Submitted!",
+    "formSuccessLineHint": "Want a faster reply? Add Dingli's official LINE and chat with an agent directly.",
+    "formSuccessLineCta": "Add our official LINE"
   },
   "propertyDetail": {
     "backToList": "← Back to listings",

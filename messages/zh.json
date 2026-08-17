@@ -168,7 +168,8 @@
     "rooms_1": "1 房",
     "rooms_2": "2 房",
     "rooms_3": "3 房",
-    "rooms_4plus": "4 房以上",
+    "rooms_4": "4 房",
+    "rooms_5plus": "5 房以上",
     "age_le_3": "3 年內",
     "age_le_10": "10 年內",
     "age_le_20": "20 年內"
@@ -220,7 +221,9 @@
     "formAny": "不限",
     "formSubmitting": "送出中...",
     "formSubmitFailed": "送出失敗，請稍後再試或來電聯繫",
-    "formSuccessTitle": "送出成功"
+    "formSuccessTitle": "送出成功",
+    "formSuccessLineHint": "想更快得到回覆？加入鼎立官方 LINE，直接與業務專員對話。",
+    "formSuccessLineCta": "加入官方 LINE 立即詢問"
   },
   "propertyDetail": {
     "backToList": "← 返回物件列表",

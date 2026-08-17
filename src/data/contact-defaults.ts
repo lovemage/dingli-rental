@@ -2,6 +2,11 @@
 // 對應 SiteContent.section = 'contact_page'
 // 注意：避開既有 'contact' section 名稱以免衝突
 
+// 官方 LINE 官方帳號「加好友」連結。
+// Footer 的 LINE 圖示與 /contact 表單送出成功後的 CTA 共用同一個常數，
+// 換官方帳號時只需改這一行。
+export const OFFICIAL_LINE_URL = 'https://line.me/R/ti/p/@526ddrhk';
+
 export type ContactAgent = {
   initial: string;            // 1 字（無頭像時顯示）
   avatarUrl?: string;         // 選填頭像 URL
