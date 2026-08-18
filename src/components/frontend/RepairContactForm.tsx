@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { CITY_DISTRICTS, REGION_OPTIONS } from '@/data/taiwan-addresses';
+import LineFollowCard from '@/components/frontend/LineFollowCard';
 
 export default function RepairContactForm() {
   const [submitted, setSubmitted] = useState(false);
@@ -52,14 +53,20 @@ export default function RepairContactForm() {
 
   if (submitted) {
     return (
-      <div className="rounded-xl border border-line bg-white p-8 text-center shadow-sm">
-        <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-brand-green-50 text-2xl font-black text-brand-green-700">
-          ✓
+      <div className="rounded-xl border border-line bg-white p-8 shadow-sm">
+        <div className="text-center">
+          <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-brand-green-50 text-2xl font-black text-brand-green-700">
+            ✓
+          </div>
+          {/* 送出後的畫面固定中／英／日並列，外籍屋主沒切語系也能讀懂下一步 */}
+          <h3 className="text-xl font-black text-ink-900">已收到修繕需求 / Received / 受け付けました</h3>
+          <p className="mt-2 text-sm leading-7 text-ink-600">
+            鼎立業務會先確認房屋狀況與地區，再協助安排後續溝通。
+          </p>
         </div>
-        <h3 className="text-xl font-black text-ink-900">已收到修繕需求</h3>
-        <p className="mt-2 text-sm leading-7 text-ink-600">
-          鼎立業務會先確認房屋狀況與地區，再協助安排後續溝通。
-        </p>
+
+        {/* 送出後把需求導進官方 LINE，由專員接手確認 */}
+        <LineFollowCard />
       </div>
     );
   }

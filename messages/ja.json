@@ -220,10 +220,7 @@
     "formMessagePlaceholder": "入居人数、通勤先、ライフスタイルなどお気軽にお書きください...",
     "formAny": "指定なし",
     "formSubmitting": "送信中...",
-    "formSubmitFailed": "送信に失敗しました。時間を置いて再度お試しいただくか、お電話ください。",
-    "formSuccessTitle": "送信しました",
-    "formSuccessLineHint": "より早いご返信をご希望の場合は、鼎立の公式LINEを追加して担当者と直接やり取りできます。",
-    "formSuccessLineCta": "公式LINEを追加して相談"
+    "formSubmitFailed": "送信に失敗しました。時間を置いて再度お試しいただくか、お電話ください。"
   },
   "propertyDetail": {
     "backToList": "← 物件一覧に戻る",

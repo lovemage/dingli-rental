@@ -220,10 +220,7 @@
     "formMessagePlaceholder": "Tell us about household size, commute, lifestyle, etc.",
     "formAny": "Any",
     "formSubmitting": "Submitting...",
-    "formSubmitFailed": "Submission failed. Please try again later or call us.",
-    "formSuccessTitle": "Submitted!",
-    "formSuccessLineHint": "Want a faster reply? Add Dingli's official LINE and chat with an agent directly.",
-    "formSuccessLineCta": "Add our official LINE"
+    "formSubmitFailed": "Submission failed. Please try again later or call us."
   },
   "propertyDetail": {
     "backToList": "← Back to listings",

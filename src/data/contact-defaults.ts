@@ -7,6 +7,11 @@
 // 換官方帳號時只需改這一行。
 export const OFFICIAL_LINE_URL = 'https://line.me/R/ti/p/@526ddrhk';
 
+// 官方帳號 ID（讓訪客可手動搜尋）與加好友 QR code（放在 public/images）。
+// 表單送出成功後的 LineFollowCard 會同時顯示按鈕、QR code 與 ID。
+export const OFFICIAL_LINE_ID = '@526ddrhk';
+export const OFFICIAL_LINE_QR_SRC = '/images/line-official-qr.jpg';
+
 export type ContactAgent = {
   initial: string;            // 1 字（無頭像時顯示）
   avatarUrl?: string;         // 選填頭像 URL

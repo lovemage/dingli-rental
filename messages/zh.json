@@ -220,10 +220,7 @@
     "formMessagePlaceholder": "請告訴我們您的居住人數、通勤地點、生活習慣等...",
     "formAny": "不限",
     "formSubmitting": "送出中...",
-    "formSubmitFailed": "送出失敗，請稍後再試或來電聯繫",
-    "formSuccessTitle": "送出成功",
-    "formSuccessLineHint": "想更快得到回覆？加入鼎立官方 LINE，直接與業務專員對話。",
-    "formSuccessLineCta": "加入官方 LINE 立即詢問"
+    "formSubmitFailed": "送出失敗，請稍後再試或來電聯繫"
   },
   "propertyDetail": {
     "backToList": "← 返回物件列表",
