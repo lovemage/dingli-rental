@@ -2,36 +2,9 @@ import { setRequestLocale } from 'next-intl/server';
 import Header from '@/components/frontend/Header';
 import Footer from '@/components/frontend/Footer';
 import ContactForm from '@/components/frontend/ContactForm';
-import { prisma } from '@/lib/prisma';
-import { CONTACT_DEFAULTS, type ContactContent } from '@/data/contact-defaults';
-import { translateCmsSection } from '@/lib/cms-translate';
+import { getContactContent } from '@/lib/contact-content';
 
 export const dynamic = 'force-dynamic';
-
-async function getContactContent(locale: string): Promise<ContactContent> {
-  try {
-    const row = await prisma.siteContent.findUnique({ where: { section: 'contact_page' } });
-    const data = (row?.data as Partial<ContactContent>) || {};
-    const merged: ContactContent = {
-      ...CONTACT_DEFAULTS,
-      ...data,
-      agents:
-        Array.isArray(data.agents) && data.agents.length
-          ? data.agents
-          : CONTACT_DEFAULTS.agents,
-      companyInfo: { ...CONTACT_DEFAULTS.companyInfo, ...(data.companyInfo || {}) },
-    };
-    if (locale === 'zh') return merged;
-    const translated = await translateCmsSection(
-      'contact_page',
-      merged as unknown as Record<string, unknown>,
-      locale
-    );
-    return { ...merged, ...(translated as Partial<ContactContent>) } as ContactContent;
-  } catch {
-    return CONTACT_DEFAULTS;
-  }
-}
 
 export default async function ContactPage({
   params,

@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { CITY_DISTRICTS, REGION_OPTIONS, formatRegionLabel } from '@/data/taiwan-addresses';
+import { OFFICIAL_LINE_URL } from '@/data/contact-defaults';
 import LineFollowCard from '@/components/frontend/LineFollowCard';
 
 type Props = {
@@ -21,6 +23,7 @@ export default function ContactForm({
   const t = useTranslations('contact');
   const tRegions = useTranslations('regions');
   const locale = useLocale();
+  const router = useRouter();
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -32,6 +35,15 @@ export default function ContactForm({
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (submitting) return;
+
+    // 官方 LINE 加好友頁必須在「使用者按下送出」的同一個手勢裡開啟。
+    // 若等到 fetch 回來（await 之後）才呼叫 window.open，瀏覽器會判定為
+    // 非使用者觸發的彈窗而攔截（iOS Safari 幾乎必擋），所以先開分頁再送出，
+    // 順序不能對調。此時原生表單驗證已通過，不會有欄位沒填就開 LINE 的情況。
+    // 被攔截時 window.open 回傳 null，使用者仍會在 /thank-you 看到按鈕與 QR。
+    const lineWindow = window.open(OFFICIAL_LINE_URL, '_blank');
+    if (lineWindow) lineWindow.opener = null;
+
     setSubmitting(true);
     setError('');
 
@@ -58,7 +70,11 @@ export default function ContactForm({
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.error || t('formSubmitFailed'));
+      // 送出後原分頁切成功畫面（導頁期間的過場／導頁失敗時的退路），
+      // 再導向 /thank-you；LINE 加好友頁已在上面的新分頁開啟。
+      // replace 而非 push：使用者按上一頁不會回到已送出的表單，避免重複送出。
       setSubmitted(true);
+      router.replace(locale === 'zh' ? '/thank-you' : `/${locale}/thank-you`);
     } catch (err: any) {
       setError(err?.message || t('formSubmitFailed'));
     } finally {
@@ -78,7 +94,7 @@ export default function ContactForm({
           <p className="text-ink-700">{successMessage}</p>
         </div>
 
-        {/* 送出後把詢問導進官方 LINE，由專員接手確認物件 */}
+        {/* 導頁到 /thank-you 之前的過場；導頁若失敗，這裡仍看得到官方 LINE 導引 */}
         <LineFollowCard />
       </div>
     );
