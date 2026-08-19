@@ -34,14 +34,18 @@ const readPrefillOnServer = () => null;
  * LINE 平台不允許網頁代替使用者加好友或代發訊息，只能提供連結與 QR code。
  * 若表單有留下需求摘要（sessionStorage），按鈕改用 oaMessage 連結：使用者加入
  * 好友後直接進聊天室，輸入框已帶好需求，按一次送出專員就收得到。
+ *
+ * flush：卡片是容器內第一個元素時用（如感謝頁），去掉與上方元素的間距。
  */
-export default function LineFollowCard() {
+export default function LineFollowCard({ flush = false }: { flush?: boolean }) {
   const prefill = useSyncExternalStore(subscribeNoop, readPrefill, readPrefillOnServer);
   const hasPrefill = Boolean(prefill);
   const lineHref = prefill ? buildOfficialLineMessageUrl(prefill) : OFFICIAL_LINE_URL;
 
   return (
-    <div className="mt-6 rounded-xl border border-line bg-brand-green-50 p-5 text-left sm:p-6">
+    <div
+      className={`${flush ? '' : 'mt-6 '}rounded-xl border border-line bg-brand-green-50 p-5 text-left sm:p-6`}
+    >
       <h3 className="text-lg font-black leading-snug text-brand-green-900">
         加入官方 LINE，由專員與您確認物件
       </h3>
