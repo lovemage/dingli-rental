@@ -12,6 +12,36 @@ export const OFFICIAL_LINE_URL = 'https://line.me/R/ti/p/@526ddrhk';
 export const OFFICIAL_LINE_ID = '@526ddrhk';
 export const OFFICIAL_LINE_QR_SRC = '/images/line-official-qr.jpg';
 
+// 表單送出後暫存「要帶進官方 LINE 聊天室的需求摘要」，供 /thank-you 的
+// LineFollowCard 讀取。放 sessionStorage：關掉分頁即消失，不留個資在裝置上。
+export const LINE_PREFILL_STORAGE_KEY = 'dingli:line-prefill';
+
+// LINE 的 oaMessage URL 會被整段塞進網址，太長會被行動裝置截斷或開啟失敗，
+// 因此限制 encode 後的長度（中文一字約佔 9 個字元）。
+const LINE_PREFILL_MAX_ENCODED = 1600;
+
+/**
+ * 產生「開啟官方帳號聊天室並預先帶入訊息」的連結。
+ *
+ * LINE 平台不允許網站代替使用者加好友或代發訊息（防濫發），能做到的最短路徑是：
+ * 點連結 → LINE 開啟本官方帳號（尚未加好友者先出現加入畫面）→ 加入後進聊天室，
+ * 輸入框已帶好表單需求 → 使用者按一次送出。最後那次「加入」與「送出」一定要由
+ * 使用者在 LINE App 內完成，任何網頁做法都繞不過去。
+ *
+ * text 為空時退回單純的加好友連結。
+ */
+export function buildOfficialLineMessageUrl(text: string) {
+  let body = text.trim();
+  if (!body) return OFFICIAL_LINE_URL;
+
+  // 逐步截短到編碼後仍在長度上限內（多位元組字元不會被切一半）
+  while (encodeURIComponent(body).length > LINE_PREFILL_MAX_ENCODED) {
+    body = body.slice(0, -20).trimEnd();
+  }
+
+  return `https://line.me/R/oaMessage/${encodeURIComponent(OFFICIAL_LINE_ID)}/?${encodeURIComponent(body)}`;
+}
+
 export type ContactAgent = {
   initial: string;            // 1 字（無頭像時顯示）
   avatarUrl?: string;         // 選填頭像 URL

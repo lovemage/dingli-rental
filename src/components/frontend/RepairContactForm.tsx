@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { CITY_DISTRICTS, REGION_OPTIONS } from '@/data/taiwan-addresses';
 import LineFollowCard from '@/components/frontend/LineFollowCard';
+import { LINE_PREFILL_STORAGE_KEY } from '@/data/contact-defaults';
 
 export default function RepairContactForm() {
   const [submitted, setSubmitted] = useState(false);
@@ -34,6 +35,22 @@ export default function RepairContactForm() {
       budget: '',
       message: `房屋修繕裝潢需求${lineId ? `\nLINE ID：${lineId}` : ''}`,
     };
+
+    // 送出後的 LineFollowCard 會把這段帶進官方 LINE 聊天室，讓專員一進對話就看到需求
+    try {
+      sessionStorage.setItem(
+        LINE_PREFILL_STORAGE_KEY,
+        [
+          '我在鼎立房屋官網填了房屋修繕需求：',
+          `姓名 / Name：${payload.name}`,
+          `電話 / Phone：${payload.phone}`,
+          payload.region ? `地區 / Area：${payload.region}` : '',
+          lineId ? `LINE ID：${lineId}` : '',
+        ].filter(Boolean).join('\n'),
+      );
+    } catch {
+      // 無痕模式寫不進去也沒關係，按鈕會退回純加好友連結
+    }
 
     try {
       const res = await fetch('/api/contact', {

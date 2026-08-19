@@ -4,8 +4,35 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { CITY_DISTRICTS, REGION_OPTIONS, formatRegionLabel } from '@/data/taiwan-addresses';
-import { OFFICIAL_LINE_URL } from '@/data/contact-defaults';
+import { LINE_PREFILL_STORAGE_KEY, buildOfficialLineMessageUrl } from '@/data/contact-defaults';
 import LineFollowCard from '@/components/frontend/LineFollowCard';
+
+// 帶進官方 LINE 聊天室的需求摘要。標籤中英並列：專員與外籍客戶都要讀得懂。
+// 完整內容已寫進資料庫，這裡只放專員接手時需要先看到的欄位。
+function buildLineRequestText(p: {
+  name: string;
+  phone: string;
+  userRole: string;
+  messengerType: string;
+  messengerHandle: string;
+  region: string;
+  propertyType: string;
+  budget: string;
+  message: string;
+}) {
+  const lines = [
+    '我在鼎立房屋官網填了需求表：',
+    `姓名 / Name：${p.name}`,
+    `電話 / Phone：${p.phone}`,
+    `身分 / Role：${p.userRole === 'landlord' ? '房東 Landlord' : '租客 Tenant'}`,
+  ];
+  if (p.messengerHandle) lines.push(`通訊軟體 / Messenger：${p.messengerType} ${p.messengerHandle}`);
+  if (p.region) lines.push(`地區 / Area：${p.region}`);
+  if (p.propertyType) lines.push(`物件類型 / Type：${p.propertyType}`);
+  if (p.budget) lines.push(`預算 / Budget：NT$${p.budget}`);
+  if (p.message) lines.push(`補充 / Notes：${p.message.slice(0, 200)}`);
+  return lines.join('\n');
+}
 
 type Props = {
   title?: string;
@@ -36,17 +63,6 @@ export default function ContactForm({
     e.preventDefault();
     if (submitting) return;
 
-    // 官方 LINE 加好友頁必須在「使用者按下送出」的同一個手勢裡開啟。
-    // 若等到 fetch 回來（await 之後）才呼叫 window.open，瀏覽器會判定為
-    // 非使用者觸發的彈窗而攔截（iOS Safari 幾乎必擋），所以先開分頁再送出，
-    // 順序不能對調。此時原生表單驗證已通過，不會有欄位沒填就開 LINE 的情況。
-    // 被攔截時 window.open 回傳 null，使用者仍會在 /thank-you 看到按鈕與 QR。
-    const lineWindow = window.open(OFFICIAL_LINE_URL, '_blank');
-    if (lineWindow) lineWindow.opener = null;
-
-    setSubmitting(true);
-    setError('');
-
     const fd = new FormData(e.currentTarget);
     const region = String(fd.get('region') || '');
     const district = String(fd.get('district') || '');
@@ -61,6 +77,26 @@ export default function ContactForm({
       budget: String(fd.get('budget') || ''),
       message: String(fd.get('message') || ''),
     };
+
+    // 官方 LINE 必須在「使用者按下送出」的同一個手勢裡開啟。
+    // 若等到 fetch 回來（await 之後）才呼叫 window.open，瀏覽器會判定為
+    // 非使用者觸發的彈窗而攔截（iOS Safari 幾乎必擋），所以先開分頁再送出，
+    // 順序不能對調。此時原生表單驗證已通過，不會有欄位沒填就開 LINE 的情況。
+    // 被攔截時 window.open 回傳 null，使用者仍會在 /thank-you 看到按鈕與 QR。
+    //
+    // 開的是 oaMessage 連結：尚未加好友者先看到加入畫面，加入後直接進聊天室，
+    // 輸入框已帶好上面這份需求，使用者按一次送出，專員在 LINE 就收得到。
+    const lineText = buildLineRequestText(payload);
+    try {
+      sessionStorage.setItem(LINE_PREFILL_STORAGE_KEY, lineText);
+    } catch {
+      // 無痕模式寫不進去也沒關係，/thank-you 會退回純加好友連結
+    }
+    const lineWindow = window.open(buildOfficialLineMessageUrl(lineText), '_blank');
+    if (lineWindow) lineWindow.opener = null;
+
+    setSubmitting(true);
+    setError('');
 
     try {
       const res = await fetch('/api/contact', {
