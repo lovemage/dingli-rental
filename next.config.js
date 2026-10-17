@@ -4,6 +4,8 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Use the filesystem cache without retaining a second copy in memory.
+  cacheMaxMemorySize: 0,
   reactStrictMode: true,
   images: {
     remotePatterns: [
@@ -12,6 +14,7 @@ const nextConfig = {
     formats: ['image/webp'],
   },
   experimental: {
+    imgOptConcurrency: 1,
     serverActions: { bodySizeLimit: '20mb' },
   },
 };

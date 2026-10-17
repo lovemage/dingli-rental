@@ -6,6 +6,7 @@
   "deploy": {
     "cronSchedule": null,
     "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 10
+    "restartPolicyMaxRetries": 10,
+    "startCommand": "MALLOC_ARENA_MAX=2 exec node --max-old-space-size=384 --max-semi-space-size=8 node_modules/next/dist/bin/next start"
   }
 }
