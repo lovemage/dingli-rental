@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { prisma } from '@/lib/prisma';
+import { prisma, OWNER_FIELDS_INCLUDE } from '@/lib/prisma';
 import { isPropertyCode, normalizePropertyCode } from '@/lib/property-code';
 import { buildAdminPropertyWhere } from '@/lib/property-search';
 import { availableMonths, parseMonthRange } from '@/lib/tracking';
@@ -39,6 +39,7 @@ export default async function AdminPropertiesList({
   const items = await prisma.property.findMany({
     where,
     include: { images: { orderBy: { order: 'asc' }, take: 1 } },
+    omit: OWNER_FIELDS_INCLUDE,
     // 精選永遠在前；其餘按最近一次更新時間倒序（更新後自動置頂）
     orderBy: [{ featured: 'desc' }, { updatedAt: 'desc' }],
   });
@@ -95,6 +96,8 @@ export default async function AdminPropertiesList({
     inactiveAt: p.inactiveAt ? p.inactiveAt.toISOString() : null,
     relistedAt: p.relistedAt ? p.relistedAt.toISOString() : null,
     imageUrl: p.images[0]?.url || null,
+    ownerName: p.ownerName,
+    ownerPhone: p.ownerPhone,
     monthViews: viewMonthByProperty.get(p.id) ?? 0,
     totalViews: viewTotalByProperty.get(p.id) ?? 0,
   }));

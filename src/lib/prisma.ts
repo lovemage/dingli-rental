@@ -24,15 +24,23 @@ function getDatabaseUrl(): string {
   return raw;
 }
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
-
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
+function createClient() {
+  return new PrismaClient({
     adapter: new PrismaPg({ connectionString: getDatabaseUrl() }),
     log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+    // 屋主姓名／電話只給後台：預設不查出，公開 API 與前台頁面不會外洩。
+    // 後台需要時以 `omit: OWNER_FIELDS_INCLUDE` 明確取回。
+    omit: { property: { ownerName: true, ownerPhone: true } },
   });
+}
+
+const globalForPrisma = globalThis as unknown as {
+  prisma: ReturnType<typeof createClient> | undefined;
+};
+
+export const prisma = globalForPrisma.prisma ?? createClient();
+
+/** 後台查詢物件時帶回屋主欄位：prisma.property.findUnique({ ..., omit: OWNER_FIELDS_INCLUDE }) */
+export const OWNER_FIELDS_INCLUDE = { ownerName: false, ownerPhone: false } as const;
 
 globalForPrisma.prisma = prisma;

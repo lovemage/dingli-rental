@@ -135,6 +135,33 @@ export const PARKING_OPTIONS = [
   '機械+平面,費用另計',
 ] as const;
 
+/** 車位是否「費用另計」（需填車位價格） */
+export function isParkingExtraFee(parkingType: string | null | undefined): boolean {
+  return Boolean(parkingType && parkingType.includes('費用另計'));
+}
+
+// 公設（「其他」勾選後可自行填寫）
+export const FACILITY_OPTIONS = ['交誼廳', '健身房', '泳池', '餐廳', '閱覽室', '瑜伽教室', '其他'] as const;
+export const FACILITY_OTHER = '其他';
+
+// 租金含稅（二選一）
+export const RENT_TAX_OPTIONS = ['含稅', '不含稅'] as const;
+
+// 坪數換算：1 坪 = 400/121 m²；1 m² = 10.7639 ft²
+export const PING_TO_M2 = 400 / 121;
+export const M2_TO_FT2 = 10.7639104;
+export function pingToM2(ping: number): number {
+  return ping * PING_TO_M2;
+}
+export function pingToFt2(ping: number): number {
+  return ping * PING_TO_M2 * M2_TO_FT2;
+}
+/** 格式化換算面積，最多 1 位小數 */
+export function formatArea(n: number): string {
+  if (!Number.isFinite(n) || n <= 0) return '';
+  return (Math.round(n * 10) / 10).toLocaleString('en-US');
+}
+
 // 朝向
 export const DIRECTION_OPTIONS = [
   '朝北', '朝南', '朝東', '朝西',

@@ -18,6 +18,13 @@ import {
   DIRECTION_OPTIONS,
   FLOOR_TYPE_OPTIONS,
   FEATURE_TAGS,
+  FACILITY_OPTIONS,
+  FACILITY_OTHER,
+  RENT_TAX_OPTIONS,
+  isParkingExtraFee,
+  pingToM2,
+  pingToFt2,
+  formatArea,
 } from '@/data/taiwan-addresses';
 import type { Taxonomies } from '@/lib/taxonomies-shared';
 
@@ -60,6 +67,8 @@ export type PropertyFormValue = {
   floorSub?: string;
   totalFloor?: string;
   community?: string;
+  facilities: string[];
+  facilitiesOther?: string;
   rooms: number | '';
   livingRooms: number | '';
   bathrooms: number | '';
@@ -81,11 +90,15 @@ export type PropertyFormValue = {
   rentIncludes: string[];
   managementFee?: number | '';
   noManagementFee: boolean;
+  rentTax?: string;
   minLease: string;
   moveInDate?: string;
   anytimeMoveIn: boolean;
   hasParking: boolean;
   parkingType?: string;
+  parkingFee?: number | '';
+  ownerName?: string;
+  ownerPhone?: string;
   title: string;
   featureTags: string[];
   description: string;
@@ -100,15 +113,16 @@ const DEFAULTS: PropertyFormValue = {
   adType: '', city: '台北市', district: '', street: '', lane: '', alley: '', number: '', numberSub: '',
   hideAddress: true,
   floorType: '出租單層', floor: '', floorSub: '', totalFloor: '',
-  community: '',
+  community: '', facilities: [], facilitiesOther: '',
   rooms: '', livingRooms: '', bathrooms: '', balconies: '', openLayout: false,
   buildingAge: '', ageUnknown: false, direction: '',
   usableArea: '', registeredArea: '',
   equipment: [], furniture: [], hasElevator: false,
   tenantTypes: [], cookingAllowed: true, petsAllowed: false,
-  rent: '', deposit: '兩個月', rentIncludes: [], managementFee: '', noManagementFee: false,
+  rent: '', deposit: '兩個月', rentIncludes: [], managementFee: '', noManagementFee: false, rentTax: '',
   minLease: '一年', moveInDate: '', anytimeMoveIn: false,
-  hasParking: false, parkingType: '',
+  hasParking: false, parkingType: '', parkingFee: '',
+  ownerName: '', ownerPhone: '',
   title: '', featureTags: [], description: '',
   status: 'active', listingStatus: 'active', featured: false,
   images: [],
@@ -417,9 +431,19 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from, oc
     const parkingType = v.hasParking ? (v.parkingType || '') : '';
     const { hasParking, ...rest } = v;
     void hasParking;
+    const parkingFee = isParkingExtraFee(parkingType) && v.parkingFee !== '' && v.parkingFee != null
+      ? Number(v.parkingFee)
+      : null;
+    const facilities = Array.isArray(v.facilities) ? v.facilities : [];
     return {
       ...rest,
       parkingType: parkingType || null,
+      parkingFee: Number.isFinite(parkingFee as number) ? parkingFee : null,
+      facilities,
+      facilitiesOther: facilities.includes(FACILITY_OTHER) ? (v.facilitiesOther || '').trim() || null : null,
+      rentTax: v.rentTax || null,
+      ownerName: (v.ownerName || '').trim() || null,
+      ownerPhone: (v.ownerPhone || '').trim() || null,
       region: v.city, // 大分類 = 縣市
       hideAddress: true,
       floor: v.floorType === '多層出租'
@@ -802,6 +826,26 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from, oc
           <input className="input-base" placeholder="填寫正確社區名，廣告即可在社區找房頁面進行曝光" value={v.community || ''} onChange={(e) => update('community', e.target.value)} />
         </Field>
 
+        <Field label="公設">
+          <div className="flex flex-wrap gap-3">
+            {FACILITY_OPTIONS.map((f) => (
+              <label key={f} className="inline-flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={(v.facilities || []).includes(f)} onChange={() => toggleArray('facilities', f)} />
+                {f}
+              </label>
+            ))}
+          </div>
+          {(v.facilities || []).includes(FACILITY_OTHER) && (
+            <input
+              className="input-base mt-2"
+              placeholder="請填寫其他公設，多項以頓號分隔（例：烤箱、蒸氣室、KTV）"
+              maxLength={200}
+              value={v.facilitiesOther || ''}
+              onChange={(e) => update('facilitiesOther', e.target.value)}
+            />
+          )}
+        </Field>
+
         {/* 格局 */}
         <Field label="格局（現況） *" required>
           <div className="grid grid-cols-4 gap-2">
@@ -841,6 +885,12 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from, oc
               <input id="field-usable-area" type="number" step="0.01" min={0} className={inputClass('field-usable-area')} placeholder="請填寫室內實際使用坪數" value={v.usableArea} onChange={(e) => update('usableArea', e.target.value === '' ? '' : Number(e.target.value))} />
               <span className="text-sm font-bold">坪</span>
             </div>
+            {Number(v.usableArea) > 0 && (
+              <p className="mt-1.5 text-xs text-ink-500">
+                約 <strong className="text-ink-700">{formatArea(pingToM2(Number(v.usableArea)))}</strong> 平方米（m²）／
+                <strong className="text-ink-700">{formatArea(pingToFt2(Number(v.usableArea)))}</strong> 平方英尺（ft²）
+              </p>
+            )}
           </Field>
 
           <Field label="朝向">
@@ -853,6 +903,19 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from, oc
 
         {/* 設備家具 */}
         <Field label="提供設備">
+          {(() => {
+            const allSelected = EQUIP_OPTS.length > 0 && EQUIP_OPTS.every((e) => v.equipment.includes(e));
+            return (
+              <label className="inline-flex items-center gap-2 text-sm font-bold mb-2">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={() => update('equipment', allSelected ? [] : [...EQUIP_OPTS])}
+                />
+                全選
+              </label>
+            );
+          })()}
           <div className="flex flex-wrap gap-3">
             {EQUIP_OPTS.map((e) => (
               <label key={e} className="inline-flex items-center gap-2 text-sm">
@@ -923,6 +986,19 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from, oc
                 {r}
               </label>
             ))}
+          </div>
+          <div className="flex flex-wrap gap-3 mt-2 pt-2 border-t border-line">
+            {RENT_TAX_OPTIONS.map((t) => (
+              <label key={t} className="inline-flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={v.rentTax === t}
+                  onChange={() => update('rentTax', v.rentTax === t ? '' : t)}
+                />
+                {t}
+              </label>
+            ))}
+            <span className="text-xs text-ink-500 self-center">（二選一）</span>
           </div>
         </Field>
 
@@ -1035,6 +1111,20 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from, oc
                 <option key={opt} value={opt}>{opt}</option>
               ))}
             </select>
+            {v.hasParking && isParkingExtraFee(v.parkingType) && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm">車位價格</span>
+                <input
+                  type="number"
+                  min={0}
+                  className="input-base !w-36"
+                  placeholder="元/月"
+                  value={v.parkingFee ?? ''}
+                  onChange={(e) => update('parkingFee', e.target.value === '' ? '' : Number(e.target.value))}
+                />
+                <span className="text-sm font-bold">元/月</span>
+              </div>
+            )}
           </div>
         </Field>
       </Card>
@@ -1087,6 +1177,15 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from, oc
           <input type="checkbox" checked={v.featured} onChange={(e) => update('featured', e.target.checked)} />
           設為精選物件（在首頁與列表優先顯示）
         </label>
+        <div className="grid sm:grid-cols-2 gap-4 pt-2">
+          <Field label="屋主">
+            <input className="input-base" placeholder="屋主姓名" maxLength={50} value={v.ownerName || ''} onChange={(e) => update('ownerName', e.target.value)} />
+          </Field>
+          <Field label="電話">
+            <input type="tel" className="input-base" placeholder="屋主電話" maxLength={30} value={v.ownerPhone || ''} onChange={(e) => update('ownerPhone', e.target.value)} />
+          </Field>
+        </div>
+        <p className="text-xs text-ink-500">屋主資料只在後台顯示，不會出現在前台網頁與 PDF。</p>
       </Card>
 
       {/* 底部固定送出列 */}

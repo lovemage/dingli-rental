@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { prisma } from '@/lib/prisma';
+import { prisma, OWNER_FIELDS_INCLUDE } from '@/lib/prisma';
 import PropertyForm from '@/components/admin/PropertyForm';
 import { splitMultiFloor } from '@/lib/property-floor';
 import { getTaxonomies } from '@/lib/taxonomies';
@@ -28,6 +28,7 @@ export default async function EditPropertyPage({
     prisma.property.findUnique({
       where: { id },
       include: { images: { orderBy: { order: 'asc' } } },
+      omit: OWNER_FIELDS_INCLUDE,
     }).catch(() => null),
     getTaxonomies(),
     loadAiSettings(),
@@ -53,6 +54,7 @@ export default async function EditPropertyPage({
     tenantTypes: (property.tenantTypes as string[]) || [],
     rentIncludes: (property.rentIncludes as string[]) || [],
     featureTags: (property.featureTags as string[]) || [],
+    facilities: (property.facilities as string[]) || [],
   };
 
   return (
@@ -83,6 +85,13 @@ export default async function EditPropertyPage({
             className="btn btn-secondary text-sm"
           >
             JA
+          </Link>
+          <Link
+            href={`/admin/properties/${id}/pdf?lang=zh`}
+            target="_blank"
+            className="btn btn-secondary text-sm"
+          >
+            匯出 PDF
           </Link>
         </div>
       </div>

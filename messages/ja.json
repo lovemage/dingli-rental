@@ -276,7 +276,15 @@
     "lane": "巷",
     "alley": "弄",
     "number": "号",
-    "numberSub": "の"
+    "numberSub": "の",
+    "facilitiesLabel": "共用施設",
+    "parkingWithFee": "{type}（NT$ {amount}／月）",
+    "rentTaxLabel": "税区分",
+    "areaConverted": "約 {m2} m²／{ft2} ft²",
+    "addressLabel": "住所",
+    "mapHeading": "地図",
+    "pdfContact": "お問い合わせ",
+    "pdfCode": "物件番号"
   },
   "languageSwitcher": {
     "label": "言語切替",

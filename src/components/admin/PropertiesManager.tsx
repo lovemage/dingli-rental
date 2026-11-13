@@ -27,6 +27,12 @@ const TAB_BUTTON_CLASS = 'inline-flex h-8 shrink-0 items-center justify-center g
 
 type ViewTab = 'active' | 'inactive' | 'featured' | 'general';
 
+const PDF_LANGS = [
+  { code: 'zh', label: '中文 PDF' },
+  { code: 'en', label: 'English PDF' },
+  { code: 'ja', label: '日本語 PDF' },
+] as const;
+
 type PropertyItem = {
   id: number;
   code?: string | null;
@@ -58,6 +64,8 @@ type PropertyItem = {
   inactiveAt?: string | null;
   relistedAt?: string | null;
   imageUrl: string | null;
+  ownerName?: string | null;
+  ownerPhone?: string | null;
   monthViews: number;
   totalViews: number;
 };
@@ -166,6 +174,8 @@ export default function PropertiesManager({
   const [sort, setSort] = useState<AdminPropertySort | ''>('');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [copiedShareId, setCopiedShareId] = useState<number | null>(null);
+  const [copiedAddressId, setCopiedAddressId] = useState<number | null>(null);
+  const [pdfMenuId, setPdfMenuId] = useState<number | null>(null);
   const [desktopViewMode, setDesktopViewMode] = useState<'card' | 'compact'>('compact');
   const listTopRef = useRef<HTMLDivElement | null>(null);
 
@@ -368,6 +378,35 @@ export default function PropertiesManager({
       }, 1200);
     } catch {
       alert('複製編號失敗');
+    }
+  }
+
+  async function copyAddress(id: number, address: string) {
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopiedAddressId(id);
+      setTimeout(() => {
+        setCopiedAddressId((current) => (current === id ? null : current));
+      }, 1200);
+    } catch {
+      alert('複製地址失敗');
+    }
+  }
+
+  async function deleteProperty(p: PropertyItem) {
+    const label = p.code ? `#${p.code} ${p.title}` : p.title;
+    if (!confirm(`確定要永久刪除「${label}」？\n刪除後照片與資料都無法復原。`)) return;
+    setPending(p.id);
+    try {
+      const res = await fetch(`/api/properties/${p.id}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || '刪除失敗');
+      setItems((prev) => prev.filter((x) => x.id !== p.id));
+      router.refresh();
+    } catch (error: any) {
+      alert(error?.message || '刪除失敗');
+    } finally {
+      setPending(null);
     }
   }
 
@@ -706,7 +745,8 @@ export default function PropertiesManager({
                   : 'border-line bg-white text-ink-700 hover:border-brand-green-500 hover:text-brand-green-700'
               }`}
             >
-              已下架（{inactiveItems.length}）
+              <MaterialIcon name="delete" className="!text-xs sm:!text-sm" />
+              垃圾桶・已下架（{inactiveItems.length}）
             </button>
           </div>
 
@@ -824,14 +864,37 @@ export default function PropertiesManager({
                             NT$ {p.rent.toLocaleString()}
                           </span>
                         </div>
-                        <p
-                          className={`mt-0.5 line-clamp-1 text-[11px] text-ink-500 ${
-                            isCompact ? 'sm:hidden' : 'sm:line-clamp-2 sm:text-xs'
-                          }`}
-                          title={fullAddress}
-                        >
-                          {fullAddress}
-                        </p>
+                        <div className={`mt-0.5 flex items-start gap-1.5 ${isCompact ? 'sm:hidden' : ''}`}>
+                          <p
+                            className="line-clamp-1 min-w-0 text-[11px] text-ink-500 sm:line-clamp-2 sm:text-xs"
+                            title={fullAddress}
+                          >
+                            {fullAddress}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => copyAddress(p.id, fullAddress)}
+                            className="shrink-0 rounded-full border border-line bg-white px-1.5 py-0.5 text-[10px] font-bold text-ink-500 transition hover:border-brand-green-500 hover:text-brand-green-700 sm:text-[11px]"
+                            title="複製地址"
+                          >
+                            {copiedAddressId === p.id ? '已複製' : '複製'}
+                          </button>
+                        </div>
+                        {(p.ownerName || p.ownerPhone) && (
+                          <p className={`mt-0.5 text-[11px] text-ink-600 sm:text-xs ${isCompact ? 'sm:hidden' : ''}`}>
+                            屋主 {p.ownerName || '—'}
+                            {p.ownerPhone && (
+                              <a
+                                href={`tel:${p.ownerPhone.replace(/[^\d+]/g, '')}`}
+                                className="ml-1.5 inline-flex items-center gap-0.5 font-bold text-brand-green-700 underline-offset-2 hover:underline"
+                                title="撥打給屋主"
+                              >
+                                <MaterialIcon name="call" className="!text-sm" />
+                                {p.ownerPhone}
+                              </a>
+                            )}
+                          </p>
+                        )}
                         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-ink-600 sm:hidden">
                           <span>{p.openLayout ? '開放式' : `${p.rooms} 房 ${p.livingRooms} 廳`}</span>
                           <span className="text-ink-300">·</span>
@@ -986,6 +1049,48 @@ export default function PropertiesManager({
                           <span className={actionLabelClass}>重新上架</span>
                         </button>
                       )}
+
+                      <button
+                        type="button"
+                        disabled={pending === p.id}
+                        onClick={() => deleteProperty(p)}
+                        className={actionBtn('danger')}
+                        title="刪除"
+                        aria-label="刪除"
+                      >
+                        <MaterialIcon name="close" className={ACTION_ICON_CLASS} />
+                        <span className={actionLabelClass}>刪除</span>
+                      </button>
+
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setPdfMenuId((cur) => (cur === p.id ? null : p.id))}
+                          className={actionBtn('neutral')}
+                          title="匯出 PDF"
+                          aria-label="匯出 PDF"
+                          aria-expanded={pdfMenuId === p.id}
+                        >
+                          <MaterialIcon name="picture_as_pdf" className={ACTION_ICON_CLASS} />
+                          <span className={actionLabelClass}>PDF</span>
+                        </button>
+                        {pdfMenuId === p.id && (
+                          <div className="absolute right-0 z-20 mt-1 w-32 overflow-hidden rounded-lg border border-line bg-white py-1 shadow-lg">
+                            {PDF_LANGS.map((l) => (
+                              <a
+                                key={l.code}
+                                href={`/admin/properties/${p.id}/pdf?lang=${l.code}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={() => setPdfMenuId(null)}
+                                className="block px-3 py-2 text-sm text-ink-700 hover:bg-paper-2"
+                              >
+                                {l.label}
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </article>

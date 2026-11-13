@@ -26,6 +26,7 @@ type PropertySourceFields = {
   minLease: string;
   direction: string | null;
   parkingType: string | null;
+  facilitiesOther?: string | null;
 };
 
 export const PROPERTY_SOURCE_SELECT = {
@@ -46,6 +47,7 @@ export const PROPERTY_SOURCE_SELECT = {
   minLease: true,
   direction: true,
   parkingType: true,
+  facilitiesOther: true,
 } satisfies Prisma.PropertySelect;
 
 function arr(v: unknown): string[] {
@@ -71,6 +73,8 @@ export function computePropertySourceHash(p: PropertySourceFields): string {
     minLease: p.minLease,
     direction: p.direction ?? '',
     parkingType: p.parkingType ?? '',
+    // 只在有填時才納入，避免新增欄位讓既有翻譯全部變成「過期」
+    ...(p.facilitiesOther?.trim() ? { facilitiesOther: p.facilitiesOther.trim() } : {}),
   });
   return crypto.createHash('sha256').update(payload).digest('hex');
 }
@@ -93,6 +97,7 @@ type RawTranslated = {
   minLease?: unknown;
   direction?: unknown;
   parkingType?: unknown;
+  facilitiesOther?: unknown;
 };
 
 function pickString(v: unknown, fallback?: string): string | null {
@@ -145,6 +150,7 @@ export async function translateProperty(
         minLease: property.minLease,
         direction: property.direction ?? '',
         parkingType: property.parkingType ?? '',
+        ...(property.facilitiesOther?.trim() ? { facilitiesOther: property.facilitiesOther } : {}),
       };
       const out = (await translateJsonObject(payload, locale, {
         usageScope: 'property',
@@ -168,6 +174,9 @@ export async function translateProperty(
         minLease: pickString(out.minLease, property.minLease),
         direction: pickString(out.direction, property.direction ?? ''),
         parkingType: pickString(out.parkingType, property.parkingType ?? ''),
+        facilitiesOther: property.facilitiesOther?.trim()
+          ? pickString(out.facilitiesOther, property.facilitiesOther)
+          : null,
         sourceHash,
       };
       await prisma.propertyTranslation.upsert({
@@ -295,5 +304,21 @@ export function localizePropertyForDetail(p: any, locale: string) {
     furniture: localizeList(p.furniture, tr?.furniture, locale),
     rentIncludes: localizeList(p.rentIncludes, tr?.rentIncludes, locale),
     tenantTypes: localizeList(p.tenantTypes, tr?.tenantTypes, locale),
+    rentTax: lookupFixed('rentTax', p.rentTax, locale) ?? p.rentTax ?? null,
+    facilities: localizeFacilities(p, tr, locale),
   };
+}
+
+/** 公設清單：固定項目走對照表；「其他」換成自填內容（英日文用 AI 翻譯）。 */
+export function localizeFacilities(p: any, tr: any, locale: string): string[] {
+  const src = arr(p.facilities);
+  const fixed = src.filter((x) => x !== '其他');
+  const out = localizeList(fixed, [], locale);
+  if (src.includes('其他')) {
+    const other = firstText(tr?.facilitiesOther, p.facilitiesOther);
+    if (other) {
+      out.push(...other.split(/[、,，/／;；\n]+/).map((x) => x.trim()).filter(Boolean));
+    }
+  }
+  return out;
 }

@@ -141,6 +141,18 @@ const LIST_ITEMS: Dict = {
   可報稅: { en: 'Rent tax-deductible', ja: '家賃の税控除可' },
   可入籍: { en: 'Household registration OK', ja: '住民登録可' },
   可租補: { en: 'Rent subsidy OK', ja: '家賃補助可' },
+  // 公設
+  交誼廳: { en: 'Lounge', ja: 'ラウンジ' },
+  健身房: { en: 'Gym', ja: 'フィットネスジム' },
+  泳池: { en: 'Swimming pool', ja: 'プール' },
+  餐廳: { en: 'Restaurant', ja: 'レストラン' },
+  閱覽室: { en: 'Reading room', ja: '読書室' },
+  瑜伽教室: { en: 'Yoga room', ja: 'ヨガルーム' },
+};
+
+const RENT_TAX: Dict = {
+  含稅: { en: 'Tax included', ja: '税込' },
+  不含稅: { en: 'Tax excluded', ja: '税別' },
 };
 
 export type FixedField =
@@ -150,6 +162,7 @@ export type FixedField =
   | 'deposit'
   | 'parkingType'
   | 'direction'
+  | 'rentTax'
   | 'minLease';
 
 const FIELD_DICT: Record<Exclude<FixedField, 'minLease'>, Dict> = {
@@ -159,6 +172,7 @@ const FIELD_DICT: Record<Exclude<FixedField, 'minLease'>, Dict> = {
   deposit: DEPOSIT,
   parkingType: PARKING,
   direction: DIRECTION,
+  rentTax: RENT_TAX,
 };
 
 function formatLeaseMonths(months: number, locale: 'en' | 'ja'): string {

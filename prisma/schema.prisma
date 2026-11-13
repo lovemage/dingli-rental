@@ -44,6 +44,7 @@ model PropertyTranslation {
   minLease     String?  // 例：1 year / 1年
   direction    String?  // 例：South-facing / 南向
   parkingType  String?  // 例：Flat parking (included)
+  facilitiesOther String? // 例：Sauna, KTV room
   sourceHash   String   // 來源中文內容的 hash，內容變更後重譯
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -85,6 +86,9 @@ model Property {
 
   // 社區
   community       String?
+  // 公設（JSON 陣列：交誼廳/健身房/泳池/餐廳/閱覽室/瑜伽教室/其他）
+  facilities      Json     @default("[]")
+  facilitiesOther String?  // 勾選「其他」時自行填寫的公設
 
   // 格局
   rooms           Int      @default(0)
@@ -120,12 +124,18 @@ model Property {
   rentIncludes    Json     @default("[]") // ["管理費","清潔費"...]
   managementFee   Int?
   noManagementFee Boolean  @default(false)
+  rentTax         String?  // 含稅 / 不含稅
 
   // 租期
   minLease        String   @default("一年") // 一年/半年/不限
   moveInDate      DateTime?
   anytimeMoveIn   Boolean  @default(false)
   parkingType     String?  // 車位：平面式,已含租金內 / 平面式,費用另計 / 機械式,已含租金內 / 機械式,費用另計
+  parkingFee      Int?     // 車位「費用另計」時的價格（元/月）
+
+  // 屋主資料（僅後台顯示；prisma client 預設 omit，公開查詢不會帶出）
+  ownerName       String?
+  ownerPhone      String?
 
   // 特色描述
   title           String   // 廣告標題 6-30 字

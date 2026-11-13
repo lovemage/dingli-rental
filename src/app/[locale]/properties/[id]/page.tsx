@@ -7,7 +7,7 @@ import Footer from '@/components/frontend/Footer';
 import TrackingBeacon from '@/components/frontend/TrackingBeacon';
 import PropertyGallery from '@/components/frontend/PropertyGallery';
 import { formatFloorLine } from '@/lib/property-floor';
-import { formatMinLeaseDisplay } from '@/data/taiwan-addresses';
+import { formatMinLeaseDisplay, formatArea, isParkingExtraFee, pingToFt2, pingToM2 } from '@/data/taiwan-addresses';
 import { prisma } from '@/lib/prisma';
 import { getCurrentAdmin } from '@/lib/auth';
 import { localizePropertyForDetail } from '@/lib/property-translate';
@@ -177,6 +177,19 @@ export default async function PropertyDetailPage({
   const tenantTypes: string[] = (p.tenantTypes as string[]) || [];
   const rentIncludes: string[] = (p.rentIncludes as string[]) || [];
   const featureTags: string[] = (p.featureTags as string[]) || [];
+  const facilities: string[] = p.facilities || [];
+
+  const areaStr = raw.usableArea > 0
+    ? `${t('areaPing', { count: raw.usableArea })}${locale === 'en' ? ' (' : '（'}${t('areaConverted', {
+        m2: formatArea(pingToM2(raw.usableArea)),
+        ft2: formatArea(pingToFt2(raw.usableArea)),
+      })}${locale === 'en' ? ')' : '）'}`
+    : t('dash');
+  const parkingStr = !p.parkingType
+    ? t('parkingNone')
+    : isParkingExtraFee(raw.parkingType) && raw.parkingFee
+      ? t('parkingWithFee', { type: p.parkingType, amount: raw.parkingFee.toLocaleString() })
+      : p.parkingType;
 
   // 公開詳情頁強制只顯示「縣市・行政區・路名」三層；
   // 巷／弄／號／之號為敏感資料，僅限 admin 後台檢視，不論 hideAddress 旗標為何
@@ -287,12 +300,12 @@ export default async function PropertyDetailPage({
                 <h2 className="font-bold text-lg mb-3">{t('basicInfo')}</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                   <Info label={t('layout')} value={layoutStr} />
-                  <Info label={t('usableArea')} value={t('areaPing', { count: raw.usableArea })} />
+                  <Info label={t('usableArea')} value={areaStr} />
                   <Info label={t('floor')} value={floorStr} />
                   <Info label={t('buildingAge')} value={ageStr} />
                   <Info label={t('direction')} value={p.direction || t('dash')} />
                   <Info label={t('community')} value={p.community || t('dash')} />
-                  <Info label={t('parking')} value={p.parkingType || t('parkingNone')} />
+                  <Info label={t('parking')} value={parkingStr} />
                   <Info
                     label={t('elevator')}
                     value={raw.hasElevator ? t('elevatorYes') : t('elevatorNo')}
@@ -301,6 +314,7 @@ export default async function PropertyDetailPage({
 
                 {equipment.length > 0 && <Tags label={t('equipmentLabel')} items={equipment} />}
                 {furniture.length > 0 && <Tags label={t('furnitureLabel')} items={furniture} />}
+                {facilities.length > 0 && <Tags label={t('facilitiesLabel')} items={facilities} />}
 
                 <h2 className="font-bold text-lg mb-3 mt-6">{t('rentTermsHeading')}</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
@@ -347,6 +361,7 @@ export default async function PropertyDetailPage({
                 <div className="space-y-2 text-sm">
                   <Row label={t('depositLabel')} value={p.deposit} />
                   <Row label={t('managementFee')} value={managementFeeStr} />
+                  {p.rentTax && <Row label={t('rentTaxLabel')} value={p.rentTax} />}
                   {rentIncludes.length > 0 && (
                     <div>
                       <p className="text-ink-500 mb-1">{t('rentIncludes')}</p>

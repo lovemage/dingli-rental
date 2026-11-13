@@ -276,7 +276,15 @@
     "lane": "Ln.",
     "alley": "Aly.",
     "number": "No.",
-    "numberSub": "-"
+    "numberSub": "-",
+    "facilitiesLabel": "Shared facilities",
+    "parkingWithFee": "{type} (NT$ {amount} / month)",
+    "rentTaxLabel": "Tax",
+    "areaConverted": "approx. {m2} m² / {ft2} sq ft",
+    "addressLabel": "Address",
+    "mapHeading": "Location map",
+    "pdfContact": "Contact us",
+    "pdfCode": "Listing No."
   },
   "languageSwitcher": {
     "label": "Switch language",
