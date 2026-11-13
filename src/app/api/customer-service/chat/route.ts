@@ -198,7 +198,7 @@ ${propertyCatalog}
       return NextResponse.json({ error: '客服無回應' }, { status: 502 });
     }
 
-    void recordAiUsage('chat');
+    void recordAiUsage('chat', { scope: 'chat', label: `客服（${languageCode.toUpperCase()}）` });
     return NextResponse.json({ reply, lineUrl });
   } catch (e: any) {
     console.error('[customer-service] failed', e?.message);

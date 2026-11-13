@@ -1,5 +1,6 @@
 import { loadAiSettings } from '@/lib/ai-extract';
-import { assertAiQuotaAvailable, recordAiUsage } from '@/lib/ai-usage';
+import { DEFAULT_TRANSLATION_MODEL } from '@/data/ai-extract-defaults';
+import { assertAiQuotaAvailable, recordAiUsage, type AiUsageScope } from '@/lib/ai-usage';
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const TRANSLATE_TIMEOUT_MS = Number(process.env.OPENROUTER_TRANSLATE_TIMEOUT_MS || 60000);
@@ -32,6 +33,10 @@ export type TranslateOptions = {
   preserveChineseProperNouns?: boolean;
   /** 額外指示 */
   extraInstructions?: string;
+  /** 用量紀錄分區（物件／網站內容），預設網站內容 */
+  usageScope?: AiUsageScope;
+  /** 用量紀錄標籤，例：物件 #478 → EN */
+  usageLabel?: string;
 };
 
 /**
@@ -51,8 +56,8 @@ export async function translateJsonObject(
   if (!settings.openrouterApiKey) {
     throw new Error('OpenRouter API key 未設定，無法執行翻譯');
   }
-  // 統一使用 AI 辨識（後台 AI 設定 → 主模型）同一個模型，集中管理、便於切換。
-  const model = settings.model || 'google/gemini-2.5-flash';
+  // 翻譯有獨立模型設定（後台 AI 設定 → AI 翻譯）
+  const model = settings.translationModel || DEFAULT_TRANSLATION_MODEL;
 
   const systemPrompt = `You are a professional translator for a Taiwanese real estate rental website (鼎立租售管理 / Dingli Rental).
 
@@ -135,7 +140,7 @@ Return ONLY the translated JSON, no markdown fences, no commentary.`;
       if (parsed == null) {
         throw new Error('OpenRouter translate: 回應無法解析為 JSON');
       }
-      void recordAiUsage('translate');
+      void recordAiUsage('translate', { scope: opts.usageScope ?? 'site', label: opts.usageLabel });
       return parsed;
     } catch (e: any) {
       lastError = e as Error;

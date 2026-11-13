@@ -2,18 +2,26 @@ import { prisma } from '@/lib/prisma';
 
 export type AiUsageKind = 'ocr' | 'translate' | 'chat' | 'other';
 
+/** 紀錄分區：客服、物件（物件翻譯／OCR）、網站內容（CMS 翻譯）分開存，互不擠掉 */
+export type AiUsageScope = 'chat' | 'property' | 'site';
+export const AI_USAGE_SCOPES: AiUsageScope[] = ['chat', 'property', 'site'];
+
 export type AiUsageLogEntry = {
   at: string;
   kind: AiUsageKind;
   delta: number;
   balance: number;
+  /** 例：物件 #478 → EN */
+  label?: string;
 };
+
+export type AiUsageLogs = Record<AiUsageScope, AiUsageLogEntry[]>;
 
 export type AiUsageMeter = {
   totalUsd: number;
   currentUsd: number;
   updatedAt: string;
-  log: AiUsageLogEntry[];
+  logs: AiUsageLogs;
 };
 
 const SECTION = 'ai_usage_meter';
@@ -21,9 +29,16 @@ const DEFAULT_TOTAL_USD = 10;
 const DEFAULT_CURRENT_USD = 0.52;
 const INCREMENT_MIN = 0.025;
 const INCREMENT_MAX = 0.055;
-const LOG_LIMIT = 10;
+/** 每個分區保留的筆數上限 */
+const LOG_LIMIT = 300;
+/** 剩餘額度低於此比例時，後台顯示紅點提醒 */
+export const AI_LOW_BALANCE_RATIO = 0.2;
 
 const VALID_KINDS: AiUsageKind[] = ['ocr', 'translate', 'chat', 'other'];
+
+function emptyLogs(): AiUsageLogs {
+  return { chat: [], property: [], site: [] };
+}
 
 function sanitizeLog(raw: unknown): AiUsageLogEntry[] {
   if (!Array.isArray(raw)) return [];
@@ -34,10 +49,26 @@ function sanitizeLog(raw: unknown): AiUsageLogEntry[] {
       const delta = Number(item?.delta);
       const balance = Number(item?.balance);
       if (!at || !Number.isFinite(delta) || !Number.isFinite(balance)) return null;
-      return { at, kind, delta, balance } satisfies AiUsageLogEntry;
+      const entry: AiUsageLogEntry = { at, kind, delta, balance };
+      if (typeof item?.label === 'string' && item.label.trim()) entry.label = item.label.trim().slice(0, 80);
+      return entry;
     })
     .filter((x): x is AiUsageLogEntry => x !== null)
     .slice(0, LOG_LIMIT);
+}
+
+function sanitizeLogs(data: any): AiUsageLogs {
+  const logs = emptyLogs();
+  if (data?.logs && typeof data.logs === 'object') {
+    for (const scope of AI_USAGE_SCOPES) logs[scope] = sanitizeLog(data.logs[scope]);
+  }
+  // 舊版單一 log：客服歸客服，其餘（翻譯／OCR）歸物件
+  if (Array.isArray(data?.log)) {
+    for (const entry of sanitizeLog(data.log)) {
+      (entry.kind === 'chat' ? logs.chat : logs.property).push(entry);
+    }
+  }
+  return logs;
 }
 
 function normalize(data: any): AiUsageMeter {
@@ -47,7 +78,7 @@ function normalize(data: any): AiUsageMeter {
     totalUsd: Number.isFinite(totalUsd) && totalUsd > 0 ? totalUsd : DEFAULT_TOTAL_USD,
     currentUsd: Number.isFinite(currentUsd) && currentUsd >= 0 ? currentUsd : DEFAULT_CURRENT_USD,
     updatedAt: typeof data?.updatedAt === 'string' ? data.updatedAt : new Date().toISOString(),
-    log: sanitizeLog(data?.log),
+    logs: sanitizeLogs(data),
   };
 }
 
@@ -59,7 +90,7 @@ export async function loadAiUsageMeter(): Promise<AiUsageMeter> {
         totalUsd: DEFAULT_TOTAL_USD,
         currentUsd: DEFAULT_CURRENT_USD,
         updatedAt: new Date().toISOString(),
-        log: [],
+        logs: emptyLogs(),
       };
       await prisma.siteContent
         .upsert({
@@ -76,20 +107,20 @@ export async function loadAiUsageMeter(): Promise<AiUsageMeter> {
       totalUsd: DEFAULT_TOTAL_USD,
       currentUsd: DEFAULT_CURRENT_USD,
       updatedAt: new Date().toISOString(),
-      log: [],
+      logs: emptyLogs(),
     };
   }
 }
 
 export async function saveAiUsageMeter(
-  patch: Partial<Pick<AiUsageMeter, 'totalUsd' | 'currentUsd' | 'log'>>,
+  patch: Partial<Pick<AiUsageMeter, 'totalUsd' | 'currentUsd' | 'logs'>>,
 ): Promise<AiUsageMeter> {
   const current = await loadAiUsageMeter();
   const next: AiUsageMeter = {
     totalUsd: patch.totalUsd ?? current.totalUsd,
     currentUsd: Math.max(0, patch.currentUsd ?? current.currentUsd),
     updatedAt: new Date().toISOString(),
-    log: patch.log ? sanitizeLog(patch.log) : current.log,
+    logs: patch.logs ? sanitizeLogs({ logs: patch.logs }) : current.logs,
   };
   await prisma.siteContent.upsert({
     where: { section: SECTION },
@@ -99,11 +130,20 @@ export async function saveAiUsageMeter(
   return next;
 }
 
+function defaultScope(kind: AiUsageKind): AiUsageScope {
+  if (kind === 'chat') return 'chat';
+  if (kind === 'ocr') return 'property';
+  return 'site';
+}
+
 /**
  * 每次成功呼叫 LLM 後呼叫一次，會在 0.025 ~ 0.055 USD 之間隨機累加，
- * 並寫入最新 10 筆 log（newest first）。失敗時靜默吞掉錯誤。
+ * 並寫入對應分區的 log（newest first）。失敗時靜默吞掉錯誤。
  */
-export async function recordAiUsage(kind: AiUsageKind = 'other'): Promise<void> {
+export async function recordAiUsage(
+  kind: AiUsageKind = 'other',
+  opts: { scope?: AiUsageScope; label?: string } = {},
+): Promise<void> {
   try {
     const delta = INCREMENT_MIN + Math.random() * (INCREMENT_MAX - INCREMENT_MIN);
     const current = await loadAiUsageMeter();
@@ -114,11 +154,19 @@ export async function recordAiUsage(kind: AiUsageKind = 'other'): Promise<void> 
       delta: Number(delta.toFixed(4)),
       balance: Number(nextUsd.toFixed(4)),
     };
-    const nextLog = [entry, ...current.log].slice(0, LOG_LIMIT);
-    await saveAiUsageMeter({ currentUsd: nextUsd, log: nextLog });
+    if (opts.label) entry.label = opts.label;
+    const scope = opts.scope ?? defaultScope(kind);
+    const logs = { ...current.logs, [scope]: [entry, ...current.logs[scope]].slice(0, LOG_LIMIT) };
+    await saveAiUsageMeter({ currentUsd: nextUsd, logs });
   } catch {
     // 統計失敗不影響使用者
   }
+}
+
+/** 剩餘比例（0~1） */
+export function remainingRatio(meter: Pick<AiUsageMeter, 'totalUsd' | 'currentUsd'>): number {
+  if (meter.totalUsd <= 0) return 0;
+  return Math.max(0, (meter.totalUsd - meter.currentUsd) / meter.totalUsd);
 }
 
 export const AI_QUOTA_EXHAUSTED_MESSAGE = 'AI 額度已用盡，AI 功能已暫停，請聯繫工作室加值';

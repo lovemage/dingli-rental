@@ -8,6 +8,7 @@ import {
   DEFAULT_USER_PROMPT_TEMPLATE,
   DEFAULT_CUSTOMER_SERVICE_MODEL,
   DEFAULT_CUSTOMER_SERVICE_SYSTEM_PROMPT,
+  DEFAULT_TRANSLATION_MODEL,
   maskModelName,
 } from '@/data/ai-extract-defaults';
 
@@ -23,7 +24,8 @@ type ModelInfo = {
 // 展開「AI 模型」設定區塊需輸入此密碼，避免他人不慎瀏覽或更動模型
 const MODEL_UNLOCK_PASSWORD = '1234';
 
-type TabKey = 'ocr' | 'cs';
+type TabKey = 'ocr' | 'tr' | 'cs';
+type PickerTarget = TabKey;
 
 export default function AiSettingsForm() {
   // === API Key (shared) ===
@@ -49,6 +51,11 @@ export default function AiSettingsForm() {
   const [csModelUnlocked, setCsModelUnlocked] = useState(false);
   const [csSysPromptOpen, setCsSysPromptOpen] = useState(false);
 
+  // === Translation ===
+  const [trModel, setTrModel] = useState(DEFAULT_TRANSLATION_MODEL);
+  const [trModelOpen, setTrModelOpen] = useState(false);
+  const [trModelUnlocked, setTrModelUnlocked] = useState(false);
+
   // === Shared model picker state ===
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [modelSearch, setModelSearch] = useState('');
@@ -63,27 +70,46 @@ export default function AiSettingsForm() {
   const [msg, setMsg] = useState('');
 
   // === Usage Meter ===
-  type UsageLogRow = { at: string; kind: string; delta: number; balance: number };
   const [usageTotal, setUsageTotal] = useState(10);
   const [usageCurrent, setUsageCurrent] = useState(0.52);
-  const [usageLog, setUsageLog] = useState<UsageLogRow[]>([]);
   const [usageLoading, setUsageLoading] = useState(false);
+  const [logScope, setLogScope] = useState<UsageScope>('property');
+  const [logPage, setLogPage] = useState(1);
+  const [logData, setLogData] = useState<UsageLogPage | null>(null);
 
-  async function loadUsage() {
+  async function loadUsage(scope: UsageScope = logScope, page: number = logPage) {
     setUsageLoading(true);
     try {
-      const res = await fetch('/api/admin/ai-usage', { cache: 'no-store' });
+      const res = await fetch(`/api/admin/ai-usage?scope=${scope}&page=${page}&pageSize=10`, { cache: 'no-store' });
       const json = await res.json();
       if (res.ok) {
         if (typeof json.totalUsd === 'number') setUsageTotal(json.totalUsd);
         if (typeof json.currentUsd === 'number') setUsageCurrent(json.currentUsd);
-        if (Array.isArray(json.log)) setUsageLog(json.log as UsageLogRow[]);
+        setLogData({
+          entries: Array.isArray(json.entries) ? json.entries : [],
+          page: Number(json.page) || 1,
+          totalPages: Number(json.totalPages) || 1,
+          totalEntries: Number(json.totalEntries) || 0,
+          counts: json.counts || {},
+        });
+        setLogPage(Number(json.page) || 1);
+        window.dispatchEvent(new Event('admin:ai-usage-updated'));
       }
     } catch {
       // ignore
     } finally {
       setUsageLoading(false);
     }
+  }
+
+  function changeLogScope(scope: UsageScope) {
+    setLogScope(scope);
+    setLogPage(1);
+    void loadUsage(scope, 1);
+  }
+
+  function changeLogPage(page: number) {
+    void loadUsage(logScope, page);
   }
 
   // 初次載入：拿設定 + 若已有 key 自動拉模型
@@ -97,6 +123,7 @@ export default function AiSettingsForm() {
           if (json.model) setModel(json.model);
           if (json.systemPrompt) setSystemPrompt(json.systemPrompt);
           if (json.userPromptTemplate) setUserPromptTemplate(json.userPromptTemplate);
+          if (json.translationModel) setTrModel(json.translationModel);
           if (json.customerServiceModel) setCsModel(json.customerServiceModel);
           if (json.customerServiceSystemPrompt) setCsSystemPrompt(json.customerServiceSystemPrompt);
           setApiKeyMasked(json.apiKeyMasked || '');
@@ -146,6 +173,7 @@ export default function AiSettingsForm() {
           model,
           systemPrompt,
           userPromptTemplate,
+          translationModel: trModel,
           customerServiceModel: csModel,
           customerServiceSystemPrompt: csSystemPrompt,
         }),
@@ -164,14 +192,23 @@ export default function AiSettingsForm() {
     }
   }
 
-  /** 展開 AI 模型區塊：第一次需密碼，解鎖後本次 session 內可自由開合 */
-  function tryToggleModelPicker(target: 'ocr' | 'cs') {
-    const unlocked = target === 'ocr' ? ocrModelUnlocked : csModelUnlocked;
-    const setOpen = target === 'ocr' ? setOcrModelOpen : setCsModelOpen;
-    const setUnlocked = target === 'ocr' ? setOcrModelUnlocked : setCsModelUnlocked;
+  const pickerState: Record<PickerTarget, {
+    open: boolean;
+    setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    unlocked: boolean;
+    setUnlocked: (v: boolean) => void;
+    setModel: (id: string) => void;
+  }> = {
+    ocr: { open: ocrModelOpen, setOpen: setOcrModelOpen, unlocked: ocrModelUnlocked, setUnlocked: setOcrModelUnlocked, setModel },
+    tr: { open: trModelOpen, setOpen: setTrModelOpen, unlocked: trModelUnlocked, setUnlocked: setTrModelUnlocked, setModel: setTrModel },
+    cs: { open: csModelOpen, setOpen: setCsModelOpen, unlocked: csModelUnlocked, setUnlocked: setCsModelUnlocked, setModel: setCsModel },
+  };
 
-    if (unlocked) {
-      setOpen((s) => !s);
+  /** 展開 AI 模型區塊：第一次需密碼，解鎖後本次 session 內可自由開合 */
+  function tryToggleModelPicker(target: PickerTarget) {
+    const st = pickerState[target];
+    if (st.unlocked) {
+      st.setOpen((s) => !s);
       return;
     }
     const pwd = window.prompt('展開 AI 模型設定需要密碼：');
@@ -180,13 +217,12 @@ export default function AiSettingsForm() {
       alert('密碼錯誤');
       return;
     }
-    setUnlocked(true);
-    setOpen(true);
+    st.setUnlocked(true);
+    st.setOpen(true);
   }
 
-  function selectModel(target: 'ocr' | 'cs', newId: string) {
-    if (target === 'ocr') setModel(newId);
-    else setCsModel(newId);
+  function selectModel(target: PickerTarget, newId: string) {
+    pickerState[target].setModel(newId);
   }
 
   function resetSystemPrompt() {
@@ -212,12 +248,12 @@ export default function AiSettingsForm() {
   function renderModelPicker(opts: {
     title: string;
     currentModel: string;
-    target: 'ocr' | 'cs';
+    target: PickerTarget;
     requireVision: boolean;
   }) {
     const { title, currentModel, target, requireVision } = opts;
-    const isOpen = target === 'ocr' ? ocrModelOpen : csModelOpen;
-    const unlocked = target === 'ocr' ? ocrModelUnlocked : csModelUnlocked;
+    const isOpen = pickerState[target].open;
+    const unlocked = pickerState[target].unlocked;
     const filteredModels = filterModelsForPicker(requireVision);
     return (
       <div className="admin-card">
@@ -347,7 +383,7 @@ export default function AiSettingsForm() {
           <div>
             <h2 className="font-bold text-lg">API Key</h2>
             <p className="text-xs text-ink-500 mt-0.5">
-              「物件辨識」與「客服」共用此 Key。儲存後僅後端讀取，不會回傳到前台。
+              「物件辨識」、「翻譯」與「客服」共用此 Key。儲存後僅後端讀取，不會回傳到前台。
             </p>
           </div>
           <span className={`text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap ${apiKeyConfigured ? 'bg-brand-green-50 text-brand-green-700' : 'bg-red-50 text-red-700'}`}>
@@ -379,15 +415,21 @@ export default function AiSettingsForm() {
       <UsageMeter
         totalUsd={usageTotal}
         currentUsd={usageCurrent}
-        log={usageLog}
         loading={usageLoading}
-        onRefresh={loadUsage}
+        onRefresh={() => loadUsage()}
+        scope={logScope}
+        onScopeChange={changeLogScope}
+        logData={logData}
+        onPageChange={changeLogPage}
       />
 
       {/* === Tabs === */}
       <div className="bg-white border border-line rounded-xl p-1 flex gap-1">
         <TabButton active={activeTab === 'ocr'} onClick={() => setActiveTab('ocr')}>
           AI 物件辨識
+        </TabButton>
+        <TabButton active={activeTab === 'tr'} onClick={() => setActiveTab('tr')}>
+          AI 翻譯
         </TabButton>
         <TabButton active={activeTab === 'cs'} onClick={() => setActiveTab('cs')}>
           AI 客服
@@ -490,6 +532,24 @@ export default function AiSettingsForm() {
         </>
       )}
 
+      {/* === Tab: Translation === */}
+      {activeTab === 'tr' && (
+        <>
+          {renderModelPicker({
+            title: 'AI 模型（翻譯）',
+            currentModel: trModel,
+            target: 'tr',
+            requireVision: false,
+          })}
+          <div className="admin-card">
+            <h2 className="font-bold text-lg">翻譯範圍</h2>
+            <p className="text-xs text-ink-500 mt-1">
+              物件新增或修改內容後，自動翻譯成英文、日文；網站內容（首頁、公告等）在英文、日文頁面被瀏覽時自動翻譯。內容沒有變動不會重複翻譯。
+            </p>
+          </div>
+        </>
+      )}
+
       {/* === Tab: Customer Service === */}
       {activeTab === 'cs' && (
         <>
@@ -570,30 +630,56 @@ function TabButton({
   );
 }
 
+type UsageScope = 'chat' | 'property' | 'site';
+type UsageLogRow = { at: string; kind: string; delta: number; balance: number; label?: string };
+type UsageLogPage = {
+  entries: UsageLogRow[];
+  page: number;
+  totalPages: number;
+  totalEntries: number;
+  counts: Partial<Record<UsageScope, number>>;
+};
+
+const USAGE_SCOPE_TABS: { key: UsageScope; label: string }[] = [
+  { key: 'property', label: '物件使用' },
+  { key: 'chat', label: '客服使用' },
+  { key: 'site', label: '網站內容' },
+];
+
 function UsageMeter({
   totalUsd,
   currentUsd,
-  log,
   loading,
   onRefresh,
+  scope,
+  onScopeChange,
+  logData,
+  onPageChange,
 }: {
   totalUsd: number;
   currentUsd: number;
-  log: { at: string; kind: string; delta: number; balance: number }[];
   loading: boolean;
   onRefresh: () => void;
+  scope: UsageScope;
+  onScopeChange: (s: UsageScope) => void;
+  logData: UsageLogPage | null;
+  onPageChange: (page: number) => void;
 }) {
   const total = totalUsd > 0 ? totalUsd : 10;
   const current = Math.max(0, Math.min(currentUsd, total));
   const percent = (current / total) * 100;
   const remaining = Math.max(0, total - current);
-  const isDanger = percent >= 90;
-  const isWarn = !isDanger && percent >= 70;
-  const barColor = isDanger
+  const remainingPct = (remaining / total) * 100;
+  const isLow = remainingPct <= 20;
+  const isWarn = !isLow && remainingPct <= 30;
+  const barColor = isLow
     ? 'bg-red-500'
     : isWarn
       ? 'bg-brand-orange-500'
       : 'bg-brand-green-600';
+  const entries = logData?.entries ?? [];
+  const page = logData?.page ?? 1;
+  const totalPages = logData?.totalPages ?? 1;
   return (
     <div className="admin-card">
       <div className="flex items-center justify-between mb-3 pb-3 border-b border-line">
@@ -635,43 +721,91 @@ function UsageMeter({
       </div>
 
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-ink-500">
-        <span>剩餘額度 <strong className="text-ink-700">${remaining.toFixed(3)} USD</strong></span>
+        <span>
+          剩餘額度 <strong className={isLow ? 'text-red-700' : 'text-ink-700'}>${remaining.toFixed(3)} USD（{Math.round(remainingPct)}%）</strong>
+        </span>
       </div>
-      {remaining <= 1e-6 && (
+      {remaining <= 1e-6 ? (
         <p className="mt-2 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-xs font-bold">
           額度已用盡：AI 翻譯、OCR 辨識、AI 客服已暫停，請聯繫工作室加值。
         </p>
-      )}
+      ) : isLow ? (
+        <p className="mt-2 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-xs font-bold">
+          額度剩餘不到 20%，即將用盡，請聯繫工作室加值。
+        </p>
+      ) : null}
 
-      <div className="mt-3">
-        <div className="flex items-baseline justify-between mb-1.5">
-          <span className="text-xs font-bold text-ink-700">最近調用紀錄</span>
-          <span className="text-[10px] text-ink-400">最新 10 筆</span>
+      <div className="mt-4">
+        <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+          <span className="text-xs font-bold text-ink-700">調用紀錄</span>
+          <div className="flex gap-1">
+            {USAGE_SCOPE_TABS.map((t) => {
+              const active = t.key === scope;
+              const count = logData?.counts?.[t.key];
+              return (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => onScopeChange(t.key)}
+                  className={`px-2.5 py-1 rounded text-xs font-bold transition ${active ? 'bg-brand-green-700 text-white' : 'text-ink-600 hover:bg-paper-2'}`}
+                >
+                  {t.label}
+                  {typeof count === 'number' && <span className="ml-1 font-normal opacity-80">{count}</span>}
+                </button>
+              );
+            })}
+          </div>
         </div>
-        {log.length === 0 ? (
-          <p className="text-[11px] text-ink-400 py-2 text-center bg-paper-2 rounded">尚無紀錄</p>
+        {entries.length === 0 ? (
+          <p className="text-[11px] text-ink-400 py-2 text-center bg-paper-2 rounded">
+            {logData ? '尚無紀錄' : loading ? '載入中…' : '尚無紀錄'}
+          </p>
         ) : (
           <div className="overflow-x-auto rounded border border-line">
             <table className="w-full text-[11px] font-mono leading-tight">
               <thead className="bg-paper-2 text-ink-500">
                 <tr>
                   <th className="px-2 py-1 text-left font-semibold">時間</th>
-                  <th className="px-2 py-1 text-left font-semibold">類型</th>
+                  <th className="px-2 py-1 text-left font-semibold">項目</th>
                   <th className="px-2 py-1 text-right font-semibold">用量</th>
                   <th className="px-2 py-1 text-right font-semibold">累計</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {log.map((row, i) => (
+                {entries.map((row, i) => (
                   <tr key={`${row.at}-${i}`} className="odd:bg-white even:bg-paper-2/40">
                     <td className="px-2 py-1 text-ink-700 whitespace-nowrap">{formatLogTime(row.at)}</td>
-                    <td className="px-2 py-1 text-ink-500 whitespace-nowrap">{formatLogKind(row.kind)}</td>
+                    <td className="px-2 py-1 text-ink-500 whitespace-nowrap">{row.label || formatLogKind(row.kind)}</td>
                     <td className="px-2 py-1 text-right text-ink-700 whitespace-nowrap">+${row.delta.toFixed(4)}</td>
                     <td className="px-2 py-1 text-right text-ink-900 font-bold whitespace-nowrap">${row.balance.toFixed(4)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+        {logData && logData.totalEntries > 0 && (
+          <div className="mt-2 flex items-center justify-between gap-2 text-xs text-ink-500">
+            <span>共 {logData.totalEntries} 筆（保留最新 300 筆）</span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => onPageChange(page - 1)}
+                disabled={loading || page <= 1}
+                className="btn btn-secondary text-xs px-2.5 py-1 disabled:opacity-40"
+              >
+                ‹ 上一頁
+              </button>
+              <span className="px-2 tabular-nums">{page} / {totalPages}</span>
+              <button
+                type="button"
+                onClick={() => onPageChange(page + 1)}
+                disabled={loading || page >= totalPages}
+                className="btn btn-secondary text-xs px-2.5 py-1 disabled:opacity-40"
+              >
+                下一頁 ›
+              </button>
+            </div>
           </div>
         )}
       </div>

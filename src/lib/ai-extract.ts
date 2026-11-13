@@ -50,6 +50,7 @@ export async function saveAiSettings(patch: Partial<AiSettings>): Promise<AiSett
     model: patch.model ?? current.model,
     systemPrompt: patch.systemPrompt ?? current.systemPrompt,
     userPromptTemplate: patch.userPromptTemplate ?? current.userPromptTemplate,
+    translationModel: patch.translationModel ?? current.translationModel,
     customerServiceModel: patch.customerServiceModel ?? current.customerServiceModel,
     customerServiceSystemPrompt: patch.customerServiceSystemPrompt ?? current.customerServiceSystemPrompt,
     openrouterApiKey:
@@ -224,7 +225,7 @@ export async function extractFromPhotos(imageUrls: string[]): Promise<AiExtracte
     '';
   if (!text) throw new Error('AI 沒有回傳內容');
 
-  void recordAiUsage('ocr');
+  void recordAiUsage('ocr', { scope: 'property', label: `OCR 辨識（${imageUrls.length} 張）` });
   const parsed = parseJsonResponse(text);
   return sanitize(parsed);
 }

@@ -16,6 +16,8 @@ export async function GET() {
     model: s.model,
     systemPrompt: s.systemPrompt,
     userPromptTemplate: s.userPromptTemplate,
+    // Translation
+    translationModel: s.translationModel,
     // Customer Service
     customerServiceModel: s.customerServiceModel,
     customerServiceSystemPrompt: s.customerServiceSystemPrompt,
@@ -36,6 +38,8 @@ export async function PUT(req: Request) {
       model: typeof body.model === 'string' ? body.model : undefined,
       systemPrompt: typeof body.systemPrompt === 'string' ? body.systemPrompt : undefined,
       userPromptTemplate: typeof body.userPromptTemplate === 'string' ? body.userPromptTemplate : undefined,
+      translationModel:
+        typeof body.translationModel === 'string' && body.translationModel.trim() ? body.translationModel.trim() : undefined,
       customerServiceModel: typeof body.customerServiceModel === 'string' ? body.customerServiceModel : undefined,
       customerServiceSystemPrompt:
         typeof body.customerServiceSystemPrompt === 'string' ? body.customerServiceSystemPrompt : undefined,

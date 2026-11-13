@@ -146,7 +146,10 @@ export async function translateProperty(
         direction: property.direction ?? '',
         parkingType: property.parkingType ?? '',
       };
-      const out = (await translateJsonObject(payload, locale)) as RawTranslated;
+      const out = (await translateJsonObject(payload, locale, {
+        usageScope: 'property',
+        usageLabel: `物件 #${propertyId} → ${locale.toUpperCase()}`,
+      })) as RawTranslated;
       const dataPatch = {
         title: pickString(out.title, property.title) || property.title,
         description: pickString(out.description) ?? pickString(property.description) ?? null,

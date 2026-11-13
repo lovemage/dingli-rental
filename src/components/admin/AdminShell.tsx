@@ -43,12 +43,55 @@ function getActiveHref(path: string): string | null {
   return best;
 }
 
+type AiQuotaState = {
+  lowBalance: boolean;
+  exhausted: boolean;
+  remainingRatio: number;
+  remainingUsd: number;
+};
+
 export default function AdminShell({ username, children }: { username: string; children: React.ReactNode }) {
   const path = usePathname() || '';
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [unreadInquiries, setUnreadInquiries] = useState(0);
+  const [aiQuota, setAiQuota] = useState<AiQuotaState | null>(null);
   const activeHref = useMemo(() => getActiveHref(path), [path]);
+  const aiAlert = Boolean(aiQuota && (aiQuota.lowBalance || aiQuota.exhausted));
+
+  // AI 額度剩餘 ≤ 20%：側欄「AI 設定」紅點＋頁面上方文字提醒
+  useEffect(() => {
+    let alive = true;
+    async function fetchQuota() {
+      try {
+        const res = await fetch('/api/admin/ai-usage', { cache: 'no-store' });
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!alive) return;
+        setAiQuota({
+          lowBalance: Boolean(json.lowBalance),
+          exhausted: Boolean(json.exhausted),
+          remainingRatio: Number(json.remainingRatio) || 0,
+          remainingUsd: Math.max(0, Number(json.totalUsd) - Number(json.currentUsd)) || 0,
+        });
+      } catch {
+        // ignore
+      }
+    }
+    function onVisible() {
+      if (document.visibilityState === 'visible') void fetchQuota();
+    }
+    void fetchQuota();
+    const timer = window.setInterval(() => { void fetchQuota(); }, 120000);
+    window.addEventListener('admin:ai-usage-updated', fetchQuota);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+      window.removeEventListener('admin:ai-usage-updated', fetchQuota);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [path]);
 
   useEffect(() => {
     let alive = true;
@@ -98,8 +141,9 @@ export default function AdminShell({ username, children }: { username: string; c
       {/* Top bar (mobile) */}
       <header className="sticky top-0 z-30 bg-white border-b border-line lg:hidden">
         <div className="flex items-center justify-between px-4 h-14">
-          <button onClick={() => setOpen(true)} className="text-2xl text-ink-700" aria-label="選單">
+          <button onClick={() => setOpen(true)} className="relative text-2xl text-ink-700" aria-label="選單">
             <MaterialIcon name="menu" className="text-3xl" />
+            {aiAlert && <span className="absolute top-0.5 right-0 h-2.5 w-2.5 rounded-full bg-red-600" aria-hidden />}
           </button>
           <Link href="/admin" className="flex items-center gap-2">
             <Image
@@ -149,6 +193,9 @@ export default function AdminShell({ username, children }: { username: string; c
                     <span className="ml-auto inline-flex min-w-5 h-5 px-1.5 items-center justify-center rounded-full bg-red-600 text-white text-[11px] font-bold">
                       {unreadInquiries}
                     </span>
+                  )}
+                  {n.href === '/admin/ai-settings' && aiAlert && (
+                    <span className="ml-auto h-2.5 w-2.5 rounded-full bg-red-600" aria-label="AI 額度不足" />
                   )}
                 </Link>
               );
@@ -211,6 +258,9 @@ export default function AdminShell({ username, children }: { username: string; c
                           {unreadInquiries}
                         </span>
                       )}
+                      {n.href === '/admin/ai-settings' && aiAlert && (
+                        <span className="ml-auto h-2.5 w-2.5 rounded-full bg-red-600" aria-label="AI 額度不足" />
+                      )}
                     </Link>
                   );
                 })}
@@ -238,7 +288,22 @@ export default function AdminShell({ username, children }: { username: string; c
         )}
 
         {/* Main */}
-        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
+          {aiQuota && aiAlert && (
+            <Link
+              href="/admin/ai-settings"
+              className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 hover:bg-red-100 transition"
+            >
+              <span className="mt-1.5 h-2.5 w-2.5 flex-shrink-0 rounded-full bg-red-600" aria-hidden />
+              <span>
+                {aiQuota.exhausted
+                  ? 'AI 額度已用盡：AI 翻譯、OCR 辨識、AI 客服已暫停，請聯繫工作室加值。'
+                  : `AI 額度剩餘 ${Math.round(aiQuota.remainingRatio * 100)}%（US$${aiQuota.remainingUsd.toFixed(2)}），即將用盡，請聯繫工作室加值。`}
+              </span>
+            </Link>
+          )}
+          {children}
+        </main>
       </div>
     </div>
   );

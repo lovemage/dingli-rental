@@ -10,6 +10,9 @@ export type AiSettings = {
   systemPrompt: string;     // 系統提示詞
   userPromptTemplate: string; // 使用者提示詞範本
 
+  // === AI 翻譯（物件、網站內容英日文）===
+  translationModel: string;
+
   // === AI 客服 ===
   customerServiceModel: string;
   customerServiceSystemPrompt: string;
@@ -144,6 +147,9 @@ export const DEFAULT_USER_PROMPT_TEMPLATE = `請看以下 {photoCount} 張 OCR �
 回傳純 JSON。範例（你的回應只要 JSON 本體）：
 {"rooms":2,"livingRooms":1,"bathrooms":1,"hasElevator":true,"buildingType":"電梯大樓","equipment":["冷氣","熱水器"],"furniture":["床","衣櫃"],"featureTags":["採光佳","邊間"],"title":"明亮兩房 採光絕佳","description":"...","city":"台北市","district":"信義區","rent":35000,"deposit":"兩個月"}`;
 
+// === AI 翻譯預設值 ===
+export const DEFAULT_TRANSLATION_MODEL = '~deepseek/deepseek-flash-latest';
+
 // === AI 客服預設值 ===
 export const DEFAULT_CUSTOMER_SERVICE_MODEL = 'google/gemini-2.5-flash';
 
@@ -169,6 +175,7 @@ export const AI_SETTINGS_DEFAULTS: AiSettings = {
   model: DEFAULT_MODEL,
   systemPrompt: DEFAULT_SYSTEM_PROMPT,
   userPromptTemplate: DEFAULT_USER_PROMPT_TEMPLATE,
+  translationModel: DEFAULT_TRANSLATION_MODEL,
   customerServiceModel: DEFAULT_CUSTOMER_SERVICE_MODEL,
   customerServiceSystemPrompt: DEFAULT_CUSTOMER_SERVICE_SYSTEM_PROMPT,
 };

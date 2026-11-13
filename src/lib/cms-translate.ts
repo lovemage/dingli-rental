@@ -63,7 +63,7 @@ export async function translateCmsSection(
   // cache miss / stale：背景刷新翻譯，先回傳舊資料或中文，避免阻塞公開頁 TTFB
   void (async () => {
     try {
-      const out = await translateJsonObject(data, locale);
+      const out = await translateJsonObject(data, locale, { usageLabel: `網站內容：${section} → ${locale.toUpperCase()}` });
       if (!out || typeof out !== 'object') return;
       const translated = out as Record<string, unknown>;
       const blob: CmsCacheBlob = { sourceHash, data: translated };
@@ -133,7 +133,7 @@ function warmOneLocale(
   const cacheKey = cacheSection(section, locale);
   const promise = (async () => {
     try {
-      const out = await translateJsonObject(obj, locale);
+      const out = await translateJsonObject(obj, locale, { usageLabel: `網站內容：${section} → ${locale.toUpperCase()}` });
       if (!out || typeof out !== 'object') return;
 
       // Stale-write guard：避免舊翻譯覆蓋新翻譯。
