@@ -25,6 +25,11 @@ export default function HeaderClient({ locale, nav }: Props) {
   // 仍從 i18n messages 讀的微文案：CTA 按鈕、a11y 標籤、語言切換器
   const t = useTranslations('header');
   const lp = (p: string) => localePath(locale, p);
+  // 日文選單字較長：桌機版選單從 1280px 起才顯示（文字一律不換行），較窄時改用漢堡選單
+  const isJa = locale === 'ja';
+  const desktopOnly = isJa ? 'hidden xl:flex' : 'hidden md:flex';
+  const mobileOnly = isJa ? 'xl:hidden' : 'md:hidden';
+  const noWrap = isJa ? 'whitespace-nowrap' : '';
 
   return (
     <header className="sticky top-0 z-50 bg-paper/90 backdrop-blur-md border-b border-line">
@@ -44,44 +49,44 @@ export default function HeaderClient({ locale, nav }: Props) {
           </Link>
 
           {/* desktop nav */}
-          <ul className="hidden md:flex items-center gap-8 list-none m-0 p-0">
+          <ul className={`${desktopOnly} items-center ${isJa ? 'gap-5' : 'gap-8'} list-none m-0 p-0`}>
             <li>
-              <Link href={lp('/properties')} className="font-medium text-ink-700 hover:text-brand-green-700 transition">
+              <Link href={lp('/properties')} className={`font-medium text-ink-700 hover:text-brand-green-700 transition ${noWrap}`}>
                 {nav.properties}
               </Link>
             </li>
             <li>
-              <Link href={lp('/services')} className="font-medium text-ink-700 hover:text-brand-green-700 transition">
+              <Link href={lp('/services')} className={`font-medium text-ink-700 hover:text-brand-green-700 transition ${noWrap}`}>
                 {nav.services}
               </Link>
             </li>
             <li>
-              <Link href={lp('/repairs')} className="font-medium text-ink-700 hover:text-brand-green-700 transition">
+              <Link href={lp('/repairs')} className={`font-medium text-ink-700 hover:text-brand-green-700 transition ${noWrap}`}>
                 {nav.repairs}
               </Link>
             </li>
             <li>
-              <Link href={lp('/careers')} className="font-medium text-ink-700 hover:text-brand-green-700 transition">
+              <Link href={lp('/careers')} className={`font-medium text-ink-700 hover:text-brand-green-700 transition ${noWrap}`}>
                 {nav.careers}
               </Link>
             </li>
             <li>
-              <Link href={lp('/contact')} className="font-medium text-ink-700 hover:text-brand-green-700 transition">
+              <Link href={lp('/contact')} className={`font-medium text-ink-700 hover:text-brand-green-700 transition ${noWrap}`}>
                 {nav.contact}
               </Link>
             </li>
           </ul>
 
-          <div className="hidden md:flex items-center gap-3">
+          <div className={`${desktopOnly} shrink-0 items-center gap-3`}>
             <LanguageSwitcherDesktop />
-            <Link href={lp('/contact')} className="btn btn-primary text-sm py-2.5 px-5">
+            <Link href={lp('/contact')} className={`btn btn-primary text-sm py-2.5 px-5 ${noWrap}`}>
               {t('consultCta')} <span aria-hidden>→</span>
             </Link>
           </div>
 
           <button
             type="button"
-            className="md:hidden text-2xl text-brand-green-900"
+            className={`${mobileOnly} text-2xl text-brand-green-900`}
             aria-label={open ? t('closeMenu') : t('openMenu')}
             onClick={() => setOpen((v) => !v)}
           >
@@ -91,7 +96,7 @@ export default function HeaderClient({ locale, nav }: Props) {
 
         {/* mobile menu */}
         {open && (
-          <div className="md:hidden pb-4">
+          <div className={`${mobileOnly} pb-4`}>
             <ul className="flex flex-col gap-3 list-none m-0 p-0">
               <li>
                 <Link

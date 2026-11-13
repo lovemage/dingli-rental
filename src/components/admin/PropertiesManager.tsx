@@ -27,12 +27,6 @@ const TAB_BUTTON_CLASS = 'inline-flex h-8 shrink-0 items-center justify-center g
 
 type ViewTab = 'active' | 'inactive' | 'featured' | 'general';
 
-const PDF_LANGS = [
-  { code: 'zh', label: '中文 PDF' },
-  { code: 'en', label: 'English PDF' },
-  { code: 'ja', label: '日本語 PDF' },
-] as const;
-
 type PropertyItem = {
   id: number;
   code?: string | null;
@@ -175,7 +169,6 @@ export default function PropertiesManager({
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [copiedShareId, setCopiedShareId] = useState<number | null>(null);
   const [copiedAddressId, setCopiedAddressId] = useState<number | null>(null);
-  const [pdfMenuId, setPdfMenuId] = useState<number | null>(null);
   const [desktopViewMode, setDesktopViewMode] = useState<'card' | 'compact'>('compact');
   const listTopRef = useRef<HTMLDivElement | null>(null);
 
@@ -1073,35 +1066,17 @@ export default function PropertiesManager({
                         <span className={actionLabelClass}>刪除</span>
                       </button>
 
-                      <div className="relative">
-                        <button
-                          type="button"
-                          onClick={() => setPdfMenuId((cur) => (cur === p.id ? null : p.id))}
-                          className={actionBtn('neutral')}
-                          title="匯出 PDF"
-                          aria-label="匯出 PDF"
-                          aria-expanded={pdfMenuId === p.id}
-                        >
-                          <MaterialIcon name="picture_as_pdf" className={ACTION_ICON_CLASS} />
-                          <span className={actionLabelClass}>PDF</span>
-                        </button>
-                        {pdfMenuId === p.id && (
-                          <div className="absolute right-0 z-20 mt-1 w-32 overflow-hidden rounded-lg border border-line bg-white py-1 shadow-lg">
-                            {PDF_LANGS.map((l) => (
-                              <a
-                                key={l.code}
-                                href={`/admin/properties/${p.id}/pdf?lang=${l.code}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={() => setPdfMenuId(null)}
-                                className="block px-3 py-2 text-sm text-ink-700 hover:bg-paper-2"
-                              >
-                                {l.label}
-                              </a>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                      <a
+                        href={`/admin/properties/${p.id}/pdf?lang=zh`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={actionBtn('neutral')}
+                        title="匯出 PDF（可在 PDF 頁切換中／英／日）"
+                        aria-label="匯出 PDF"
+                      >
+                        <MaterialIcon name="picture_as_pdf" className={ACTION_ICON_CLASS} />
+                        <span className={actionLabelClass}>PDF</span>
+                      </a>
                     </div>
                   </div>
                 </article>
