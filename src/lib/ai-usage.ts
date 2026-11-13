@@ -120,3 +120,26 @@ export async function recordAiUsage(kind: AiUsageKind = 'other'): Promise<void> 
     // 統計失敗不影響使用者
   }
 }
+
+export const AI_QUOTA_EXHAUSTED_MESSAGE = 'AI 額度已用盡，AI 功能已暫停，請聯繫工作室加值';
+
+export class AiQuotaExhaustedError extends Error {
+  constructor() {
+    super(AI_QUOTA_EXHAUSTED_MESSAGE);
+    this.name = 'AiQuotaExhaustedError';
+  }
+}
+
+/** 用量已達總額度（recordAiUsage 會把 currentUsd 封頂在 totalUsd）。 */
+export function isQuotaExhausted(meter: Pick<AiUsageMeter, 'totalUsd' | 'currentUsd'>): boolean {
+  return meter.currentUsd >= meter.totalUsd - 1e-6;
+}
+
+export async function isAiQuotaExhausted(): Promise<boolean> {
+  return isQuotaExhausted(await loadAiUsageMeter());
+}
+
+/** 每次呼叫 LLM 前檢查；額度用盡時丟出 AiQuotaExhaustedError，不呼叫 AI。 */
+export async function assertAiQuotaAvailable(): Promise<void> {
+  if (await isAiQuotaExhausted()) throw new AiQuotaExhaustedError();
+}

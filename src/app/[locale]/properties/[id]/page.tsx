@@ -317,6 +317,15 @@ export default async function PropertyDetailPage({
                 </div>
                 {tenantTypes.length > 0 && <Tags label={t('tenantTypes')} items={tenantTypes} />}
 
+                {p.description && (
+                  <>
+                    <h2 className="font-bold text-lg mb-3 mt-6">{t('descriptionHeading')}</h2>
+                    <div className="prose max-w-none text-ink-700 whitespace-pre-wrap">
+                      {p.description}
+                    </div>
+                  </>
+                )}
+
                 <h2 className="font-bold text-lg mb-3 mt-6">{t('locationHeading')}</h2>
                 <div className="rounded-xl overflow-hidden border border-line bg-paper-2">
                   <iframe
@@ -331,14 +340,6 @@ export default async function PropertyDetailPage({
                 </div>
                 <p className="text-xs text-ink-500 mt-2">{t('locationDisclaimer')}</p>
 
-                {p.description && (
-                  <>
-                    <h2 className="font-bold text-lg mb-3 mt-6">{t('descriptionHeading')}</h2>
-                    <div className="prose max-w-none text-ink-700 whitespace-pre-wrap">
-                      {p.description}
-                    </div>
-                  </>
-                )}
 
               </div>
 

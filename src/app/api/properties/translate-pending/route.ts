@@ -6,6 +6,7 @@ import {
   computePropertySourceHash,
   PROPERTY_SOURCE_SELECT,
 } from '@/lib/property-translate';
+import { AI_QUOTA_EXHAUSTED_MESSAGE, isAiQuotaExhausted } from '@/lib/ai-usage';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -26,6 +27,9 @@ export async function POST() {
   try {
     const me = await getCurrentAdmin();
     if (!me) return NextResponse.json({ error: '未授權' }, { status: 401 });
+    if (await isAiQuotaExhausted()) {
+      return NextResponse.json({ error: AI_QUOTA_EXHAUSTED_MESSAGE }, { status: 402 });
+    }
 
     const BATCH_SIZE = 20;
 

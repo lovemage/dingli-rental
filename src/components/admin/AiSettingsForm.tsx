@@ -33,6 +33,7 @@ export default function AiSettingsForm() {
   const [showKey, setShowKey] = useState(false);
 
   // === OCR ===
+  const [ocrEnabled, setOcrEnabled] = useState(false);
   const [model, setModel] = useState(DEFAULT_MODEL);
   const [systemPrompt, setSystemPrompt] = useState(AI_SETTINGS_DEFAULTS.systemPrompt);
   const [userPromptTemplate, setUserPromptTemplate] = useState(AI_SETTINGS_DEFAULTS.userPromptTemplate);
@@ -92,6 +93,7 @@ export default function AiSettingsForm() {
         const res = await fetch('/api/admin/ai-settings', { cache: 'no-store' });
         const json = await res.json();
         if (res.ok) {
+          setOcrEnabled(Boolean(json.ocrEnabled));
           if (json.model) setModel(json.model);
           if (json.systemPrompt) setSystemPrompt(json.systemPrompt);
           if (json.userPromptTemplate) setUserPromptTemplate(json.userPromptTemplate);
@@ -140,6 +142,7 @@ export default function AiSettingsForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           openrouterApiKey: apiKey, // 空字串 = 保留原 key
+          ocrEnabled,
           model,
           systemPrompt,
           userPromptTemplate,
@@ -394,6 +397,23 @@ export default function AiSettingsForm() {
       {/* === Tab: OCR === */}
       {activeTab === 'ocr' && (
         <>
+          <div className="admin-card">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4"
+                checked={ocrEnabled}
+                onChange={(e) => setOcrEnabled(e.target.checked)}
+              />
+              <span className="min-w-0">
+                <span className="block font-bold text-lg">開啟「OCR 上架系統」</span>
+                <span className="block text-xs text-ink-500 mt-0.5">
+                  開啟後，新增／編輯物件頁會顯示 OCR 上架區塊，可上傳截圖或傳單由 AI 自動填入欄位。變更後請按下方「儲存」。
+                </span>
+              </span>
+            </label>
+          </div>
+
           {renderModelPicker({
             title: 'AI 模型（物件辨識）',
             currentModel: model,
@@ -617,6 +637,11 @@ function UsageMeter({
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-ink-500">
         <span>剩餘額度 <strong className="text-ink-700">${remaining.toFixed(3)} USD</strong></span>
       </div>
+      {remaining <= 1e-6 && (
+        <p className="mt-2 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-xs font-bold">
+          額度已用盡：AI 翻譯、OCR 辨識、AI 客服已暫停，請聯繫工作室加值。
+        </p>
+      )}
 
       <div className="mt-3">
         <div className="flex items-baseline justify-between mb-1.5">

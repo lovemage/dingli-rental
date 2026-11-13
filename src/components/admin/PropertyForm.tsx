@@ -124,9 +124,11 @@ type Props = {
    * 讓使用者原本的 tab / 篩選 / 月份保留不變。
    */
   from?: string;
+  /** 是否顯示「OCR 上架系統」區塊（由 AI 設定開關控制，預設關閉） */
+  ocrEnabled?: boolean;
 };
 
-export default function PropertyForm({ initial, propertyId, taxonomies, from }: Props) {
+export default function PropertyForm({ initial, propertyId, taxonomies, from, ocrEnabled = false }: Props) {
   const SAVE_PROGRESS_MESSAGES = [
     '逐字稿生成中',
     '物件翻譯中',
@@ -533,7 +535,8 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from }: 
     >
       {err && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{err}</div>}
 
-      {/* === OCR 上架系統 === */}
+      {/* === OCR 上架系統（AI 設定開啟時才顯示） === */}
+      {ocrEnabled && (
       <details className="admin-card border-2 border-dashed border-brand-orange-300 bg-brand-orange-50/40 group">
         <summary className="flex cursor-pointer list-none items-start justify-between gap-4 [&::-webkit-details-marker]:hidden">
           <div>
@@ -612,6 +615,7 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from }: 
           )}
         </div>
       </details>
+      )}
 
       {/* === 照片（放在 OCR 區塊下方） === */}
       <Card title={`照片（最多 ${MAX_PROPERTY_IMAGES} 張）`}>

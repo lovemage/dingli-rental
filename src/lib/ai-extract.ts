@@ -4,7 +4,7 @@ import {
   type AiExtractedFields,
   type AiSettings,
 } from '@/data/ai-extract-defaults';
-import { recordAiUsage } from '@/lib/ai-usage';
+import { assertAiQuotaAvailable, recordAiUsage } from '@/lib/ai-usage';
 import {
   EQUIPMENT_OPTIONS,
   FURNITURE_OPTIONS,
@@ -46,6 +46,7 @@ export async function loadAiSettings(): Promise<AiSettings> {
 export async function saveAiSettings(patch: Partial<AiSettings>): Promise<AiSettings> {
   const current = await loadAiSettings();
   const next: AiSettings = {
+    ocrEnabled: patch.ocrEnabled ?? current.ocrEnabled,
     model: patch.model ?? current.model,
     systemPrompt: patch.systemPrompt ?? current.systemPrompt,
     userPromptTemplate: patch.userPromptTemplate ?? current.userPromptTemplate,
@@ -174,6 +175,7 @@ export async function extractFromPhotos(imageUrls: string[]): Promise<AiExtracte
   if (!settings.openrouterApiKey) {
     throw new Error('尚未設定 OpenRouter API key — 請至「後台 → AI 設定」填入');
   }
+  await assertAiQuotaAvailable();
 
   const userPrompt = renderPrompt(settings.userPromptTemplate, {
     photoCount: imageUrls.length,

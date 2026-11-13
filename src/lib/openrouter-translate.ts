@@ -1,5 +1,5 @@
 import { loadAiSettings } from '@/lib/ai-extract';
-import { recordAiUsage } from '@/lib/ai-usage';
+import { assertAiQuotaAvailable, recordAiUsage } from '@/lib/ai-usage';
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const TRANSLATE_TIMEOUT_MS = Number(process.env.OPENROUTER_TRANSLATE_TIMEOUT_MS || 60000);
@@ -45,6 +45,7 @@ export async function translateJsonObject(
   opts: TranslateOptions = {}
 ): Promise<unknown> {
   if (!data || targetLocale === 'zh') return data;
+  await assertAiQuotaAvailable();
   const targetName = LOCALE_NAME[targetLocale] ?? targetLocale;
   const settings = await loadAiSettings();
   if (!settings.openrouterApiKey) {

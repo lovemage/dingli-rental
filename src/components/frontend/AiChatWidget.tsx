@@ -167,8 +167,8 @@ export default function AiChatWidget({ triggerClassName, triggerLabel = '鼎立 
         }),
       });
       const json = await res.json();
+      if (json?.lineUrl) setLineUrl(json.lineUrl);
       if (!res.ok) throw new Error(json?.error || 'Service unavailable');
-      if (json.lineUrl) setLineUrl(json.lineUrl);
       setMessages([...newHistory, { role: 'assistant', content: json.reply }]);
     } catch (e: any) {
       setError(e?.message || 'Send failed');

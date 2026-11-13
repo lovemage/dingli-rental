@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import PropertyForm from '@/components/admin/PropertyForm';
 import { splitMultiFloor } from '@/lib/property-floor';
 import { getTaxonomies } from '@/lib/taxonomies';
+import { loadAiSettings } from '@/lib/ai-extract';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,12 +24,13 @@ export default async function EditPropertyPage({
   const fromRaw = (sp.from || '').trim();
   const fromParam = fromRaw.startsWith('/admin/properties') ? fromRaw : '';
 
-  const [property, taxonomies] = await Promise.all([
+  const [property, taxonomies, aiSettings] = await Promise.all([
     prisma.property.findUnique({
       where: { id },
       include: { images: { orderBy: { order: 'asc' } } },
     }).catch(() => null),
     getTaxonomies(),
+    loadAiSettings(),
   ]);
 
   if (!property) notFound();
@@ -84,7 +86,7 @@ export default async function EditPropertyPage({
           </Link>
         </div>
       </div>
-      <PropertyForm initial={initial} propertyId={id} taxonomies={taxonomies} from={fromParam} />
+      <PropertyForm initial={initial} propertyId={id} taxonomies={taxonomies} from={fromParam} ocrEnabled={aiSettings.ocrEnabled} />
     </div>
   );
 }

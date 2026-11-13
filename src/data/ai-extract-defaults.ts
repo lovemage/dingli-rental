@@ -5,6 +5,7 @@ export type AiSettings = {
   openrouterApiKey: string; // 後端使用，前台 GET 會被遮罩
 
   // === AI 物件辨識（OCR）===
+  ocrEnabled: boolean;      // 物件表單是否顯示「OCR 上架系統」區塊（預設關閉）
   model: string;            // OpenRouter model id（如 google/gemini-2.5-flash）
   systemPrompt: string;     // 系統提示詞
   userPromptTemplate: string; // 使用者提示詞範本
@@ -164,6 +165,7 @@ export const DEFAULT_CUSTOMER_SERVICE_SYSTEM_PROMPT = `你是「鼎立租售管�
 // 預設值（供 fallback 與「重設」按鈕使用）
 export const AI_SETTINGS_DEFAULTS: AiSettings = {
   openrouterApiKey: '',
+  ocrEnabled: false,
   model: DEFAULT_MODEL,
   systemPrompt: DEFAULT_SYSTEM_PROMPT,
   userPromptTemplate: DEFAULT_USER_PROMPT_TEMPLATE,

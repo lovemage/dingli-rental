@@ -12,6 +12,7 @@ export async function GET() {
   const s = await loadAiSettings();
   return NextResponse.json({
     // OCR
+    ocrEnabled: Boolean(s.ocrEnabled),
     model: s.model,
     systemPrompt: s.systemPrompt,
     userPromptTemplate: s.userPromptTemplate,
@@ -31,6 +32,7 @@ export async function PUT(req: Request) {
     const body = await req.json();
     const saved = await saveAiSettings({
       openrouterApiKey: typeof body.openrouterApiKey === 'string' ? body.openrouterApiKey : '',
+      ocrEnabled: typeof body.ocrEnabled === 'boolean' ? body.ocrEnabled : undefined,
       model: typeof body.model === 'string' ? body.model : undefined,
       systemPrompt: typeof body.systemPrompt === 'string' ? body.systemPrompt : undefined,
       userPromptTemplate: typeof body.userPromptTemplate === 'string' ? body.userPromptTemplate : undefined,

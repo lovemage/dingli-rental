@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { loadAiSettings } from '@/lib/ai-extract';
+import { isAiQuotaExhausted } from '@/lib/ai-usage';
 import { recordAiUsage } from '@/lib/ai-usage';
 import { FLOATING_CTA_DEFAULTS, type FloatingCtaContent } from '@/data/floating-cta-defaults';
 import { LEGAL_SUMMARY_FOR_AI } from '@/data/legal-content';
@@ -77,6 +78,20 @@ export async function POST(req: Request) {
     const settings = await loadAiSettings();
     if (!settings.openrouterApiKey) {
       return NextResponse.json({ error: 'AI 客服尚未設定（缺少 API Key）' }, { status: 503 });
+    }
+    if (await isAiQuotaExhausted()) {
+      // 額度用盡：不呼叫 AI，引導訪客改用 LINE
+      const unavailable: Record<string, string> = {
+        zh: '線上客服目前暫停服務，請點選「LINE 諮詢」與我們聯繫。',
+        ja: 'オンライン対応は現在休止中です。LINEからお問い合わせください。',
+      };
+      return NextResponse.json(
+        {
+          error: unavailable[languageCode] ?? 'Our online assistant is currently unavailable. Please contact us via LINE.',
+          lineUrl: await loadLineUrl(),
+        },
+        { status: 503 },
+      );
     }
     const model = settings.customerServiceModel || 'google/gemini-2.5-flash';
 

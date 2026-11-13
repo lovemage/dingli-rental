@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentAdmin } from '@/lib/auth';
-import { extractFromPhotos } from '@/lib/ai-extract';
+import { extractFromPhotos, loadAiSettings } from '@/lib/ai-extract';
+import { AI_QUOTA_EXHAUSTED_MESSAGE, isAiQuotaExhausted } from '@/lib/ai-usage';
 
 const OCR_MAX_PHOTOS = 3;
 
@@ -11,6 +12,14 @@ export const maxDuration = 60; // vision 推論可能 5-30s，給寬鬆 timeout
 export async function POST(req: Request) {
   const me = await getCurrentAdmin();
   if (!me) return NextResponse.json({ error: '未授權' }, { status: 401 });
+
+  const settings = await loadAiSettings();
+  if (!settings.ocrEnabled) {
+    return NextResponse.json({ error: 'OCR 上架系統未開啟，請至「AI 設定」開啟' }, { status: 403 });
+  }
+  if (await isAiQuotaExhausted()) {
+    return NextResponse.json({ error: AI_QUOTA_EXHAUSTED_MESSAGE }, { status: 402 });
+  }
 
   try {
     const body = await req.json();
