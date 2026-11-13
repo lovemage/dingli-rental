@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { translateJsonObject } from '@/lib/openrouter-translate';
 import type { PropertyCardData } from '@/components/frontend/PropertyCard';
 import type { Prisma } from '@/generated/prisma/client';
+import { localizeList, lookupDistrict, lookupFixed } from '@/lib/property-i18n';
 
 const TRANSLATION_LOCALES = ['en', 'ja'] as const;
 export type TranslationLocale = (typeof TRANSLATION_LOCALES)[number];
@@ -148,7 +149,7 @@ export async function translateProperty(
       const out = (await translateJsonObject(payload, locale)) as RawTranslated;
       const dataPatch = {
         title: pickString(out.title, property.title) || property.title,
-        description: pickString(out.description, property.description ?? '') ?? null,
+        description: pickString(out.description) ?? pickString(property.description) ?? null,
         featureTags: arr(out.featureTags) as any,
         equipment: arr(out.equipment) as any,
         furniture: arr(out.furniture) as any,
@@ -204,24 +205,20 @@ export function getLocalizedPropertyCards(
   items: any[],
   locale: string
 ): PropertyCardData[] {
-  const localeCandidates =
-    locale === 'ja' ? ['ja', 'jp'] : [locale];
   return items.map((p) => {
-    const tr =
-      locale !== 'zh'
-        ? p.translations?.find((t: any) => localeCandidates.includes(t.locale))
-        : undefined;
+    const tr = findTranslation(p, locale);
+    const l = localizeCommon(p, tr, locale);
 
     return {
       id: p.id,
       code: p.code ?? null,
-      title: tr?.title || p.title,
-      region: tr?.region || p.region,
-      district: tr?.district || p.district,
-      street: tr?.street ?? p.street,
-      community: tr?.community ?? p.community,
-      typeMid: tr?.typeMid || p.typeMid,
-      buildingType: tr?.buildingType ?? p.buildingType,
+      title: l.title,
+      region: l.region,
+      district: l.district,
+      street: l.street,
+      community: l.community,
+      typeMid: l.typeMid,
+      buildingType: l.buildingType,
       rooms: p.rooms,
       bathrooms: p.bathrooms,
       livingRooms: p.livingRooms,
@@ -229,17 +226,12 @@ export function getLocalizedPropertyCards(
       usableArea: p.usableArea,
       rent: p.rent,
       imageUrl: p.images?.[0]?.url ?? null,
-      featureTags:
-        tr && Array.isArray(tr.featureTags)
-          ? (tr.featureTags as string[])
-          : Array.isArray(p.featureTags)
-            ? (p.featureTags as string[])
-            : [],
+      featureTags: localizeList(p.featureTags, tr?.featureTags, locale),
       buildingAge: p.buildingAge,
       hasElevator: p.hasElevator,
       petsAllowed: p.petsAllowed,
       cookingAllowed: p.cookingAllowed,
-      description: tr?.description ?? p.description,
+      description: l.description,
       hideAddress: p.hideAddress,
       featured: p.featured,
       status: p.status,
@@ -252,37 +244,53 @@ export function getLocalizedPropertyCards(
   });
 }
 
+function findTranslation(p: any, locale: string): any | undefined {
+  if (locale === 'zh') return undefined;
+  const localeCandidates = locale === 'ja' ? ['ja', 'jp'] : [locale];
+  return p.translations?.find((t: any) => localeCandidates.includes(t.locale));
+}
+
+/** 非空字串才採用，否則退回下一個候選值（避免翻譯存成 "" 蓋掉原文）。 */
+function firstText(...values: unknown[]): string | null {
+  for (const v of values) {
+    if (typeof v === 'string' && v.trim()) return v;
+  }
+  return null;
+}
+
+/**
+ * 卡片與詳情頁共用的欄位在地化。
+ * 優先序：固定選項對照表 → AI 翻譯 → 中文原值。
+ */
+function localizeCommon(p: any, tr: any, locale: string) {
+  return {
+    title: firstText(tr?.title, p.title) ?? '',
+    description: firstText(tr?.description, p.description),
+    region: lookupFixed('region', p.region, locale) ?? firstText(tr?.region, p.region) ?? '',
+    district: lookupDistrict(p.district, locale) ?? firstText(tr?.district, p.district) ?? '',
+    street: firstText(tr?.street, p.street),
+    community: firstText(tr?.community, p.community),
+    typeMid: lookupFixed('typeMid', p.typeMid, locale) ?? firstText(tr?.typeMid, p.typeMid) ?? '',
+    buildingType:
+      lookupFixed('buildingType', p.buildingType, locale) ?? firstText(tr?.buildingType, p.buildingType),
+  };
+}
+
 /** 給詳情頁用：把所有翻譯欄位都套用 */
 export function localizePropertyForDetail(p: any, locale: string) {
-  const localeCandidates =
-    locale === 'ja' ? ['ja', 'jp'] : [locale];
-  const tr =
-    locale !== 'zh'
-      ? p.translations?.find((t: any) => localeCandidates.includes(t.locale))
-      : undefined;
+  const tr = findTranslation(p, locale);
   return {
     ...p,
-    title: tr?.title || p.title,
-    description: tr?.description ?? p.description,
-    region: tr?.region || p.region,
-    district: tr?.district || p.district,
-    street: tr?.street ?? p.street,
-    community: tr?.community ?? p.community,
-    typeMid: tr?.typeMid || p.typeMid,
-    buildingType: tr?.buildingType ?? p.buildingType,
-    deposit: tr?.deposit || p.deposit,
-    minLease: tr?.minLease || p.minLease,
-    direction: tr?.direction ?? p.direction,
-    parkingType: tr?.parkingType ?? p.parkingType,
-    featureTags:
-      tr && Array.isArray(tr.featureTags) ? (tr.featureTags as string[]) : (p.featureTags as string[]),
-    equipment:
-      tr && Array.isArray(tr.equipment) ? (tr.equipment as string[]) : (p.equipment as string[]),
-    furniture:
-      tr && Array.isArray(tr.furniture) ? (tr.furniture as string[]) : (p.furniture as string[]),
-    rentIncludes:
-      tr && Array.isArray(tr.rentIncludes) ? (tr.rentIncludes as string[]) : (p.rentIncludes as string[]),
-    tenantTypes:
-      tr && Array.isArray(tr.tenantTypes) ? (tr.tenantTypes as string[]) : (p.tenantTypes as string[]),
+    ...localizeCommon(p, tr, locale),
+    deposit: lookupFixed('deposit', p.deposit, locale) ?? firstText(tr?.deposit, p.deposit) ?? '',
+    minLease: lookupFixed('minLease', p.minLease, locale) ?? firstText(tr?.minLease, p.minLease),
+    direction: lookupFixed('direction', p.direction, locale) ?? firstText(tr?.direction, p.direction),
+    parkingType:
+      lookupFixed('parkingType', p.parkingType, locale) ?? firstText(tr?.parkingType, p.parkingType),
+    featureTags: localizeList(p.featureTags, tr?.featureTags, locale),
+    equipment: localizeList(p.equipment, tr?.equipment, locale),
+    furniture: localizeList(p.furniture, tr?.furniture, locale),
+    rentIncludes: localizeList(p.rentIncludes, tr?.rentIncludes, locale),
+    tenantTypes: localizeList(p.tenantTypes, tr?.tenantTypes, locale),
   };
 }

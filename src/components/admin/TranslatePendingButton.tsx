@@ -43,9 +43,9 @@ export default function TranslatePendingButton() {
         onClick={run}
         disabled={running}
         className="btn btn-secondary disabled:opacity-60"
-        title="檢查所有物件，僅對缺少英文 / 日文翻譯的物件執行翻譯"
+        title="檢查所有物件，對缺少或內容已更新的英文 / 日文翻譯重新執行翻譯"
       >
-        {running ? '翻譯中...' : '🌐 批次翻譯（缺 EN / JA）'}
+        {running ? '翻譯中...' : '🌐 批次翻譯（缺漏／過期 EN / JA）'}
       </button>
 
       {running && (
@@ -77,7 +77,7 @@ export default function TranslatePendingButton() {
           <p>
             {result.pending === 0 ? (
               <span className="text-brand-green-700 font-medium">
-                ✓ 所有 {result.total} 筆物件均已具備 EN / JA 翻譯
+                ✓ 所有 {result.total} 筆物件的 EN / JA 翻譯皆為最新
               </span>
             ) : (
               <span>

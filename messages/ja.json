@@ -105,7 +105,11 @@
     "statusRented": "成約済",
     "statusSold": "売却済",
     "statusClosed": "終了",
-    "addressHidden": "(住所非公開)"
+    "addressHidden": "(住所非公開)",
+    "openLayout": "オープンレイアウト",
+    "codeLabel": "物件番号",
+    "copyCode": "物件番号をコピー",
+    "parkingYes": "あり"
   },
   "propertyFilters": {
     "searchPlaceholder": "物件番号・エリア・物件名・キーワード",

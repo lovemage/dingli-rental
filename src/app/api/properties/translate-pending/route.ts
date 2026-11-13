@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getCurrentAdmin } from '@/lib/auth';
 import {
   translateProperty,
+  computePropertySourceHash,
   PROPERTY_SOURCE_SELECT,
 } from '@/lib/property-translate';
 
@@ -18,7 +19,7 @@ function isMissingTranslationTableError(e: unknown): boolean {
 
 /**
  * POST /api/properties/translate-pending
- * 找出所有「缺英文翻譯」、「缺日文翻譯」的物件，依序翻譯。
+ * 找出所有「缺英文／日文翻譯」或「翻譯已過期（內容改過）」的物件，依序翻譯。
  * Admin 後台「批次翻譯」按鈕呼叫此端點。
  */
 export async function POST() {
@@ -41,9 +42,14 @@ export async function POST() {
     });
 
     const TARGETS = ['en', 'ja'] as const;
-    const pending = properties.filter((p) =>
-      TARGETS.some((loc) => !p.translations.find((t) => t.locale === loc))
-    );
+    // 缺翻譯，或來源內容已改過（hash 不符 = 翻譯過期）都要重譯
+    const pending = properties.filter((p) => {
+      const hash = computePropertySourceHash(p);
+      return TARGETS.some((loc) => {
+        const tr = p.translations.find((t) => t.locale === loc);
+        return !tr || tr.sourceHash !== hash;
+      });
+    });
 
     if (pending.length === 0) {
       return NextResponse.json({

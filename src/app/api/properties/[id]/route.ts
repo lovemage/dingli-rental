@@ -1,8 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentAdmin } from '@/lib/auth';
 import { deleteUpload } from '@/lib/storage';
 import { isVideoUrl, normalizePropertyMediaOrder } from '@/lib/property-media';
+import { translateProperty } from '@/lib/property-translate';
 
 export const dynamic = 'force-dynamic';
 
@@ -97,10 +98,15 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       include: { images: true },
     });
 
-    // 翻譯只在首次建立 (POST /api/properties) 時自動執行；
-    // 後續更新一律不重打翻譯 API，避免每次小修改都耗用配額。
-    // 若需要重譯，請走 POST /api/properties/:id/translate（強制重譯）
-    // 或 POST /api/properties/translate-pending（補譯缺漏語系）。
+    // 更新後在 response 送出後重譯 en / ja。
+    // translateProperty 預設 skipUpToDate：以來源欄位 hash 比對，
+    // 只有標題、描述、地址等「會被翻譯的欄位」真的變動才會打翻譯 API，
+    // 改租金、圖片、上下架等不影響翻譯的修改不耗配額。
+    after(async () => {
+      await translateProperty(id).catch((e) => {
+        console.error(`[after translateProperty:update] ${id}`, (e as Error).message);
+      });
+    });
 
     return NextResponse.json(updated);
   } catch (e: any) {

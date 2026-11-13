@@ -1,3 +1,5 @@
+import { isPolicyLabel } from '@/lib/property-i18n';
+
 export type TagTone = 'green' | 'orange' | 'blue' | 'purple' | 'gray';
 
 export type Tag = { label: string; tone: TagTone };
@@ -17,23 +19,39 @@ const POLICY_TAGS = new Set([
   '社會住宅', '租金補貼', '高齡友善', '可報稅', '可入籍',
 ]);
 
+const DERIVED_LABELS = {
+  newBuild:   { zh: '新成屋',       en: 'New build',            ja: '新築' },
+  under10:    { zh: '屋齡 10 年內', en: 'Under 10 yrs old',     ja: '築10年以内' },
+  elevator:   { zh: '電梯',         en: 'Elevator',             ja: 'エレベーター' },
+  pets:       { zh: '寵物友善',     en: 'Pet-friendly',         ja: 'ペット可' },
+  cooking:    { zh: '可開伙',       en: 'Cooking OK',           ja: '自炊可' },
+  nearMetro:  { zh: '近捷運/車站',  en: 'Near MRT / station',   ja: '駅近' },
+  school:     { zh: '優質學區',     en: 'Good school district', ja: '学区良好' },
+  corner:     { zh: '邊間',         en: 'Corner unit',          ja: '角部屋' },
+  bright:     { zh: '採光佳',       en: 'Bright',               ja: '日当たり良好' },
+} as const;
+
+type DerivedLocale = 'zh' | 'en' | 'ja';
+
 // 從 Property 欄位推導的標籤（不存 DB，列表渲染時計算）
-export function getDerivedTags(p: Source): Tag[] {
+export function getDerivedTags(p: Source, locale: string = 'zh'): Tag[] {
+  const loc: DerivedLocale = locale === 'en' ? 'en' : locale === 'ja' || locale === 'jp' ? 'ja' : 'zh';
+  const L = (k: keyof typeof DERIVED_LABELS) => DERIVED_LABELS[k][loc];
   const tags: Tag[] = [];
 
   if (p.buildingAge != null) {
-    if (p.buildingAge <= 3) tags.push({ label: '新成屋', tone: 'green' });
-    else if (p.buildingAge <= 10) tags.push({ label: '屋齡 10 年內', tone: 'green' });
+    if (p.buildingAge <= 3) tags.push({ label: L('newBuild'), tone: 'green' });
+    else if (p.buildingAge <= 10) tags.push({ label: L('under10'), tone: 'green' });
   }
-  if (p.hasElevator) tags.push({ label: '電梯', tone: 'blue' });
-  if (p.petsAllowed) tags.push({ label: '寵物友善', tone: 'orange' });
-  if (p.cookingAllowed) tags.push({ label: '可開伙', tone: 'orange' });
+  if (p.hasElevator) tags.push({ label: L('elevator'), tone: 'blue' });
+  if (p.petsAllowed) tags.push({ label: L('pets'), tone: 'orange' });
+  if (p.cookingAllowed) tags.push({ label: L('cooking'), tone: 'orange' });
 
   const text = `${p.description ?? ''} ${p.street ?? ''} ${p.community ?? ''}`;
-  if (/捷運|車站|高鐵/.test(text)) tags.push({ label: '近捷運/車站', tone: 'purple' });
-  if (/學區|學校/.test(text)) tags.push({ label: '優質學區', tone: 'purple' });
-  if (/邊間/.test(text)) tags.push({ label: '邊間', tone: 'purple' });
-  if (/採光/.test(text)) tags.push({ label: '採光佳', tone: 'purple' });
+  if (/捷運|車站|高鐵/.test(text)) tags.push({ label: L('nearMetro'), tone: 'purple' });
+  if (/學區|學校/.test(text)) tags.push({ label: L('school'), tone: 'purple' });
+  if (/邊間/.test(text)) tags.push({ label: L('corner'), tone: 'purple' });
+  if (/採光/.test(text)) tags.push({ label: L('bright'), tone: 'purple' });
 
   return tags;
 }
@@ -43,7 +61,7 @@ export function classifyFeatureTags(tags: string[] | undefined | null): Tag[] {
   if (!Array.isArray(tags)) return [];
   return tags.map((t) => ({
     label: t,
-    tone: POLICY_TAGS.has(t) ? 'green' : 'orange',
+    tone: POLICY_TAGS.has(t) || isPolicyLabel(t) ? 'green' : 'orange',
   }));
 }
 

@@ -20,7 +20,6 @@ import {
   FEATURE_TAGS,
 } from '@/data/taiwan-addresses';
 import type { Taxonomies } from '@/lib/taxonomies-shared';
-import { LISTING_STATUS_OPTIONS } from '@/components/frontend/PropertyCard';
 
 const OCR_MAX_PHOTOS = 3;
 const MAX_PROPERTY_IMAGES = 20;
@@ -1076,20 +1075,11 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from }: 
       </Card>
 
       {/* === 上下架 === */}
+      {/* status / listingStatus 欄位仍保留在資料中（前台顯示、成交下架依賴），
+          但不在表單編輯：新物件預設上架，上下架改由物件管理列表的
+          「成交下架／重新上架」按鈕操作，編輯時原值原樣送回。 */}
       <Card title="上下架設定">
-        <div className="grid grid-cols-2 gap-3">
-          <select className="input-base" value={v.status} onChange={(e) => update('status', e.target.value)}>
-            <option value="active">上架中</option>
-            <option value="inactive">下架</option>
-            <option value="pending">審核中</option>
-          </select>
-          <select className="input-base" value={v.listingStatus} onChange={(e) => update('listingStatus', e.target.value)}>
-            {LISTING_STATUS_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </div>
-        <label className="inline-flex items-center gap-2 text-sm mt-3">
+        <label className="inline-flex items-center gap-2 text-sm">
           <input type="checkbox" checked={v.featured} onChange={(e) => update('featured', e.target.checked)} />
           設為精選物件（在首頁與列表優先顯示）
         </label>

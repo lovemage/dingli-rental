@@ -105,7 +105,11 @@
     "statusRented": "Rented",
     "statusSold": "Sold",
     "statusClosed": "Closed",
-    "addressHidden": "(Address protected)"
+    "addressHidden": "(Address protected)",
+    "openLayout": "Open layout",
+    "codeLabel": "No.",
+    "copyCode": "Copy listing number",
+    "parkingYes": "Yes"
   },
   "propertyFilters": {
     "searchPlaceholder": "Property code, district, community, or keyword",

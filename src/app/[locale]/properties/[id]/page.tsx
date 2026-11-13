@@ -142,6 +142,7 @@ export default async function PropertyDetailPage({
   if (!id) notFound();
 
   const t = await getTranslations('propertyDetail');
+  const tCard = await getTranslations('propertyCard');
   const lp = (p: string) => localePath(locale, p);
   const officialLineUrl = await loadOfficialLineUrl();
 
@@ -164,6 +165,12 @@ export default async function PropertyDetailPage({
   const p = localizePropertyForDetail(raw, locale);
   const listingStatus = listingStatusForPropertyStatus(raw.status, raw.listingStatus);
   const listingBadge = LISTING_STATUS_BADGE[listingStatus];
+  const listingLabel = tCard(
+    listingStatus === 'rented' ? 'statusRented'
+    : listingStatus === 'sold' ? 'statusSold'
+    : listingStatus === 'closed' ? 'statusClosed'
+    : 'statusActive'
+  );
 
   const equipment: string[] = (p.equipment as string[]) || [];
   const furniture: string[] = (p.furniture as string[]) || [];
@@ -195,11 +202,11 @@ export default async function PropertyDetailPage({
       ? t('ageYears', { count: raw.buildingAge })
       : t('dash');
 
-  const floorLine = formatFloorLine(raw.floorType, raw.floor, raw.totalFloor);
+  const floorLine = formatFloorLine(raw.floorType, raw.floor, raw.totalFloor, locale);
   const floorStr = floorLine || t('dash');
 
   const layoutStr = raw.openLayout
-    ? '開放式'
+    ? t('openLayout')
     : t('layoutValue', {
         rooms: raw.rooms,
         living: raw.livingRooms,
@@ -233,7 +240,7 @@ export default async function PropertyDetailPage({
               <div>
                 <div className="flex flex-wrap gap-2 mb-3">
                   <span className={`${listingBadge.className} text-xs font-bold px-2.5 py-1 rounded-full`}>
-                    {listingBadge.label}
+                    {listingLabel}
                   </span>
                   <span className="bg-brand-green-50 text-brand-green-900 text-xs font-bold px-2.5 py-1 rounded-full">
                     {p.region}

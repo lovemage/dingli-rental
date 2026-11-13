@@ -89,7 +89,7 @@ export default function PropertyCard({ property: p, maxTags = 3, variant = 'card
   const categoryTags = [...new Set([p.typeMid, p.buildingType].filter(Boolean) as string[])];
 
   const policyAndCustom = classifyFeatureTags(p.featureTags);
-  const derived = getDerivedTags(p);
+  const derived = getDerivedTags(p, locale);
   const allTags = mergeTags(
     policyAndCustom.filter((t) => t.tone === 'green'),
     derived,
@@ -161,13 +161,13 @@ export default function PropertyCard({ property: p, maxTags = 3, variant = 'card
       <div className={isMobileList ? 'min-w-0 flex flex-1 flex-col p-3 sm:p-5' : 'p-5 flex flex-col flex-1'}>
         {p.code && (
           <div className="mb-1 flex items-center gap-1.5">
-            <span className="text-[10px] font-mono font-bold tracking-wider text-ink-400">編號 {p.code}</span>
+            <span className="text-[10px] font-mono font-bold tracking-wider text-ink-400">{t('codeLabel')} {p.code}</span>
             <button
               type="button"
               onClick={copyCode}
               className="inline-flex items-center justify-center rounded-full border border-line bg-white text-ink-500 hover:text-brand-green-700 hover:border-brand-green-500 w-5 h-5 transition"
-              aria-label="複製物件編號"
-              title="複製物件編號"
+              aria-label={t('copyCode')}
+              title={t('copyCode')}
             >
               <MaterialIcon name={copied ? 'check' : 'content_copy'} className="!text-xs" />
             </button>
@@ -203,7 +203,7 @@ export default function PropertyCard({ property: p, maxTags = 3, variant = 'card
           : 'flex flex-wrap gap-x-4 gap-y-2 pt-4 border-t border-line text-xs text-ink-700 mt-auto'}>
           <span className="flex items-center gap-1">
             <SpecIcon type="rooms" />
-            {p.openLayout ? '開放式' : `${t('rooms', { count: p.rooms })}${t('livingRooms', { count: p.livingRooms ?? 0 })}`}
+            {p.openLayout ? t('openLayout') : `${t('rooms', { count: p.rooms })}${t('livingRooms', { count: p.livingRooms ?? 0 })}`}
           </span>
           {!p.openLayout && (
             <span className="flex items-center gap-1">
@@ -218,13 +218,13 @@ export default function PropertyCard({ property: p, maxTags = 3, variant = 'card
           {p.parkingType && (
             <span className="flex items-center gap-1">
               <SpecIcon type="parking" />
-              有
+              {t('parkingYes')}
             </span>
           )}
           {p.floor && (
             <span className="flex items-center gap-1">
               <SpecIcon type="floor" />
-              {formatFloorLine(p.floorType, p.floor, p.totalFloor)}
+              {formatFloorLine(p.floorType, p.floor, p.totalFloor, locale)}
             </span>
           )}
         </div>

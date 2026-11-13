@@ -105,7 +105,11 @@
     "statusRented": "已出租",
     "statusSold": "售出",
     "statusClosed": "結束",
-    "addressHidden": "(地址保護中)"
+    "addressHidden": "(地址保護中)",
+    "openLayout": "開放式",
+    "codeLabel": "編號",
+    "copyCode": "複製物件編號",
+    "parkingYes": "有"
   },
   "propertyFilters": {
     "searchPlaceholder": "輸入編號、區域、社區或關鍵字",
