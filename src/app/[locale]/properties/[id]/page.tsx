@@ -186,7 +186,9 @@ export default async function PropertyDetailPage({
   const mapQueryParts = [raw.region, raw.district];
   if (raw.street) mapQueryParts.push(raw.street);
   const mapQuery = mapQueryParts.join(' ');
-  const mapSrc = `https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&z=16&output=embed`;
+  // 查詢字串維持中文地址（定位最準）；hl 控制地圖介面與地名標示語言
+  const mapLang = locale === 'en' ? 'en' : locale === 'ja' ? 'ja' : 'zh-TW';
+  const mapSrc = `https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&z=16&hl=${mapLang}&output=embed`;
 
   const moveInDateStr = raw.anytimeMoveIn
     ? t('moveInAnytime')
