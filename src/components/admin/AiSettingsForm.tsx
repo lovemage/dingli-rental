@@ -76,6 +76,7 @@ export default function AiSettingsForm() {
   const [logScope, setLogScope] = useState<UsageScope>('property');
   const [logPage, setLogPage] = useState(1);
   const [logData, setLogData] = useState<UsageLogPage | null>(null);
+  const [topups, setTopups] = useState<TopupRow[]>([]);
 
   async function loadUsage(scope: UsageScope = logScope, page: number = logPage) {
     setUsageLoading(true);
@@ -85,6 +86,7 @@ export default function AiSettingsForm() {
       if (res.ok) {
         if (typeof json.totalUsd === 'number') setUsageTotal(json.totalUsd);
         if (typeof json.currentUsd === 'number') setUsageCurrent(json.currentUsd);
+        if (Array.isArray(json.topups)) setTopups(json.topups);
         setLogData({
           entries: Array.isArray(json.entries) ? json.entries : [],
           page: Number(json.page) || 1,
@@ -421,6 +423,7 @@ export default function AiSettingsForm() {
         onScopeChange={changeLogScope}
         logData={logData}
         onPageChange={changeLogPage}
+        topups={topups}
       />
 
       {/* === Tabs === */}
@@ -631,6 +634,7 @@ function TabButton({
 }
 
 type UsageScope = 'chat' | 'property' | 'site';
+type TopupRow = { at: string; amountUsd: number; totalAfter: number; note?: string };
 type UsageLogRow = { at: string; kind: string; delta: number; balance: number; label?: string };
 type UsageLogPage = {
   entries: UsageLogRow[];
@@ -655,6 +659,7 @@ function UsageMeter({
   onScopeChange,
   logData,
   onPageChange,
+  topups,
 }: {
   totalUsd: number;
   currentUsd: number;
@@ -664,6 +669,7 @@ function UsageMeter({
   onScopeChange: (s: UsageScope) => void;
   logData: UsageLogPage | null;
   onPageChange: (page: number) => void;
+  topups: TopupRow[];
 }) {
   const total = totalUsd > 0 ? totalUsd : 10;
   const current = Math.max(0, Math.min(currentUsd, total));
@@ -734,6 +740,36 @@ function UsageMeter({
           額度剩餘不到 20%，即將用盡，請聯繫工作室加值。
         </p>
       ) : null}
+
+      <div className="mt-4">
+        <span className="block text-xs font-bold text-ink-700 mb-1.5">儲值紀錄</span>
+        {topups.length === 0 ? (
+          <p className="text-[11px] text-ink-400 py-2 text-center bg-paper-2 rounded">尚無儲值紀錄</p>
+        ) : (
+          <div className="overflow-x-auto rounded border border-line">
+            <table className="w-full text-[11px] font-mono leading-tight">
+              <thead className="bg-paper-2 text-ink-500">
+                <tr>
+                  <th className="px-2 py-1 text-left font-semibold">日期</th>
+                  <th className="px-2 py-1 text-right font-semibold">儲值金額</th>
+                  <th className="px-2 py-1 text-right font-semibold">儲值後總額度</th>
+                  <th className="px-2 py-1 text-left font-semibold">備註</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {topups.map((t, i) => (
+                  <tr key={`${t.at}-${i}`} className="odd:bg-white even:bg-paper-2/40">
+                    <td className="px-2 py-1 text-ink-700 whitespace-nowrap">{formatTopupDate(t.at)}</td>
+                    <td className="px-2 py-1 text-right text-brand-green-700 font-bold whitespace-nowrap">+${t.amountUsd.toFixed(2)}</td>
+                    <td className="px-2 py-1 text-right text-ink-900 whitespace-nowrap">${t.totalAfter.toFixed(2)}</td>
+                    <td className="px-2 py-1 text-ink-500 font-sans">{t.note || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       <div className="mt-4">
         <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
@@ -811,6 +847,12 @@ function UsageMeter({
       </div>
     </div>
   );
+}
+
+function formatTopupDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function formatLogTime(iso: string): string {

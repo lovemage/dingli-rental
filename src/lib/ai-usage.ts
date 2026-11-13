@@ -17,11 +17,20 @@ export type AiUsageLogEntry = {
 
 export type AiUsageLogs = Record<AiUsageScope, AiUsageLogEntry[]>;
 
+/** 儲值紀錄（由工作室登記；後台唯讀顯示） */
+export type AiTopupEntry = {
+  at: string;
+  amountUsd: number;
+  totalAfter: number;
+  note?: string;
+};
+
 export type AiUsageMeter = {
   totalUsd: number;
   currentUsd: number;
   updatedAt: string;
   logs: AiUsageLogs;
+  topups: AiTopupEntry[];
 };
 
 const SECTION = 'ai_usage_meter';
@@ -71,6 +80,22 @@ function sanitizeLogs(data: any): AiUsageLogs {
   return logs;
 }
 
+function sanitizeTopups(raw: unknown): AiTopupEntry[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((t: any) => {
+      const at = typeof t?.at === 'string' ? t.at : '';
+      const amountUsd = Number(t?.amountUsd);
+      const totalAfter = Number(t?.totalAfter);
+      if (!at || !Number.isFinite(amountUsd) || !Number.isFinite(totalAfter)) return null;
+      const entry: AiTopupEntry = { at, amountUsd, totalAfter };
+      if (typeof t?.note === 'string' && t.note.trim()) entry.note = t.note.trim().slice(0, 100);
+      return entry;
+    })
+    .filter((x): x is AiTopupEntry => x !== null)
+    .slice(0, 100);
+}
+
 function normalize(data: any): AiUsageMeter {
   const totalUsd = Number(data?.totalUsd);
   const currentUsd = Number(data?.currentUsd);
@@ -79,6 +104,7 @@ function normalize(data: any): AiUsageMeter {
     currentUsd: Number.isFinite(currentUsd) && currentUsd >= 0 ? currentUsd : DEFAULT_CURRENT_USD,
     updatedAt: typeof data?.updatedAt === 'string' ? data.updatedAt : new Date().toISOString(),
     logs: sanitizeLogs(data),
+    topups: sanitizeTopups(data?.topups),
   };
 }
 
@@ -91,6 +117,7 @@ export async function loadAiUsageMeter(): Promise<AiUsageMeter> {
         currentUsd: DEFAULT_CURRENT_USD,
         updatedAt: new Date().toISOString(),
         logs: emptyLogs(),
+        topups: [],
       };
       await prisma.siteContent
         .upsert({
@@ -108,12 +135,13 @@ export async function loadAiUsageMeter(): Promise<AiUsageMeter> {
       currentUsd: DEFAULT_CURRENT_USD,
       updatedAt: new Date().toISOString(),
       logs: emptyLogs(),
+      topups: [],
     };
   }
 }
 
 export async function saveAiUsageMeter(
-  patch: Partial<Pick<AiUsageMeter, 'totalUsd' | 'currentUsd' | 'logs'>>,
+  patch: Partial<Pick<AiUsageMeter, 'totalUsd' | 'currentUsd' | 'logs' | 'topups'>>,
 ): Promise<AiUsageMeter> {
   const current = await loadAiUsageMeter();
   const next: AiUsageMeter = {
@@ -121,6 +149,7 @@ export async function saveAiUsageMeter(
     currentUsd: Math.max(0, patch.currentUsd ?? current.currentUsd),
     updatedAt: new Date().toISOString(),
     logs: patch.logs ? sanitizeLogs({ logs: patch.logs }) : current.logs,
+    topups: patch.topups ? sanitizeTopups(patch.topups) : current.topups,
   };
   await prisma.siteContent.upsert({
     where: { section: SECTION },

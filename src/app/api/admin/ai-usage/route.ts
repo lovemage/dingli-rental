@@ -31,6 +31,7 @@ export async function GET(req: Request) {
     lowBalance: ratio <= AI_LOW_BALANCE_RATIO,
     exhausted: isQuotaExhausted(meter),
     counts: Object.fromEntries(AI_USAGE_SCOPES.map((s) => [s, meter.logs[s].length])),
+    topups: meter.topups,
   };
 
   const url = new URL(req.url);
