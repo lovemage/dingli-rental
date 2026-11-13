@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { HERO_DEFAULTS, type HeroContent } from '@/data/homepage-defaults';
+import HeroTitle from '@/components/frontend/HeroTitle';
 
 export default function HomepageHeroTextForm() {
   const [data, setData] = useState<HeroContent>(HERO_DEFAULTS);
@@ -70,19 +71,43 @@ export default function HomepageHeroTextForm() {
         </div>
         <div>
           <label className="label-base">主標題第一行</label>
-          <input
-            className="input-base"
+          <textarea
+            rows={2}
+            className="input-base resize-y"
             value={data.titleLine1}
             onChange={(e) => set('titleLine1', e.target.value)}
           />
         </div>
         <div>
           <label className="label-base">主標題第二行（橘色高亮）</label>
-          <input
-            className="input-base"
+          <textarea
+            rows={2}
+            className="input-base resize-y"
             value={data.titleLine2}
             onChange={(e) => set('titleLine2', e.target.value)}
           />
+        </div>
+        <div className="md:col-span-2">
+          <p className="text-xs text-ink-500 mb-2">
+            按 Enter 可強制換行；中文只會在空白或換行處斷行。下方預覽與前台中文版顯示一致。
+          </p>
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
+            <div className="overflow-hidden rounded-lg bg-ink-900 p-4">
+              <p className="text-[11px] font-bold text-paper/70 mb-1">桌機預覽</p>
+              {/* 前台桌機標題寬 672px、字級 56px；等比縮小 55% 預覽 */}
+              <div className="w-[370px] h-[140px] overflow-hidden">
+                <div className="w-[672px] origin-top-left scale-[0.55]">
+                  <HeroTitle line1={data.titleLine1} line2={data.titleLine2} locale="zh" size="desktop" />
+                </div>
+              </div>
+            </div>
+            <div className="overflow-hidden rounded-lg bg-ink-900 p-4">
+              <p className="text-[11px] font-bold text-paper/70 mb-1">手機預覽</p>
+              <div className="w-[343px] max-w-full">
+                <HeroTitle line1={data.titleLine1} line2={data.titleLine2} locale="zh" size="mobile" />
+              </div>
+            </div>
+          </div>
         </div>
         <div className="md:col-span-2">
           <label className="label-base">描述文字</label>

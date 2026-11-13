@@ -187,12 +187,9 @@ function Pagination({
 }) {
   if (total <= 1) return null;
 
-  const maxVisible = 10;
-  const end = Math.min(maxVisible, total);
-  const pages: number[] = [];
-  for (let p = 1; p <= end; p++) pages.push(p);
-  const showEllipsis = total > maxVisible + 1;
-  const showLastPage = total > maxVisible;
+  // 頁碼視窗跟著目前頁移動（第 10 頁時可直接點 11、12、13…），首頁與末頁固定顯示
+  const desktopPages = buildPageList(current, total, 9);
+  const mobilePages = buildPageList(current, total, 3);
 
   const buildHref = (page: number) => {
     const params = new URLSearchParams();
@@ -229,27 +226,19 @@ function Pagination({
             <MaterialIcon name="chevron_left" className="!text-lg" />
           </Link>
         )}
-        {pages.slice(0, 5).map((n) => (
-          <Link
-            key={n}
-            href={buildHref(n)}
-            aria-current={n === current ? 'page' : undefined}
-            className={n === current ? `${baseBtn} ${sizeSquare} ${activeBtn}` : squareIdle}
-          >
-            {n}
-          </Link>
-        ))}
-        {total > 6 && (
-          <>
-            <span className="px-0.5 text-xs text-ink-400">...</span>
+        {mobilePages.map((n, i) =>
+          n === 'gap' ? (
+            <span key={`gap-${i}`} className="px-0.5 text-xs text-ink-400">...</span>
+          ) : (
             <Link
-              href={buildHref(total)}
-              aria-current={total === current ? 'page' : undefined}
-              className={total === current ? `${baseBtn} ${sizeSquare} ${activeBtn}` : squareIdle}
+              key={n}
+              href={buildHref(n)}
+              aria-current={n === current ? 'page' : undefined}
+              className={n === current ? `${baseBtn} ${sizeSquare} ${activeBtn}` : squareIdle}
             >
-              {total}
+              {n}
             </Link>
-          </>
+          ),
         )}
         {nextDisabled ? (
           <span className={disabled} aria-disabled="true">
@@ -274,28 +263,19 @@ function Pagination({
           </Link>
         )}
 
-        {pages.map((n) => (
-          <Link
-            key={n}
-            href={buildHref(n)}
-            aria-current={n === current ? 'page' : undefined}
-            className={n === current ? `${baseBtn} ${sizeSquare} ${activeBtn}` : squareIdle}
-          >
-            {n}
-          </Link>
-        ))}
-
-        {showEllipsis && (
-          <span className="px-1 text-xs text-ink-400">...</span>
-        )}
-        {showLastPage && (
-          <Link
-            href={buildHref(total)}
-            aria-current={total === current ? 'page' : undefined}
-            className={total === current ? `${baseBtn} ${sizeSquare} ${activeBtn}` : squareIdle}
-          >
-            {total}
-          </Link>
+        {desktopPages.map((n, i) =>
+          n === 'gap' ? (
+            <span key={`gap-${i}`} className="px-1 text-xs text-ink-400">...</span>
+          ) : (
+            <Link
+              key={n}
+              href={buildHref(n)}
+              aria-current={n === current ? 'page' : undefined}
+              className={n === current ? `${baseBtn} ${sizeSquare} ${activeBtn}` : squareIdle}
+            >
+              {n}
+            </Link>
+          ),
         )}
 
         {nextDisabled ? (
@@ -310,4 +290,19 @@ function Pagination({
       </div>
     </nav>
   );
+}
+
+/** 產生頁碼清單：1 … (目前頁前後 windowSize 個) … total */
+function buildPageList(current: number, total: number, windowSize: number): (number | 'gap')[] {
+  if (total <= windowSize + 4) return Array.from({ length: total }, (_, i) => i + 1);
+  const half = Math.floor(windowSize / 2);
+  let start = Math.max(2, current - half);
+  const end = Math.min(total - 1, start + windowSize - 1);
+  start = Math.max(2, end - windowSize + 1);
+  const out: (number | 'gap')[] = [1];
+  if (start > 2) out.push('gap');
+  for (let p = start; p <= end; p++) out.push(p);
+  if (end < total - 1) out.push('gap');
+  out.push(total);
+  return out;
 }

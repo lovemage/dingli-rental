@@ -9,6 +9,7 @@ import {
   type ContactSocial,
 } from '@/data/contact-defaults';
 import { getTaxonomies } from '@/lib/taxonomies';
+import { lookupFixed } from '@/lib/property-i18n';
 
 const FOOTER_PROPERTY_TYPES_LIMIT = 6;
 
@@ -95,7 +96,7 @@ export default async function Footer() {
                     href={lp(`/properties?type=${encodeURIComponent(type)}`)}
                     className="hover:text-brand-orange-300"
                   >
-                    {type}
+                    {lookupFixed('typeMid', type, locale) ?? type}
                   </Link>
                 </li>
               ))}

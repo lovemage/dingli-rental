@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import HeroTitle from '@/components/frontend/HeroTitle';
 import { getTranslations, getLocale, setRequestLocale } from 'next-intl/server';
 import Header from '@/components/frontend/Header';
 import Footer from '@/components/frontend/Footer';
@@ -241,21 +242,7 @@ export default async function HomePage({
               {/* EN/JA 使用策展短文案與略小字級，避免 hero CTA 被長譯文擠出畫面。 */}
               <div className={`pt-6 ${currentLocale === 'zh' ? 'max-w-2xl' : 'max-w-3xl'}`}>
                 <span className="eyebrow bg-paper/90"><span className="dot" />{hero.eyebrow}</span>
-                <h1
-                  className={
-                    currentLocale === 'zh'
-                      ? 'text-4xl md:text-5xl lg:text-[56px] font-black leading-tight my-5 text-paper drop-shadow-[0_2px_18px_rgba(26,36,33,0.35)]'
-                      : 'text-3xl md:text-4xl lg:text-5xl font-black leading-tight my-5 text-paper drop-shadow-[0_2px_18px_rgba(26,36,33,0.35)]'
-                  }
-                >
-                  {/* zh 強制兩行；EN/JA 以自然換行維持按鈕可見。 */}
-                  {hero.titleLine1}
-                  {currentLocale === 'zh' ? <br /> : ' '}
-                  <span className="text-brand-orange-300 relative inline-block">
-                    {hero.titleLine2}
-                    <span className="absolute left-0 right-0 bottom-1 h-3.5 bg-brand-green-900/55 -z-10 rounded" />
-                  </span>
-                </h1>
+                <HeroTitle line1={hero.titleLine1} line2={hero.titleLine2} locale={currentLocale} />
                 <p className="text-lg text-paper/95 max-w-xl mb-8 whitespace-pre-line drop-shadow-[0_1px_12px_rgba(26,36,33,0.35)]">
                   {hero.description}
                 </p>
