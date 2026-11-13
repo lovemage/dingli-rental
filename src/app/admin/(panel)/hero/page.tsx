@@ -1,7 +1,9 @@
+import { Suspense } from 'react';
 import HeroManager from '@/components/admin/HeroManager';
 import HomepageHeroTextForm from '@/components/admin/HomepageHeroTextForm';
 import CategoriesForm from '@/components/admin/CategoriesForm';
 import ServicesForm from '@/components/admin/ServicesForm';
+import HomepageTabs from '@/components/admin/HomepageTabs';
 
 export default function HomepageAdminPage() {
   return (
@@ -13,10 +15,16 @@ export default function HomepageAdminPage() {
         </p>
       </div>
 
-      <HomepageHeroTextForm />
-      <HeroManager />
-      <CategoriesForm />
-      <ServicesForm />
+      <Suspense fallback={<p className="text-ink-500">載入中...</p>}>
+        <HomepageTabs
+          tabs={[
+            { key: 'hero-text', label: '主視覺文字', icon: 'title', content: <HomepageHeroTextForm /> },
+            { key: 'slides', label: '輪播圖', icon: 'view_carousel', content: <HeroManager /> },
+            { key: 'categories', label: '三大入口', icon: 'grid_view', content: <CategoriesForm /> },
+            { key: 'services', label: '服務特色', icon: 'room_service', content: <ServicesForm /> },
+          ]}
+        />
+      </Suspense>
     </div>
   );
 }
