@@ -864,22 +864,25 @@ export default function PropertiesManager({
                             NT$ {p.rent.toLocaleString()}
                           </span>
                         </div>
-                        <div className={`mt-0.5 flex items-start gap-1.5 ${isCompact ? 'sm:hidden' : ''}`}>
-                          <p
-                            className="line-clamp-1 min-w-0 text-[11px] text-ink-500 sm:line-clamp-2 sm:text-xs"
-                            title={fullAddress}
-                          >
+                        <button
+                          type="button"
+                          onClick={() => copyAddress(p.id, fullAddress)}
+                          className={`group mt-0.5 flex max-w-full items-start gap-1.5 text-left ${isCompact ? 'sm:hidden' : ''}`}
+                          title="點擊複製地址"
+                        >
+                          <span className="line-clamp-1 min-w-0 text-[11px] text-ink-500 transition group-hover:text-brand-green-700 sm:line-clamp-2 sm:text-xs">
                             {fullAddress}
-                          </p>
-                          <button
-                            type="button"
-                            onClick={() => copyAddress(p.id, fullAddress)}
-                            className="shrink-0 rounded-full border border-line bg-white px-1.5 py-0.5 text-[10px] font-bold text-ink-500 transition hover:border-brand-green-500 hover:text-brand-green-700 sm:text-[11px]"
-                            title="複製地址"
+                          </span>
+                          <span
+                            className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-bold transition sm:text-[11px] ${
+                              copiedAddressId === p.id
+                                ? 'border-brand-green-500 bg-brand-green-50 text-brand-green-700'
+                                : 'border-line bg-white text-ink-500 group-hover:border-brand-green-500 group-hover:text-brand-green-700'
+                            }`}
                           >
                             {copiedAddressId === p.id ? '已複製' : '複製'}
-                          </button>
-                        </div>
+                          </span>
+                        </button>
                         {(p.ownerName || p.ownerPhone) && (
                           <p className={`mt-0.5 text-[11px] text-ink-600 sm:text-xs ${isCompact ? 'sm:hidden' : ''}`}>
                             屋主 {p.ownerName || '—'}
@@ -939,10 +942,18 @@ export default function PropertiesManager({
                           <span>瀏覽 {p.monthViews.toLocaleString()} / {p.totalViews.toLocaleString()}</span>
                           <span>上架 {fmtDate(p.createdAt)}</span>
                         </div>
-                        <div className="truncate text-ink-500" title={fullAddress}>
-                          <MaterialIcon name="location_on" className="!text-sm align-[-2px] mr-0.5" />
-                          {fullAddress}
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => copyAddress(p.id, fullAddress)}
+                          className="group flex min-w-0 items-center gap-1 text-left text-ink-500"
+                          title="點擊複製地址"
+                        >
+                          <MaterialIcon name="location_on" className="!text-sm shrink-0" />
+                          <span className="truncate transition group-hover:text-brand-green-700">{fullAddress}</span>
+                          <span className={`shrink-0 text-[10px] font-bold ${copiedAddressId === p.id ? 'text-brand-green-700' : 'text-ink-300 group-hover:text-brand-green-700'}`}>
+                            {copiedAddressId === p.id ? '已複製' : '複製'}
+                          </span>
+                        </button>
                       </div>
                     )}
 

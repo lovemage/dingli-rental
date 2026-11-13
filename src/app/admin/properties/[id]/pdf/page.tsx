@@ -168,10 +168,12 @@ export default async function PropertyPdfPage({
   const company = contact?.companyInfo;
 
   return (
-    <div className="min-h-screen bg-paper-2 print:bg-white">
+    <div className="pdf-page min-h-screen bg-paper-2">
       <style>{`
         @page { size: A4; margin: 12mm; }
         @media print {
+          html, body { background: #fff !important; }
+          .pdf-page { background: #fff !important; min-height: 0 !important; }
           .pdf-toolbar { display: none !important; }
           .pdf-sheet { box-shadow: none !important; margin: 0 !important; padding: 0 !important; max-width: none !important; }
           .pdf-avoid { break-inside: avoid; }
