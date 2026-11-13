@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import MaterialIcon from '@/components/admin/MaterialIcon';
+import AiChatLogs from '@/components/admin/AiChatLogs';
 
 type Inquiry = {
   id: number;
@@ -15,6 +16,7 @@ type Inquiry = {
   budget: number | null;
   message: string | null;
   status: string;
+  source?: string | null;
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -49,6 +51,7 @@ function isRepairInquiry(it: Inquiry): boolean {
 }
 
 type Counts = { all: number; new: number; contacted: number; closed: number };
+type TabKey = 'all' | 'new' | 'contacted' | 'closed' | 'ai';
 
 const STATUS_TABS: { key: 'all' | 'new' | 'contacted' | 'closed'; label: string }[] = [
   { key: 'all',       label: '全部' },
@@ -76,7 +79,7 @@ function fmt(dt: string) {
 export default function InquiriesManager() {
   const [items, setItems] = useState<Inquiry[]>([]);
   const [counts, setCounts] = useState<Counts>({ all: 0, new: 0, contacted: 0, closed: 0 });
-  const [tab, setTab] = useState<'all' | 'new' | 'contacted' | 'closed'>('new');
+  const [tab, setTab] = useState<TabKey>('new');
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [savingId, setSavingId] = useState<number | null>(null);
@@ -86,7 +89,8 @@ export default function InquiriesManager() {
     window.dispatchEvent(new CustomEvent('admin:inquiries-updated', { detail: { newCount: nextNew } }));
   }
 
-  async function refresh(currentTab = tab, opts: { showLoading?: boolean } = {}) {
+  async function refresh(currentTab: TabKey = tab, opts: { showLoading?: boolean } = {}) {
+    if (currentTab === 'ai') return;
     if (opts.showLoading) setLoading(true);
     try {
       const url = currentTab === 'all'
@@ -107,6 +111,7 @@ export default function InquiriesManager() {
 
   useEffect(() => {
     let cancelled = false;
+    if (tab === 'ai') return;
     (async () => {
       try {
         const url = tab === 'all'
@@ -194,10 +199,20 @@ export default function InquiriesManager() {
             </button>
           );
         })}
+        <button
+          type="button"
+          onClick={() => setTab('ai')}
+          className={`flex-1 min-w-fit px-4 py-2.5 rounded-lg text-sm font-bold transition flex items-center justify-center gap-1.5 ${tab === 'ai' ? 'bg-brand-green-700 text-white shadow-sm' : 'text-ink-700 hover:bg-paper-2'}`}
+        >
+          <MaterialIcon name="smart_toy" className="!text-base" />
+          AI 客服記錄
+        </button>
       </div>
 
       {/* === List === */}
-      {loading ? (
+      {tab === 'ai' ? (
+        <AiChatLogs onOpenInquiries={() => { setLoading(true); setTab('all'); }} />
+      ) : loading ? (
         <p className="text-ink-500 text-center py-12">載入中...</p>
       ) : items.length === 0 ? (
         <div className="admin-card text-center py-16 text-ink-500">
@@ -236,6 +251,11 @@ export default function InquiriesManager() {
                       {it.userRole && USER_ROLE_LABEL[it.userRole] && (
                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${it.userRole === 'landlord' ? 'bg-brand-orange-100 text-brand-orange-700' : 'bg-brand-green-100 text-brand-green-700'}`}>
                           {USER_ROLE_LABEL[it.userRole]}
+                        </span>
+                      )}
+                      {it.source === 'ai_chat' && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-ink-900 text-white">
+                          AI 客服
                         </span>
                       )}
                       {isRepairInquiry(it) && (

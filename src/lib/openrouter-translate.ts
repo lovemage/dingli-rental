@@ -75,24 +75,30 @@ CRITICAL RULES:
 9. **Addresses**: Convert Taiwan addresses to standard romanization in ${targetName}. Example: "台北市中山區民權東路三段100號" → "No. 100, Sec. 3, Minquan E. Rd., Zhongshan Dist., Taipei City". For Japanese, use the same format with Japanese particles where natural; or keep "台北市" / "新北市" as 台北市 / 新北市 in Japanese (these are commonly used in Japanese as-is). For Chinese county/city → use standard romanized form in English; in Japanese keep the kanji names as-is since Japanese readers understand them.
 10. **Region names**: For English: "台北市"→"Taipei City", "新北市"→"New Taipei City", "基隆市"→"Keelung City", "桃園市"→"Taoyuan City", "新竹市"→"Hsinchu City", "新竹縣"→"Hsinchu County". For Japanese: keep as-is (台北市 etc.).
 11. **District names**: For English use Hanyu Pinyin + " District" (e.g., 中山區→"Zhongshan District"). For Japanese: keep kanji.
-12. **Property type / building type / equipment / furniture / tenant types**: Translate naturally.
-   - 套房 (en: "Studio"; ja: "ワンルーム")
-   - 整層住家 (en: "Whole-Floor Residence"; ja: "一棟住宅")
-   - 別墅 (en: "Villa"; ja: "別荘")
+12. **Property type / building type / equipment / furniture / tenant types**: Translate naturally, using these exact terms:
+   - 套房 / 獨立套房 (en: "Studio"; ja: "ワンルーム")
+   - 分租套房 (en: "Room with Private Bath"; ja: "バス付き個室")
+   - 雅房 (en: "Room (Shared Bath)"; ja: "シェアルーム（共用バス）")
+   - 整層住家 (en: "Whole-Floor Residence"; ja: "フロア貸し住宅")
+   - 別墅 (en: "Villa"; ja: "一戸建て")
    - 店面 (en: "Shop"; ja: "店舗")
    - 辦公室 (en: "Office"; ja: "オフィス")
    - 其他 (en: "Other"; ja: "その他")
-   - 公寓 (en: "Apartment"; ja: "アパート")
-   - 電梯大樓 (en: "Elevator Building"; ja: "エレベーターマンション")
+   - 公寓 (en: "Walk-up Apartment"; ja: "アパート")
+   - 電梯大樓 (en: "Elevator Building"; ja: "エレベーター付きマンション")
+   - 華廈 (en: "Mid-rise Building"; ja: "中層マンション")
    - 透天厝 (en: "Townhouse"; ja: "戸建て")
    - 出租中 (en: "Available"; ja: "募集中")
    - 已出租 (en: "Rented"; ja: "成約済")
    - 售出 (en: "Sold"; ja: "売却済")
    - 結束 (en: "Closed"; ja: "終了")
-   - Legacy values still in DB: 獨立套房 / 分租套房 / 雅房 / 車位 → translate using their literal meaning if encountered.
-13. **Currency**: NT$ stays as NT$. Numbers stay numeric.
-14. **Tone**: Friendly, professional real-estate marketing voice.
-${opts.extraInstructions ? `\n15. ${opts.extraInstructions}` : ''}
+13. **Currency & units**: NT$ stays as NT$. Numbers stay numeric. 坪 → "ping" in English (e.g. "25 ping"), keep "坪" in Japanese.
+14. **Arrays**: Every array must keep exactly the same number of items in the same order as the source (one translated item per source item). Never merge, split, drop or reorder items.
+15. **Faithfulness**: Translate only what is written. Do not add facts, selling points, emojis or disclaimers that are not in the source, and do not omit any sentence. Keep line breaks, bullet symbols and emojis as they are.
+16. **Place names**: Use official English names for MRT stations, roads and landmarks (e.g. 士林站 → "Shilin Station", 承德路四段 → "Sec. 4, Chengde Rd."). In Japanese, keep Chinese place names in kanji (convert to Japanese glyphs where natural, e.g. 区).
+17. **Titles**: Keep titles short and natural (English ≤ 70 characters); do not use ALL CAPS.
+18. **Tone**: Friendly, professional real-estate marketing voice, written for foreign tenants living in Taiwan.
+${opts.extraInstructions ? `\n19. ${opts.extraInstructions}` : ''}
 
 Return ONLY the translated JSON, no markdown fences, no commentary.`;
 

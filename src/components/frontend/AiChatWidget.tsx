@@ -97,6 +97,33 @@ const FOOTER_DISCLAIMER: Record<Language['code'], string> = {
   id: 'Jawaban AI hanya sebagai referensi — silakan hubungi agen kami untuk detail',
 };
 
+const FORM_LINK_LABEL: Record<Language['code'], string> = {
+  zh: '填寫需求表單',
+  en: 'Fill in the request form',
+  ja: 'ご希望フォームに入力',
+  vi: 'Điền biểu mẫu yêu cầu',
+  th: 'กรอกแบบฟอร์มความต้องการ',
+  id: 'Isi formulir kebutuhan',
+};
+
+const INQUIRY_DONE_LABEL: Record<Language['code'], string> = {
+  zh: '✓ 需求單已送出，業務專員會盡快與您聯繫',
+  en: '✓ Your request has been submitted. Our agent will contact you soon.',
+  ja: '✓ ご希望を承りました。担当者よりご連絡いたします。',
+  vi: '✓ Yêu cầu đã được gửi. Chuyên viên sẽ sớm liên hệ với bạn.',
+  th: '✓ ส่งความต้องการเรียบร้อยแล้ว พนักงานจะติดต่อกลับโดยเร็ว',
+  id: '✓ Permintaan Anda telah terkirim. Agen kami akan segera menghubungi Anda.',
+};
+
+function newSessionId(): string {
+  try {
+    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
+  } catch {
+    // ignore
+  }
+  return `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 12)}`;
+}
+
 const CLOSE_LABEL: Record<Language['code'], string> = {
   zh: '關閉', en: 'Close', ja: '閉じる', vi: 'Đóng', th: 'ปิด', id: 'Tutup',
 };
@@ -119,6 +146,8 @@ export default function AiChatWidget({ triggerClassName, triggerLabel = '鼎立 
   const [sending, setSending] = useState(false);
   const [lineUrl, setLineUrl] = useState('https://lin.ee/z9d5558');
   const [error, setError] = useState('');
+  const [sessionId, setSessionId] = useState('');
+  const [inquiryDone, setInquiryDone] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -138,6 +167,8 @@ export default function AiChatWidget({ triggerClassName, triggerLabel = '鼎立 
     setLanguage(lang);
     setMessages([{ role: 'assistant', content: lang.greeting }]);
     setError('');
+    setSessionId(newSessionId());
+    setInquiryDone(false);
   }
 
   function resetToLanguagePicker() {
@@ -164,12 +195,14 @@ export default function AiChatWidget({ triggerClassName, triggerLabel = '鼎立 
         body: JSON.stringify({
           messages: newHistory,
           language: language.code,
+          sessionId,
         }),
       });
       const json = await res.json();
       if (json?.lineUrl) setLineUrl(json.lineUrl);
       if (!res.ok) throw new Error(json?.error || 'Service unavailable');
       setMessages([...newHistory, { role: 'assistant', content: json.reply }]);
+      if (json.inquirySubmitted) setInquiryDone(true);
     } catch (e: any) {
       setError(e?.message || 'Send failed');
     } finally {
@@ -262,7 +295,7 @@ export default function AiChatWidget({ triggerClassName, triggerLabel = '鼎立 
                         : 'bg-white border border-line text-ink-900 rounded-bl-sm shadow-sm'
                     }`}
                   >
-                    {m.role === 'assistant' ? renderRichText(m.content) : m.content}
+                    {m.role === 'assistant' ? renderRichText(m.content, language.code) : m.content}
                   </div>
                 </div>
               ))}
@@ -276,6 +309,11 @@ export default function AiChatWidget({ triggerClassName, triggerLabel = '鼎立 
                     </span>
                   </div>
                 </div>
+              )}
+              {inquiryDone && (
+                <p className="text-xs text-brand-green-700 text-center bg-brand-green-50 border border-brand-green-200 rounded-lg px-3 py-2 font-bold">
+                  {INQUIRY_DONE_LABEL[language.code]}
+                </p>
               )}
               {error && (
                 <p className="text-xs text-red-600 text-center bg-red-50 border border-red-200 rounded-lg px-3 py-2">
@@ -376,18 +414,19 @@ function tokenize(text: string): Token[] {
   return tokens;
 }
 
-function classifyLink(url: string): { kind: 'line' | 'property' | 'other'; label: string } {
+function classifyLink(url: string, lang: Language['code']): { kind: 'line' | 'property' | 'form' | 'other'; label: string } {
   if (/lin\.ee|line\.me/i.test(url)) return { kind: 'line', label: 'LINE 諮詢' };
+  if (/\/contact\/?(?:[?#]|$)/.test(url)) return { kind: 'form', label: FORM_LINK_LABEL[lang] };
   const propMatch = url.match(/\/properties\/(\d+)/);
   if (propMatch) return { kind: 'property', label: `查看物件 #${propMatch[1]}` };
   return { kind: 'other', label: url.replace(/^https?:\/\//, '').replace(/\/$/, '') };
 }
 
-function renderRichText(content: string): React.ReactNode {
+function renderRichText(content: string, lang: Language['code']): React.ReactNode {
   const tokens = tokenize(content);
   return tokens.map((t, i) => {
     if (t.type === 'text') return <span key={i}>{t.content}</span>;
-    const { kind, label } = classifyLink(t.url);
+    const { kind, label } = classifyLink(t.url, lang);
     const display = t.text === t.url ? label : t.text;
     if (kind === 'line') {
       return (
@@ -400,6 +439,20 @@ function renderRichText(content: string): React.ReactNode {
         >
           <span className="inline-grid place-items-center w-4 h-4 rounded bg-white text-[#06C755] text-[9px] font-black leading-none">L</span>
           {display}
+        </a>
+      );
+    }
+    if (kind === 'form') {
+      return (
+        <a
+          key={i}
+          href={t.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 mx-0.5 my-1 px-3 py-1.5 rounded-full bg-brand-green-700 hover:bg-brand-green-900 text-white text-xs font-bold transition no-underline"
+        >
+          {display}
+          <span aria-hidden>→</span>
         </a>
       );
     }

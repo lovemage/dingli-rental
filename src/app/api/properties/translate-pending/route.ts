@@ -4,6 +4,7 @@ import { getCurrentAdmin } from '@/lib/auth';
 import {
   translateProperty,
   computePropertySourceHash,
+  isCopiedTranslation,
   PROPERTY_SOURCE_SELECT,
 } from '@/lib/property-translate';
 import { AI_QUOTA_EXHAUSTED_MESSAGE, isAiQuotaExhausted } from '@/lib/ai-usage';
@@ -39,19 +40,19 @@ export async function POST() {
         id: true,
         ...PROPERTY_SOURCE_SELECT,
         translations: {
-          select: { locale: true, sourceHash: true },
+          select: { locale: true, sourceHash: true, title: true },
         },
       },
       orderBy: [{ updatedAt: 'desc' }],
     });
 
     const TARGETS = ['en', 'ja'] as const;
-    // 缺翻譯，或來源內容已改過（hash 不符 = 翻譯過期）都要重譯
+    // 缺翻譯、來源內容已改過（hash 不符 = 翻譯過期），或譯文其實是中文原文，都要重譯
     const pending = properties.filter((p) => {
       const hash = computePropertySourceHash(p);
       return TARGETS.some((loc) => {
         const tr = p.translations.find((t) => t.locale === loc);
-        return !tr || tr.sourceHash !== hash;
+        return !tr || tr.sourceHash !== hash || isCopiedTranslation(tr, p);
       });
     });
 

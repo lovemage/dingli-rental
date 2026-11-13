@@ -79,6 +79,19 @@ export function computePropertySourceHash(p: PropertySourceFields): string {
   return crypto.createHash('sha256').update(payload).digest('hex');
 }
 
+/**
+ * 譯文標題與中文原文完全相同（且含漢字）＝ 當初翻譯失敗、直接存了中文。
+ * 這種資料 hash 雖相符，仍視為「未翻譯」，批次翻譯與重新儲存時要重譯。
+ */
+export function isCopiedTranslation(
+  tr: { title?: string | null } | null | undefined,
+  source: { title?: string | null },
+): boolean {
+  const a = tr?.title?.trim();
+  const b = source.title?.trim();
+  return Boolean(a && b && a === b && /[\u4e00-\u9fff]/.test(b));
+}
+
 type RawTranslated = {
   title?: unknown;
   description?: unknown;
@@ -127,7 +140,7 @@ export async function translateProperty(
 
   for (const locale of locales) {
     const existing = property.translations.find((t) => t.locale === locale);
-    if (skipUpToDate && existing && existing.sourceHash === sourceHash) {
+    if (skipUpToDate && existing && existing.sourceHash === sourceHash && !isCopiedTranslation(existing, property)) {
       skipped.push(locale);
       continue;
     }

@@ -221,6 +221,9 @@ model ContactInquiry {
   propertyType  String?
   budget        Int?
   message       String?  @db.Text
+  // 來源：'form'（網站需求表單）/ 'ai_chat'（AI 客服對話中收集）；舊資料為 null
+  source        String?
+  chatSessionId String?
   status        String   @default("new") // new / contacted / closed
   notes         String?  @db.Text        // 業務內部備註
   createdAt     DateTime @default(now())
@@ -264,4 +267,18 @@ model SiteVisit {
 
   @@unique([ipHash, day])
   @@index([day])
+}
+
+// AI 客服對話紀錄（保留 90 天，逾期自動刪除）
+model AiChatLog {
+  id           Int      @id @default(autoincrement())
+  sessionId    String   @unique // 前台對話視窗產生的隨機 ID
+  language     String   @default("zh")
+  messages     Json     @default("[]") // [{ role, content }]
+  messageCount Int      @default(0)
+  inquiryId    Int? // 對話中建立的需求單
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([updatedAt])
 }
