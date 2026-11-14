@@ -136,6 +136,10 @@ model Property {
   // 屋主資料（僅後台顯示；prisma client 預設 omit，公開查詢不會帶出）
   ownerName       String?
   ownerPhone      String?
+  ownerName2      String? // 第 2 組屋主／聯絡人
+  ownerPhone2     String?
+  ownerName3      String? // 第 3 組屋主／聯絡人
+  ownerPhone3     String?
 
   // 特色描述
   title           String   // 廣告標題 6-30 字

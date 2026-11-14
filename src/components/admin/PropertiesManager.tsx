@@ -46,6 +46,7 @@ type PropertyItem = {
   openLayout?: boolean | null;
   floorType?: string | null;
   floor?: string | null;
+  floorSub?: string | null;
   totalFloor?: string | null;
   parkingType?: string | null;
   managementFee?: number | null;
@@ -58,8 +59,8 @@ type PropertyItem = {
   inactiveAt?: string | null;
   relistedAt?: string | null;
   imageUrl: string | null;
-  ownerName?: string | null;
-  ownerPhone?: string | null;
+  /** 屋主／聯絡人（最多 3 組，只含有填的） */
+  owners?: OwnerContact[];
   monthViews: number;
   totalViews: number;
 };
@@ -73,8 +74,34 @@ function fmtDate(dateIso?: string | null) {
   return `${dd}/${mm}/${yyyy}`;
 }
 
-function formatFullAddress(p: Pick<PropertyItem, 'region' | 'district' | 'street' | 'lane' | 'alley' | 'number' | 'numberSub'>) {
-  return `${p.region}${p.district}${p.street || ''}${p.lane ? `${p.lane}巷` : ''}${p.alley ? `${p.alley}弄` : ''}${p.number ? `${p.number}號` : ''}${p.numberSub ? `之${p.numberSub}` : ''}`;
+type OwnerContact = { name: string; phone: string };
+
+function telHref(phone: string) {
+  return `tel:${phone.replace(/[^\d+]/g, '')}`;
+}
+
+/** 地址後面的樓層：21樓之2、地下1樓、頂樓加蓋、3~5樓；整棟不加 */
+function formatAddressFloor(p: Pick<PropertyItem, 'floorType' | 'floor' | 'floorSub'>): string {
+  const floor = (p.floor || '').trim();
+  if (!floor || p.floorType === '全棟出租') return '';
+  if (p.floorType === '多層出租') {
+    const m = floor.match(/^(-?\d+)-(-?\d+)$/);
+    return m ? `${m[1]}~${m[2]}樓` : `${floor}樓`;
+  }
+  if (floor.startsWith('+')) return '頂樓加蓋';
+  const n = Number(floor);
+  if (Number.isFinite(n)) {
+    if (n === 0) return '';
+    const base = n < 0 ? `地下${Math.abs(n)}樓` : `${n}樓`;
+    return `${base}${p.floorSub?.trim() ? `之${p.floorSub.trim()}` : ''}`;
+  }
+  return floor;
+}
+
+function formatFullAddress(
+  p: Pick<PropertyItem, 'region' | 'district' | 'street' | 'lane' | 'alley' | 'number' | 'numberSub' | 'floorType' | 'floor' | 'floorSub'>,
+) {
+  return `${p.region}${p.district}${p.street || ''}${p.lane ? `${p.lane}巷` : ''}${p.alley ? `${p.alley}弄` : ''}${p.number ? `${p.number}${p.numberSub ? `之${p.numberSub}` : ''}號` : ''}${formatAddressFloor(p)}`;
 }
 
 function getStatusBadge(item: Pick<PropertyItem, 'status' | 'listingStatus'>) {
@@ -169,6 +196,15 @@ export default function PropertiesManager({
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [copiedShareId, setCopiedShareId] = useState<number | null>(null);
   const [copiedAddressId, setCopiedAddressId] = useState<number | null>(null);
+  const [callMenuId, setCallMenuId] = useState<number | null>(null);
+
+  // 點選單以外的地方關閉「撥打」選單
+  useEffect(() => {
+    if (callMenuId === null) return;
+    const close = () => setCallMenuId(null);
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, [callMenuId]);
   const [desktopViewMode, setDesktopViewMode] = useState<'card' | 'compact'>('compact');
   const listTopRef = useRef<HTMLDivElement | null>(null);
 
@@ -772,6 +808,8 @@ export default function PropertiesManager({
                 `${ACTION_BUTTON_BASE} ${actionSize} ${ACTION_BUTTON_TONES[tone]}`;
               const actionLabelClass = isCompact ? 'hidden' : 'hidden sm:inline';
               const fullAddress = formatFullAddress(p);
+              const owners = p.owners ?? [];
+              const phoneOwners = owners.filter((o) => o.phone);
               const floorLine = formatFloorLine(p.floorType, p.floor, p.totalFloor);
 
               return (
@@ -876,19 +914,23 @@ export default function PropertiesManager({
                             {copiedAddressId === p.id ? '已複製' : '複製'}
                           </span>
                         </button>
-                        {(p.ownerName || p.ownerPhone) && (
-                          <p className={`mt-0.5 text-[11px] text-ink-600 sm:text-xs ${isCompact ? 'sm:hidden' : ''}`}>
-                            屋主 {p.ownerName || '—'}
-                            {p.ownerPhone && (
-                              <a
-                                href={`tel:${p.ownerPhone.replace(/[^\d+]/g, '')}`}
-                                className="ml-1.5 inline-flex items-center gap-0.5 font-bold text-brand-green-700 underline-offset-2 hover:underline"
-                                title="撥打給屋主"
-                              >
-                                <MaterialIcon name="call" className="!text-sm" />
-                                {p.ownerPhone}
-                              </a>
-                            )}
+                        {owners.length > 0 && (
+                          <p className={`mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-ink-600 sm:text-xs ${isCompact ? 'sm:hidden' : ''}`}>
+                            {owners.map((o, i) => (
+                              <span key={i} className="inline-flex items-center">
+                                屋主 {o.name || '—'}
+                                {o.phone && (
+                                  <a
+                                    href={telHref(o.phone)}
+                                    className="ml-1.5 inline-flex items-center gap-0.5 font-bold text-brand-green-700 underline-offset-2 hover:underline"
+                                    title={`撥打給屋主 ${o.name}`.trim()}
+                                  >
+                                    <MaterialIcon name="call" className="!text-sm" />
+                                    {o.phone}
+                                  </a>
+                                )}
+                              </span>
+                            ))}
                           </p>
                         )}
                         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-ink-600 sm:hidden">
@@ -1078,16 +1120,49 @@ export default function PropertiesManager({
                         <span className={actionLabelClass}>PDF</span>
                       </a>
 
-                      {p.ownerPhone?.trim() ? (
+                      {phoneOwners.length === 1 ? (
                         <a
-                          href={`tel:${p.ownerPhone.replace(/[^\d+]/g, '')}`}
+                          href={telHref(phoneOwners[0].phone)}
                           className={actionBtn('success')}
-                          title={`撥打給屋主${p.ownerName ? ` ${p.ownerName}` : ''}（${p.ownerPhone}）`}
-                          aria-label={`撥打給屋主 ${p.ownerPhone}`}
+                          title={`撥打給屋主${phoneOwners[0].name ? ` ${phoneOwners[0].name}` : ''}（${phoneOwners[0].phone}）`}
+                          aria-label={`撥打給屋主 ${phoneOwners[0].phone}`}
                         >
                           <MaterialIcon name="call" className={ACTION_ICON_CLASS} />
                           <span className={actionLabelClass}>撥打</span>
                         </a>
+                      ) : phoneOwners.length > 1 ? (
+                        // 多組屋主電話：先跳出選單選要撥給誰
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setCallMenuId((cur) => (cur === p.id ? null : p.id));
+                            }}
+                            className={actionBtn('success')}
+                            title="撥打給屋主"
+                            aria-label="撥打給屋主"
+                            aria-expanded={callMenuId === p.id}
+                          >
+                            <MaterialIcon name="call" className={ACTION_ICON_CLASS} />
+                            <span className={actionLabelClass}>撥打</span>
+                          </button>
+                          {callMenuId === p.id && (
+                            <div className="absolute bottom-full right-0 z-30 mb-1 min-w-[180px] overflow-hidden rounded-lg border border-line bg-white py-1 shadow-lg">
+                              {phoneOwners.map((o, i) => (
+                                <a
+                                  key={i}
+                                  href={telHref(o.phone)}
+                                  className="flex items-center gap-2 px-3 py-2 text-xs text-ink-900 hover:bg-brand-green-50"
+                                >
+                                  <MaterialIcon name="call" className="!text-base text-brand-green-700" />
+                                  <span className="font-bold">{o.name || `屋主 ${i + 1}`}</span>
+                                  <span className="ml-auto pl-2 text-ink-500">{o.phone}</span>
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       ) : (
                         <button
                           type="button"

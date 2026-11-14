@@ -280,7 +280,7 @@
     "facilitiesLabel": "公設",
     "parkingWithFee": "{type}（NT$ {amount} / 月）",
     "rentTaxLabel": "稅別",
-    "areaConverted": "約 {m2} m²／{ft2} ft²",
+    "areaConverted": "約 {m2} 平方米／{ft2} 平方英尺",
     "addressLabel": "地址",
     "mapHeading": "位置地圖",
     "pdfContact": "聯絡我們",

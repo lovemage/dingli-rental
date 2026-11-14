@@ -84,6 +84,7 @@ export default async function AdminPropertiesList({
     openLayout: p.openLayout,
     floorType: p.floorType,
     floor: p.floor,
+    floorSub: p.floorSub,
     totalFloor: p.totalFloor,
     parkingType: p.parkingType,
     managementFee: p.managementFee,
@@ -96,8 +97,13 @@ export default async function AdminPropertiesList({
     inactiveAt: p.inactiveAt ? p.inactiveAt.toISOString() : null,
     relistedAt: p.relistedAt ? p.relistedAt.toISOString() : null,
     imageUrl: p.images[0]?.url || null,
-    ownerName: p.ownerName,
-    ownerPhone: p.ownerPhone,
+    owners: [
+      { name: p.ownerName, phone: p.ownerPhone },
+      { name: p.ownerName2, phone: p.ownerPhone2 },
+      { name: p.ownerName3, phone: p.ownerPhone3 },
+    ]
+      .map((o) => ({ name: (o.name || '').trim(), phone: (o.phone || '').trim() }))
+      .filter((o) => o.name || o.phone),
     monthViews: viewMonthByProperty.get(p.id) ?? 0,
     totalViews: viewTotalByProperty.get(p.id) ?? 0,
   }));

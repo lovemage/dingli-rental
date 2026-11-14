@@ -99,6 +99,10 @@ export type PropertyFormValue = {
   parkingFee?: number | '';
   ownerName?: string;
   ownerPhone?: string;
+  ownerName2?: string;
+  ownerPhone2?: string;
+  ownerName3?: string;
+  ownerPhone3?: string;
   title: string;
   featureTags: string[];
   description: string;
@@ -122,7 +126,7 @@ const DEFAULTS: PropertyFormValue = {
   rent: '', deposit: '兩個月', rentIncludes: [], managementFee: '', noManagementFee: false, rentTax: '',
   minLease: '一年', moveInDate: '', anytimeMoveIn: false,
   hasParking: false, parkingType: '', parkingFee: '',
-  ownerName: '', ownerPhone: '',
+  ownerName: '', ownerPhone: '', ownerName2: '', ownerPhone2: '', ownerName3: '', ownerPhone3: '',
   title: '', featureTags: [], description: '',
   status: 'active', listingStatus: 'active', featured: false,
   images: [],
@@ -444,6 +448,10 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from, oc
       rentTax: v.rentTax || null,
       ownerName: (v.ownerName || '').trim() || null,
       ownerPhone: (v.ownerPhone || '').trim() || null,
+      ownerName2: (v.ownerName2 || '').trim() || null,
+      ownerPhone2: (v.ownerPhone2 || '').trim() || null,
+      ownerName3: (v.ownerName3 || '').trim() || null,
+      ownerPhone3: (v.ownerPhone3 || '').trim() || null,
       region: v.city, // 大分類 = 縣市
       hideAddress: true,
       floor: v.floorType === '多層出租'
@@ -904,15 +912,22 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from, oc
         {/* 設備家具 */}
         <Field label="提供設備">
           {(() => {
-            const allSelected = EQUIP_OPTS.length > 0 && EQUIP_OPTS.every((e) => v.equipment.includes(e));
+            // 全選同時涵蓋「提供設備」與「提供家具」（桌子、椅子）
+            const allSelected =
+              EQUIP_OPTS.length + FURN_OPTS.length > 0 &&
+              EQUIP_OPTS.every((e) => v.equipment.includes(e)) &&
+              FURN_OPTS.every((f) => v.furniture.includes(f));
             return (
               <label className="inline-flex items-center gap-2 text-sm font-bold mb-2">
                 <input
                   type="checkbox"
                   checked={allSelected}
-                  onChange={() => update('equipment', allSelected ? [] : [...EQUIP_OPTS])}
+                  onChange={() => {
+                    update('equipment', allSelected ? [] : [...EQUIP_OPTS]);
+                    update('furniture', allSelected ? [] : [...FURN_OPTS]);
+                  }}
                 />
-                全選
+                全選（含家具）
               </label>
             );
           })()}
@@ -1177,14 +1192,21 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from, oc
           <input type="checkbox" checked={v.featured} onChange={(e) => update('featured', e.target.checked)} />
           設為精選物件（在首頁與列表優先顯示）
         </label>
-        <div className="grid sm:grid-cols-2 gap-4 pt-2">
-          <Field label="屋主">
-            <input className="input-base" placeholder="屋主姓名" maxLength={50} value={v.ownerName || ''} onChange={(e) => update('ownerName', e.target.value)} />
-          </Field>
-          <Field label="電話">
-            <input type="tel" className="input-base" placeholder="屋主電話" maxLength={30} value={v.ownerPhone || ''} onChange={(e) => update('ownerPhone', e.target.value)} />
-          </Field>
-        </div>
+        {/* 屋主／聯絡人最多 3 組 */}
+        {([
+          ['ownerName', 'ownerPhone', '屋主'],
+          ['ownerName2', 'ownerPhone2', '屋主 2'],
+          ['ownerName3', 'ownerPhone3', '屋主 3'],
+        ] as const).map(([nameKey, phoneKey, label], i) => (
+          <div key={nameKey} className={`grid sm:grid-cols-2 gap-4 ${i === 0 ? 'pt-2' : ''}`}>
+            <Field label={label}>
+              <input className="input-base" placeholder="姓名" maxLength={50} value={v[nameKey] || ''} onChange={(e) => update(nameKey, e.target.value)} />
+            </Field>
+            <Field label="電話">
+              <input type="tel" className="input-base" placeholder="電話" maxLength={30} value={v[phoneKey] || ''} onChange={(e) => update(phoneKey, e.target.value)} />
+            </Field>
+          </div>
+        ))}
         <p className="text-xs text-ink-500">屋主資料只在後台顯示，不會出現在前台網頁與 PDF。</p>
       </Card>
 

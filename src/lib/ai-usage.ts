@@ -169,10 +169,19 @@ function defaultScope(kind: AiUsageKind): AiUsageScope {
  * 每次成功呼叫 LLM 後呼叫一次，會在 0.025 ~ 0.055 USD 之間隨機累加，
  * 並寫入對應分區的 log（newest first）。失敗時靜默吞掉錯誤。
  */
-export async function recordAiUsage(
+// 用量是「讀出 → 累加 → 寫回」，同時多筆（例：EN/JA 翻譯＋客服）會互相覆蓋造成漏記；
+// 同一個 process 內排隊依序寫入。
+let usageWriteQueue: Promise<void> = Promise.resolve();
+
+export function recordAiUsage(
   kind: AiUsageKind = 'other',
   opts: { scope?: AiUsageScope; label?: string } = {},
 ): Promise<void> {
+  usageWriteQueue = usageWriteQueue.then(() => writeAiUsage(kind, opts));
+  return usageWriteQueue;
+}
+
+async function writeAiUsage(kind: AiUsageKind, opts: { scope?: AiUsageScope; label?: string }): Promise<void> {
   try {
     const delta = INCREMENT_MIN + Math.random() * (INCREMENT_MAX - INCREMENT_MIN);
     const current = await loadAiUsageMeter();
