@@ -4,6 +4,7 @@ import { getCurrentAdmin } from '@/lib/auth';
 import { deleteUpload } from '@/lib/storage';
 import { isVideoUrl, normalizePropertyMediaOrder } from '@/lib/property-media';
 import { translateProperty } from '@/lib/property-translate';
+import { cleanPropertyDescription } from '@/lib/property-description-clean';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,6 +45,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       inactiveAt: _droppedInactiveAt,
       ...data
     } = body;
+    if ('description' in data) data.description = cleanPropertyDescription(data.description);
     void _droppedId;
     void _droppedCode;
     void _droppedCreatedAt;

@@ -18,6 +18,7 @@ import {
   MIN_LEASE_OPTIONS,
   TENANT_TYPES,
 } from '@/data/taiwan-addresses';
+import { cleanPropertyDescription } from '@/lib/property-description-clean';
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
@@ -127,7 +128,7 @@ function sanitize(raw: Record<string, unknown>): AiExtractedFields {
   r('furniture',       arrField(raw.furniture, FURNITURE_OPTIONS));
   r('featureTags',     tagArr(raw.featureTags));
   r('title',           strField(raw.title, 30));
-  r('description',     strField(raw.description, 2500));
+  r('description',     cleanPropertyDescription(strField(raw.description, 2500)));
   r('direction',       enumField(raw.direction, DIRECTION_OPTIONS));
   r('cookingAllowed',  boolField(raw.cookingAllowed));
   r('noManagementFee', boolField(raw.noManagementFee));

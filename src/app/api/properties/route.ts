@@ -7,6 +7,7 @@ import { isVideoUrl, normalizePropertyMediaOrder } from '@/lib/property-media';
 import { createPropertyWithCode } from '@/lib/property-code';
 import { buildPublicPropertyWhere } from '@/lib/property-search';
 import { buildPropertyOrderBy } from '@/lib/property-sort';
+import { cleanPropertyDescription } from '@/lib/property-description-clean';
 
 export const dynamic = 'force-dynamic';
 
@@ -68,6 +69,7 @@ export async function POST(req: Request) {
       images = [],
       ...data
     } = body;
+    if ('description' in data) data.description = cleanPropertyDescription(data.description);
     const rawMedia = Array.isArray(images) ? images : [];
     const orderedMedia = normalizePropertyMediaOrder(rawMedia);
     if (rawMedia.length > 0 && orderedMedia.length === 0) {

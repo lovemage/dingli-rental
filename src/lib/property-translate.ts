@@ -4,6 +4,7 @@ import { translateJsonObject } from '@/lib/openrouter-translate';
 import type { PropertyCardData } from '@/components/frontend/PropertyCard';
 import type { Prisma } from '@/generated/prisma/client';
 import { localizeList, lookupDistrict, lookupFixed } from '@/lib/property-i18n';
+import { cleanPropertyDescription } from '@/lib/property-description-clean';
 
 const TRANSLATION_LOCALES = ['en', 'ja'] as const;
 export type TranslationLocale = (typeof TRANSLATION_LOCALES)[number];
@@ -171,7 +172,7 @@ export async function translateProperty(
       })) as RawTranslated;
       const dataPatch = {
         title: pickString(out.title, property.title) || property.title,
-        description: pickString(out.description) ?? pickString(property.description) ?? null,
+        description: cleanPropertyDescription(pickString(out.description) ?? pickString(property.description) ?? null),
         featureTags: arr(out.featureTags) as any,
         equipment: arr(out.equipment) as any,
         furniture: arr(out.furniture) as any,
