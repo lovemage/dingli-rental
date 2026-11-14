@@ -644,6 +644,21 @@ type UsageLogPage = {
   counts: Partial<Record<UsageScope, number>>;
 };
 
+/**
+ * 某筆紀錄發生當時的總額度：依儲值紀錄回推（儲值前用第一次儲值前的額度），
+ * 沒有儲值紀錄就用目前總額度。
+ */
+function totalAtTime(at: string, topups: TopupRow[], currentTotal: number): number {
+  const sorted = [...topups].sort((a, b) => a.at.localeCompare(b.at));
+  if (sorted.length === 0) return currentTotal;
+  let total = sorted[0].totalAfter - sorted[0].amountUsd;
+  for (const t of sorted) {
+    if (t.at <= at) total = t.totalAfter;
+    else break;
+  }
+  return total;
+}
+
 const USAGE_SCOPE_TABS: { key: UsageScope; label: string }[] = [
   { key: 'property', label: '物件使用' },
   { key: 'chat', label: '客服使用' },
@@ -805,6 +820,7 @@ function UsageMeter({
                   <th className="px-2 py-1 text-left font-semibold">項目</th>
                   <th className="px-2 py-1 text-right font-semibold">用量</th>
                   <th className="px-2 py-1 text-right font-semibold">累計</th>
+                  <th className="px-2 py-1 text-right font-semibold">剩餘</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
@@ -814,6 +830,9 @@ function UsageMeter({
                     <td className="px-2 py-1 text-ink-500 whitespace-nowrap">{row.label || formatLogKind(row.kind)}</td>
                     <td className="px-2 py-1 text-right text-ink-700 whitespace-nowrap">+${row.delta.toFixed(4)}</td>
                     <td className="px-2 py-1 text-right text-ink-900 font-bold whitespace-nowrap">${row.balance.toFixed(4)}</td>
+                    <td className="px-2 py-1 text-right text-brand-green-700 font-bold whitespace-nowrap">
+                      ${Math.max(0, totalAtTime(row.at, topups, total) - row.balance).toFixed(4)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
