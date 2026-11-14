@@ -989,29 +989,6 @@ export default function PropertiesManager({
                         <span className={actionLabelClass}>編輯</span>
                       </Link>
 
-                      {p.ownerPhone?.trim() ? (
-                        <a
-                          href={`tel:${p.ownerPhone.replace(/[^\d+]/g, '')}`}
-                          className={actionBtn('success')}
-                          title={`撥打給屋主${p.ownerName ? ` ${p.ownerName}` : ''}（${p.ownerPhone}）`}
-                          aria-label={`撥打給屋主 ${p.ownerPhone}`}
-                        >
-                          <MaterialIcon name="call" className={ACTION_ICON_CLASS} />
-                          <span className={actionLabelClass}>撥打</span>
-                        </a>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled
-                          className={`${actionBtn('neutral')} cursor-not-allowed opacity-40`}
-                          title="尚未填寫屋主電話（請至編輯頁新增）"
-                          aria-label="尚未填寫屋主電話"
-                        >
-                          <MaterialIcon name="call" className={ACTION_ICON_CLASS} />
-                          <span className={actionLabelClass}>撥打</span>
-                        </button>
-                      )}
-
                       <button
                         type="button"
                         onClick={(event) => handleCopyShare(event, p.id)}
@@ -1100,6 +1077,29 @@ export default function PropertiesManager({
                         <MaterialIcon name="picture_as_pdf" className={ACTION_ICON_CLASS} />
                         <span className={actionLabelClass}>PDF</span>
                       </a>
+
+                      {p.ownerPhone?.trim() ? (
+                        <a
+                          href={`tel:${p.ownerPhone.replace(/[^\d+]/g, '')}`}
+                          className={actionBtn('success')}
+                          title={`撥打給屋主${p.ownerName ? ` ${p.ownerName}` : ''}（${p.ownerPhone}）`}
+                          aria-label={`撥打給屋主 ${p.ownerPhone}`}
+                        >
+                          <MaterialIcon name="call" className={ACTION_ICON_CLASS} />
+                          <span className={actionLabelClass}>撥打</span>
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled
+                          className={`${actionBtn('neutral')} cursor-not-allowed opacity-40`}
+                          title="尚未填寫屋主電話（請至編輯頁新增）"
+                          aria-label="尚未填寫屋主電話"
+                        >
+                          <MaterialIcon name="call" className={ACTION_ICON_CLASS} />
+                          <span className={actionLabelClass}>撥打</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </article>
