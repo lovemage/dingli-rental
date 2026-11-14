@@ -98,7 +98,8 @@ export default async function PropertyPdfPage({
 
   const photos = raw.images.map((i) => i.url).filter((u) => !isVideoUrl(u));
   const cover = photos[0];
-  const thumbs = photos.slice(1, 7);
+  // 最多呈現 15 張：封面 1 張＋縮圖 14 張
+  const thumbs = photos.slice(1, 15);
 
   const dash = t('dash');
   const layoutStr = raw.openLayout
@@ -177,23 +178,25 @@ export default async function PropertyPdfPage({
           .pdf-toolbar { display: none !important; }
           .pdf-sheet { box-shadow: none !important; margin: 0 !important; padding: 0 !important; max-width: none !important; }
           .pdf-avoid { break-inside: avoid; }
+          .pdf-thumb { break-inside: avoid; }
           body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
       `}</style>
       <PdfToolbar id={id} lang={lang} full={full} />
 
-      <article className="pdf-sheet mx-auto my-6 max-w-[820px] bg-white p-8 text-ink-900 shadow-sm" lang={mapLang}>
-        <header className="flex items-start justify-between gap-4 border-b-2 border-ink-900 pb-3">
+      <article className="pdf-sheet mx-auto max-w-[820px] bg-white p-4 text-ink-900 shadow-sm sm:my-6 sm:p-8" lang={mapLang}>
+        {/* 手機：Logo 在上、標題地址佔滿整行（Logo 很寬，並排會把標題擠成窄條）；平板以上與列印：左右並排 */}
+        <header className="flex flex-col-reverse items-start gap-3 border-b-2 border-ink-900 pb-3 sm:flex-row sm:justify-between sm:gap-4 print:flex-row print:justify-between print:gap-4">
           <div className="min-w-0">
-            <h1 className="text-2xl font-black leading-snug">{p.title}</h1>
+            <h1 className="break-words text-xl font-black leading-snug sm:text-2xl print:text-2xl">{p.title}</h1>
             <p className="mt-1 text-sm text-ink-600">{address}</p>
           </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/LOGO_0.png" alt="Dingli Rental Service" className="h-9 w-auto shrink-0" />
+          <img src="/LOGO_0.png" alt="Dingli Rental Service" className="h-8 w-auto max-w-full shrink-0 sm:h-9 print:h-9" />
         </header>
 
         <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2">
-          <p className="text-3xl font-black">
+          <p className="text-2xl font-black sm:text-3xl print:text-3xl">
             NT$ {raw.rent.toLocaleString()}
             <span className="ml-1.5 text-base font-medium text-ink-500">{t('rentSuffix')}</span>
           </p>
@@ -205,14 +208,15 @@ export default async function PropertyPdfPage({
         </div>
 
         {cover && (
-          <div className="pdf-avoid mt-4">
+          <div className="mt-4">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={cover} alt={p.title} className="aspect-[16/9] w-full object-cover" />
+            <img src={cover} alt={p.title} className="pdf-avoid aspect-[16/9] w-full object-cover" />
             {thumbs.length > 0 && (
-              <div className="mt-2 grid grid-cols-3 gap-2">
+              // 縮圖最多 14 張，可能跨頁：不整塊 avoid，改成每張不被切開
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 print:grid-cols-3">
                 {thumbs.map((u) => (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img key={u} src={u} alt="" className="aspect-[4/3] w-full object-cover" />
+                  <img key={u} src={u} alt="" className="pdf-thumb aspect-[4/3] w-full object-cover" />
                 ))}
               </div>
             )}
@@ -221,11 +225,11 @@ export default async function PropertyPdfPage({
 
         <section className="pdf-avoid mt-6">
           <h2 className="mb-2 bg-ink-900 px-3 py-1.5 text-sm font-bold text-white">{t('basicInfo')}</h2>
-          <dl className="grid grid-cols-2 gap-x-6 text-sm sm:grid-cols-3">
+          <dl className="grid grid-cols-1 gap-x-6 text-sm sm:grid-cols-2 lg:grid-cols-3 print:grid-cols-3">
             {[...priceRows, ...info].map(([k, v]) => (
               <div key={k} className="flex justify-between gap-3 border-b border-line py-1.5">
-                <dt className="shrink-0 text-ink-500">{k}</dt>
-                <dd className="text-right font-medium">{v}</dd>
+                <dt className="max-w-[45%] text-ink-500">{k}</dt>
+                <dd className="min-w-0 break-words text-right font-medium">{v}</dd>
               </div>
             ))}
           </dl>
@@ -236,8 +240,8 @@ export default async function PropertyPdfPage({
             {tagGroups
               .filter(([, items]) => items.length > 0)
               .map(([label, items]) => (
-                <div key={label} className="flex gap-3">
-                  <p className="w-28 shrink-0 font-bold text-ink-700">{label}</p>
+                <div key={label} className="flex flex-col gap-0.5 sm:flex-row sm:gap-3 print:flex-row print:gap-3">
+                  <p className="font-bold text-ink-700 sm:w-28 sm:shrink-0 print:w-28 print:shrink-0">{label}</p>
                   <p className="min-w-0 flex-1">{items.join(lang === 'zh' ? '、' : lang === 'ja' ? '・' : ', ')}</p>
                 </div>
               ))}
@@ -247,13 +251,13 @@ export default async function PropertyPdfPage({
         {p.description && (
           <section className="mt-6">
             <h2 className="mb-2 bg-ink-900 px-3 py-1.5 text-sm font-bold text-white">{t('descriptionHeading')}</h2>
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink-700">{p.description}</p>
+            <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-700">{p.description}</p>
           </section>
         )}
 
         <section className="pdf-avoid mt-6">
           <h2 className="mb-2 bg-ink-900 px-3 py-1.5 text-sm font-bold text-white">{t('mapHeading')}</h2>
-          <p className="mb-2 text-sm">
+          <p className="mb-2 break-words text-sm">
             <span className="font-bold">{t('addressLabel')}：</span>
             {address}
           </p>
@@ -262,15 +266,16 @@ export default async function PropertyPdfPage({
             src={mapSrc}
             width="100%"
             height="320"
+            className="h-[240px] sm:h-[320px] print:h-[320px]"
             referrerPolicy="no-referrer-when-downgrade"
             style={{ border: 0, display: 'block' }}
           />
         </section>
 
-        <footer className="pdf-avoid mt-6 flex items-center gap-4 border-t-2 border-ink-900 pt-4 text-sm">
+        <footer className="pdf-avoid mt-6 flex items-center gap-3 border-t-2 border-ink-900 pt-4 text-sm sm:gap-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={OFFICIAL_LINE_QR_SRC} alt="LINE QR" className="h-20 w-20 shrink-0" />
-          <div className="min-w-0">
+          <div className="min-w-0 break-words">
             <p className="font-bold">{t('pdfContact')}</p>
             {company?.companyName && <p>{company.companyName}</p>}
             {company?.customerEmail && <p>{company.customerEmail}</p>}

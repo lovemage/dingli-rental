@@ -18,8 +18,8 @@ export default function PdfToolbar({ id, lang, full }: { id: number; lang: strin
 
   return (
     <div className="pdf-toolbar sticky top-0 z-10 border-b border-line bg-white">
-      <div className="mx-auto flex max-w-[820px] flex-wrap items-center gap-3 px-4 py-2.5 text-sm">
-        <span className="font-bold text-ink-700">匯出 PDF</span>
+      <div className="mx-auto flex max-w-[820px] flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5 text-sm">
+        <span className="hidden font-bold text-ink-700 sm:inline">匯出 PDF</span>
         <div className="flex overflow-hidden rounded-lg border border-line" role="group" aria-label="PDF 語言">
           {LANGS.map((l) => {
             const active = l.code === lang;
@@ -29,7 +29,7 @@ export default function PdfToolbar({ id, lang, full }: { id: number; lang: strin
                 type="button"
                 onClick={() => go({ lang: l.code })}
                 aria-pressed={active}
-                className={`px-3 py-1.5 font-bold transition ${
+                className={`px-2.5 py-1.5 font-bold transition sm:px-3 ${
                   active ? 'bg-brand-green-700 text-white' : 'bg-white text-ink-700 hover:bg-paper-2'
                 }`}
               >
@@ -50,7 +50,7 @@ export default function PdfToolbar({ id, lang, full }: { id: number; lang: strin
         <button
           type="button"
           onClick={() => window.print()}
-          className="ml-auto rounded-lg bg-brand-green-700 px-4 py-1.5 font-bold text-white hover:bg-brand-green-900"
+          className="w-full rounded-lg bg-brand-green-700 px-4 py-2 font-bold text-white hover:bg-brand-green-900 sm:ml-auto sm:w-auto sm:py-1.5"
         >
           列印／儲存 PDF
         </button>
