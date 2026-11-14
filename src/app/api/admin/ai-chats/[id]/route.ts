@@ -13,6 +13,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   if (!id) return NextResponse.json({ error: 'invalid id' }, { status: 400 });
   const row = await prisma.aiChatLog.findUnique({ where: { id } });
   if (!row) return NextResponse.json({ error: 'not found' }, { status: 404 });
+  // 後台點開查看 → 標為已讀（保留原 updatedAt，避免影響排序與 90 天保留期限）
+  if (row.unread) {
+    await prisma.aiChatLog
+      .update({ where: { id }, data: { unread: false, updatedAt: row.updatedAt } })
+      .catch(() => null);
+  }
   return NextResponse.json({
     id: row.id,
     language: row.language,

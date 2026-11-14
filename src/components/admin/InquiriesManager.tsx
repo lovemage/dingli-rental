@@ -50,7 +50,7 @@ function isRepairInquiry(it: Inquiry): boolean {
   return it.propertyType === '房屋修繕';
 }
 
-type Counts = { all: number; new: number; contacted: number; closed: number };
+type Counts = { all: number; new: number; contacted: number; closed: number; aiUnread?: number };
 type TabKey = 'all' | 'new' | 'contacted' | 'closed' | 'ai';
 
 const STATUS_TABS: { key: 'all' | 'new' | 'contacted' | 'closed'; label: string }[] = [
@@ -83,6 +83,19 @@ export default function InquiriesManager() {
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [savingId, setSavingId] = useState<number | null>(null);
+  const [aiUnread, setAiUnread] = useState(0);
+
+  // AI 客服記錄未讀數：隨詢問列表一起取得，之後由 AiChatLogs 透過事件即時更新
+  useEffect(() => {
+    function onAi(e: Event) {
+      const n = Number((e as CustomEvent<{ unreadCount?: number }>).detail?.unreadCount ?? 0);
+      if (Number.isFinite(n)) setAiUnread(n);
+    }
+    window.addEventListener('admin:ai-chats-updated', onAi as EventListener);
+    return () => {
+      window.removeEventListener('admin:ai-chats-updated', onAi as EventListener);
+    };
+  }, []);
 
   function publishUnreadCount(nextNew: number) {
     if (typeof window === 'undefined') return;
@@ -102,6 +115,7 @@ export default function InquiriesManager() {
         setItems(json.items || []);
         const nextCounts = json.counts || { all: 0, new: 0, contacted: 0, closed: 0 };
         setCounts(nextCounts);
+        setAiUnread(Number(nextCounts.aiUnread) || 0);
         publishUnreadCount(Number(nextCounts.new || 0));
       }
     } finally {
@@ -124,6 +138,7 @@ export default function InquiriesManager() {
           setItems(json.items || []);
           const nextCounts = json.counts || { all: 0, new: 0, contacted: 0, closed: 0 };
           setCounts(nextCounts);
+          setAiUnread(Number(nextCounts.aiUnread) || 0);
           publishUnreadCount(Number(nextCounts.new || 0));
         }
       } finally {
@@ -206,6 +221,11 @@ export default function InquiriesManager() {
         >
           <MaterialIcon name="smart_toy" className="!text-base" />
           AI 客服記錄
+          {aiUnread > 0 && (
+            <span className="inline-flex min-w-5 h-5 px-1.5 items-center justify-center rounded-full bg-red-600 text-white text-[11px] font-bold">
+              {aiUnread}
+            </span>
+          )}
         </button>
       </div>
 

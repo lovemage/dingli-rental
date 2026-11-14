@@ -106,6 +106,24 @@ const FORM_LINK_LABEL: Record<Language['code'], string> = {
   id: 'Isi formulir kebutuhan',
 };
 
+const PROPERTY_LINK_LABEL: Record<Language['code'], string> = {
+  zh: '查看物件',
+  en: 'View property',
+  ja: '物件を見る',
+  vi: 'Xem bất động sản',
+  th: 'ดูทรัพย์สิน',
+  id: 'Lihat properti',
+};
+
+const LINE_LINK_LABEL: Record<Language['code'], string> = {
+  zh: 'LINE 聯繫',
+  en: 'Contact via LINE',
+  ja: 'LINEで連絡',
+  vi: 'Liên hệ qua LINE',
+  th: 'ติดต่อทาง LINE',
+  id: 'Hubungi via LINE',
+};
+
 const INQUIRY_DONE_LABEL: Record<Language['code'], string> = {
   zh: '✓ 需求單已送出，業務專員會盡快與您聯繫',
   en: '✓ Your request has been submitted. Our agent will contact you soon.',
@@ -415,10 +433,10 @@ function tokenize(text: string): Token[] {
 }
 
 function classifyLink(url: string, lang: Language['code']): { kind: 'line' | 'property' | 'form' | 'other'; label: string } {
-  if (/lin\.ee|line\.me/i.test(url)) return { kind: 'line', label: 'LINE 諮詢' };
+  if (/lin\.ee|line\.me/i.test(url)) return { kind: 'line', label: LINE_LINK_LABEL[lang] };
   if (/\/contact\/?(?:[?#]|$)/.test(url)) return { kind: 'form', label: FORM_LINK_LABEL[lang] };
   const propMatch = url.match(/\/properties\/(\d+)/);
-  if (propMatch) return { kind: 'property', label: `查看物件 #${propMatch[1]}` };
+  if (propMatch) return { kind: 'property', label: PROPERTY_LINK_LABEL[lang] };
   return { kind: 'other', label: url.replace(/^https?:\/\//, '').replace(/\/$/, '') };
 }
 
@@ -427,7 +445,8 @@ function renderRichText(content: string, lang: Language['code']): React.ReactNod
   return tokens.map((t, i) => {
     if (t.type === 'text') return <span key={i}>{t.content}</span>;
     const { kind, label } = classifyLink(t.url, lang);
-    const display = t.text === t.url ? label : t.text;
+    // LINE / 物件 / 表單按鈕一律用該語言的固定標籤，避免 AI 的連結文字混用中文
+    const display = kind === 'other' && t.text !== t.url ? t.text : label;
     if (kind === 'line') {
       return (
         <a

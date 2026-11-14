@@ -277,8 +277,10 @@ model AiChatLog {
   messages     Json     @default("[]") // [{ role, content }]
   messageCount Int      @default(0)
   inquiryId    Int? // 對話中建立的需求單
+  unread       Boolean  @default(false) // 訪客有新訊息、後台尚未查看
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   @@index([updatedAt])
+  @@index([unread])
 }

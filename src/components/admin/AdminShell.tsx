@@ -54,7 +54,9 @@ export default function AdminShell({ username, children }: { username: string; c
   const path = usePathname() || '';
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [unreadInquiries, setUnreadInquiries] = useState(0);
+  const [newInquiries, setNewInquiries] = useState(0);
+  const [unreadAiChats, setUnreadAiChats] = useState(0);
+  const unreadInquiries = newInquiries + unreadAiChats; // 側欄 badge：新進詢問 + AI 客服未讀
   const [aiQuota, setAiQuota] = useState<AiQuotaState | null>(null);
   const activeHref = useMemo(() => getActiveHref(path), [path]);
   const aiAlert = Boolean(aiQuota && (aiQuota.lowBalance || aiQuota.exhausted));
@@ -101,7 +103,9 @@ export default function AdminShell({ username, children }: { username: string; c
         const json = await res.json();
         if (!alive) return;
         const next = Number(json?.counts?.new || 0);
-        setUnreadInquiries(Number.isFinite(next) ? next : 0);
+        const ai = Number(json?.counts?.aiUnread || 0);
+        setNewInquiries(Number.isFinite(next) ? next : 0);
+        setUnreadAiChats(Number.isFinite(ai) ? ai : 0);
       } catch {
         // ignore
       }
@@ -110,7 +114,12 @@ export default function AdminShell({ username, children }: { username: string; c
     function onUpdated(e: Event) {
       const detail = (e as CustomEvent<{ newCount?: number }>).detail;
       const next = Number(detail?.newCount ?? 0);
-      if (Number.isFinite(next)) setUnreadInquiries(next);
+      if (Number.isFinite(next)) setNewInquiries(next);
+    }
+
+    function onAiUpdated(e: Event) {
+      const next = Number((e as CustomEvent<{ unreadCount?: number }>).detail?.unreadCount ?? 0);
+      if (Number.isFinite(next)) setUnreadAiChats(next);
     }
 
     function onVisible() {
@@ -120,12 +129,14 @@ export default function AdminShell({ username, children }: { username: string; c
     void fetchUnread();
     const timer = window.setInterval(() => { void fetchUnread(); }, 30000);
     window.addEventListener('admin:inquiries-updated', onUpdated as EventListener);
+    window.addEventListener('admin:ai-chats-updated', onAiUpdated as EventListener);
     document.addEventListener('visibilitychange', onVisible);
 
     return () => {
       alive = false;
       window.clearInterval(timer);
       window.removeEventListener('admin:inquiries-updated', onUpdated as EventListener);
+      window.removeEventListener('admin:ai-chats-updated', onAiUpdated as EventListener);
       document.removeEventListener('visibilitychange', onVisible);
     };
   }, []);

@@ -39,6 +39,7 @@ export async function saveChatLog(input: {
     language: input.language,
     messages: messages as any,
     messageCount: messages.length,
+    unread: true, // 每次存檔都代表訪客送出新訊息 → 標為未讀
     ...(input.inquiryId ? { inquiryId: input.inquiryId } : {}),
   };
   try {
@@ -51,6 +52,15 @@ export async function saveChatLog(input: {
     console.error('[ai-chat-log] save failed', (e as Error).message);
   }
   void cleanupExpiredChatLogs();
+}
+
+/** 後台未讀的 AI 客服對話數 */
+export async function countUnreadChatLogs(): Promise<number> {
+  try {
+    return await prisma.aiChatLog.count({ where: { unread: true } });
+  } catch {
+    return 0;
+  }
 }
 
 export async function getChatLogInquiryId(sessionId: string): Promise<number | null> {

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { countUnreadChatLogs } from '@/lib/ai-chat-log';
 import { prisma } from '@/lib/prisma';
 import { getCurrentAdmin } from '@/lib/auth';
 
@@ -32,7 +33,9 @@ export async function GET(req: Request) {
     for (const c of counts) byStatus[c.status] = c._count._all;
     byStatus.all = byStatus.new + byStatus.contacted + byStatus.closed;
 
-    return NextResponse.json({ items, counts: byStatus });
+    const aiUnread = await countUnreadChatLogs();
+
+    return NextResponse.json({ items, counts: { ...byStatus, aiUnread } });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || '讀取詢問失敗' }, { status: 500 });
   }

@@ -18,11 +18,16 @@ const MAX_USER_MESSAGES = 20;
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
+/** 網站語系路徑前綴（網站只有 zh / en / ja，其他對話語言導向英文版） */
+function localePrefix(languageCode: string): string {
+  if (languageCode === 'zh') return '';
+  if (languageCode === 'ja') return '/ja';
+  return '/en';
+}
+
 /** 需求單頁面路徑（依對話語言） */
 function contactPath(languageCode: string): string {
-  if (languageCode === 'zh') return '/contact';
-  if (languageCode === 'ja') return '/ja/contact';
-  return '/en/contact';
+  return `${localePrefix(languageCode)}/contact`;
 }
 
 const INQUIRY_BLOCK_RE = /<inquiry>([\s\S]*?)(?:<\/inquiry>|$)/i;
@@ -116,7 +121,7 @@ async function loadLineUrl(): Promise<string> {
 }
 
 /** 把資料庫物件壓成 AI prompt 用的精簡格式 */
-function summarizeProperty(p: any, siteUrl: string): string {
+function summarizeProperty(p: any, baseUrl: string): string {
   const displayCode = p.code || `未編號-${p.id}`;
   const parts: string[] = [
     `[物件編號 ${displayCode}]`,
@@ -133,7 +138,7 @@ function summarizeProperty(p: any, siteUrl: string): string {
   const tags = Array.isArray(p.featureTags) ? (p.featureTags as string[]).slice(0, 4).join('/') : '';
   if (tags) parts.push(tags);
   parts.push(`— ${p.title}`);
-  parts.push(`詳情連結：${siteUrl}/properties/${p.id}`);
+  parts.push(`詳情連結：${baseUrl}/properties/${p.id}`);
   return parts.filter(Boolean).join(' · ');
 }
 
@@ -208,7 +213,7 @@ export async function POST(req: Request) {
     const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://dingli-rental.com').replace(/\/$/, '');
 
     const propertyCatalog = properties.length
-      ? properties.map((p) => summarizeProperty(p, siteUrl)).join('\n')
+      ? properties.map((p) => summarizeProperty(p, `${siteUrl}${localePrefix(languageCode)}`)).join('\n')
       : '（目前資料庫沒有任何「出租中」狀態的物件）';
 
     // 把 LEGAL_SUMMARY_FOR_AI 中的 ${siteUrl} 模板替換成實際 URL
@@ -230,8 +235,8 @@ ${propertyCatalog}
 3. **絕對不可虛構物件** — 不要編造物件編號、地址、租金、坪數、房型等任何欄位
 4. 若清單為空（沒有任何出租中物件），誠實告知用戶「目前暫無符合需求的可租物件，建議透過 LINE 聯繫業務專員了解最新進件」
 5. 推薦時請註明物件編號、地區、房型、租金，方便用戶辨識與複製
-6. 用戶想看完整資訊時，使用清單中的「詳情連結」，不要自行組 URL
-7. 用戶有預約看房 / 議價 / 詳細諮詢需求時，引導他們點擊下方「LINE 諮詢」按鈕直接聯繫業務專員（連結：${lineUrl}）
+6. **每推薦一個物件，都必須在該物件說明的最後另起一行附上清單中的「詳情連結」完整網址**（直接貼純網址，不要用 markdown 連結語法、不要加其他文字；系統會自動轉成按鈕）。不要自行組 URL
+7. 用戶有預約看房 / 議價 / 詳細諮詢需求時，引導他們透過 LINE 直接聯繫業務專員，並直接貼出純網址：${lineUrl}
 8. 用戶詢問完整服務條款內容請提供 ${siteUrl}/terms
 9. 用戶詢問完整隱私權政策內容請提供 ${siteUrl}/privacy
 10. 一次最多推薦 3 個物件，避免訊息過長
