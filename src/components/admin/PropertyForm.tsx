@@ -194,6 +194,10 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from, oc
   const [aiMsg, setAiMsg] = useState('');
   const [aiAppliedKeys, setAiAppliedKeys] = useState<string[]>([]);
   const [fieldErrorId, setFieldErrorId] = useState<string>('');
+  // 屋主預設只顯示 1 組，按「新增」再展開（最多 3 組）；編輯時依已填資料決定顯示幾組
+  const [ownerRows, setOwnerRows] = useState<number>(() =>
+    v.ownerName3 || v.ownerPhone3 ? 3 : v.ownerName2 || v.ownerPhone2 ? 2 : 1,
+  );
   const districts = CITY_DISTRICTS[v.city] || [];
 
   function update<K extends keyof PropertyFormValue>(k: K, val: PropertyFormValue[K]) {
@@ -1192,21 +1196,61 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from, oc
           <input type="checkbox" checked={v.featured} onChange={(e) => update('featured', e.target.checked)} />
           設為精選物件（在首頁與列表優先顯示）
         </label>
-        {/* 屋主／聯絡人最多 3 組 */}
+        {/* 屋主／聯絡人：預設 1 組，可自行新增，最多 3 組 */}
         {([
           ['ownerName', 'ownerPhone', '屋主'],
           ['ownerName2', 'ownerPhone2', '屋主 2'],
           ['ownerName3', 'ownerPhone3', '屋主 3'],
-        ] as const).map(([nameKey, phoneKey, label], i) => (
-          <div key={nameKey} className={`grid sm:grid-cols-2 gap-4 ${i === 0 ? 'pt-2' : ''}`}>
+        ] as const).slice(0, ownerRows).map(([nameKey, phoneKey, label], i) => (
+          <div key={nameKey} className={`grid sm:grid-cols-[1fr_1fr_auto] gap-4 items-end ${i === 0 ? 'pt-2' : ''}`}>
             <Field label={label}>
               <input className="input-base" placeholder="姓名" maxLength={50} value={v[nameKey] || ''} onChange={(e) => update(nameKey, e.target.value)} />
             </Field>
             <Field label="電話">
               <input type="tel" className="input-base" placeholder="電話" maxLength={30} value={v[phoneKey] || ''} onChange={(e) => update(phoneKey, e.target.value)} />
             </Field>
+            {i > 0 ? (
+              <button
+                type="button"
+                onClick={() => {
+                  // 移除這一組，後面的往前遞補
+                  setV((s) => {
+                    const rows = [
+                      [s.ownerName, s.ownerPhone],
+                      [s.ownerName2, s.ownerPhone2],
+                      [s.ownerName3, s.ownerPhone3],
+                    ];
+                    rows.splice(i, 1);
+                    rows.push(['', '']);
+                    return {
+                      ...s,
+                      ownerName: rows[0][0], ownerPhone: rows[0][1],
+                      ownerName2: rows[1][0], ownerPhone2: rows[1][1],
+                      ownerName3: rows[2][0], ownerPhone3: rows[2][1],
+                    };
+                  });
+                  setOwnerRows((n) => Math.max(1, n - 1));
+                }}
+                className="btn btn-secondary mb-0.5"
+                aria-label={`移除${label}`}
+              >
+                移除
+              </button>
+            ) : (
+              <span className="hidden sm:block w-[64px]" aria-hidden="true" />
+            )}
           </div>
         ))}
+        {ownerRows < 3 && (
+          <button
+            type="button"
+            onClick={() => setOwnerRows((n) => Math.min(3, n + 1))}
+            className="inline-flex items-center gap-1 text-sm font-medium text-brand-green-700 hover:text-brand-green-900"
+          >
+            <MaterialIcon name="add" className="!text-lg" />
+            新增屋主電話
+          </button>
+        )}
         <p className="text-xs text-ink-500">屋主資料只在後台顯示，不會出現在前台網頁與 PDF。</p>
       </Card>
 
