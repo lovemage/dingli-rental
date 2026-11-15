@@ -781,7 +781,6 @@ function UsageMeter({
       <div className="mt-4">
         <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
           <span className="text-xs font-bold text-ink-700">調用紀錄（物件、客服、網站內容）</span>
-          <span className="text-[11px] text-ink-500">「補登」為舊紀錄回推：用量為估算值，累計與剩餘無法回推</span>
         </div>
         {entries.length === 0 ? (
           <p className="text-[11px] text-ink-500 py-2 text-center bg-paper-2 rounded">
