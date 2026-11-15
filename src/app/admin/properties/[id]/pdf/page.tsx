@@ -214,14 +214,12 @@ export default async function PropertyPdfPage({
       />
 
       <article className="pdf-sheet mx-auto max-w-[820px] bg-white p-4 text-ink-900 shadow-sm sm:my-6 sm:p-8" lang={mapLang}>
-        {/* 手機：Logo 在上、標題地址佔滿整行（Logo 很寬，並排會把標題擠成窄條）；平板以上與列印：左右並排 */}
-        <header className="flex flex-col-reverse items-start gap-3 border-b-2 border-ink-900 pb-3 sm:flex-row sm:justify-between sm:gap-4 print:flex-row print:justify-between print:gap-4">
-          <div className="min-w-0">
-            <h1 className="break-words text-xl font-black leading-snug sm:text-2xl print:text-2xl">{p.title}</h1>
-            <p className="mt-1 text-sm text-ink-600">{address}</p>
-          </div>
+        {/* Logo 獨立一行靠左，標題佔滿整行，地址靠右貼齊分隔線 */}
+        <header className="border-b-2 border-ink-900 pb-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/LOGO_0.png" alt="Dingli Rental Service" className="h-8 w-auto max-w-full shrink-0 sm:h-9 print:h-9" />
+          <img src="/LOGO_0.png" alt="Dingli Rental Service" className="h-8 w-auto max-w-full sm:h-9 print:h-9" />
+          <h1 className="mt-3 break-words text-xl font-black leading-snug sm:text-2xl print:mt-2 print:text-2xl">{p.title}</h1>
+          <p className="mt-1 break-words text-right text-sm text-ink-600">{address}</p>
         </header>
 
         <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2">
@@ -305,6 +303,16 @@ export default async function PropertyPdfPage({
               referrerPolicy="no-referrer-when-downgrade"
               className="absolute left-1/2 top-0 -translate-x-1/2"
               style={{ border: 0, display: 'block', width: 700, height: 200, maxWidth: 'none' }}
+            />
+            {/* 公司 Logo 水印：地圖右下方（避開 Google 版權列），螢幕與列印都顯示；
+                外框比 700px 寬時對齊地圖右緣，比較窄時對齊外框右緣 */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/LOGO_0.png"
+              alt=""
+              aria-hidden
+              className="pointer-events-none absolute bottom-6 h-7 w-auto bg-white/80 px-1.5 py-1"
+              style={{ right: 'max(0.5rem, calc((100% - 700px) / 2 + 0.5rem))' }}
             />
             {/* Google 地圖的定位圖釘印不出來：列印時在正中央（嵌入地圖以查詢地址為中心）補一個 */}
             <svg
