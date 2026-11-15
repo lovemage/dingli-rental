@@ -35,11 +35,15 @@ export async function GET(req: Request) {
   };
 
   const url = new URL(req.url);
-  const scope = url.searchParams.get('scope') as AiUsageScope | null;
-  if (!scope || !AI_USAGE_SCOPES.includes(scope)) return NextResponse.json(summary);
+  const scope = url.searchParams.get('scope');
+  if (scope !== 'all' && !AI_USAGE_SCOPES.includes(scope as AiUsageScope)) return NextResponse.json(summary);
 
-  const pageSize = Math.min(50, Math.max(1, Number(url.searchParams.get('pageSize')) || 10));
-  const entries = meter.logs[scope];
+  // scope=all：物件、客服、網站內容合併成一張表（新到舊）
+  const pageSize = Math.min(100, Math.max(1, Number(url.searchParams.get('pageSize')) || 100));
+  const scopes: AiUsageScope[] = scope === 'all' ? AI_USAGE_SCOPES : [scope as AiUsageScope];
+  const entries = scopes
+    .flatMap((s) => meter.logs[s].map((e) => ({ ...e, scope: s })))
+    .sort((x, y) => (x.at < y.at ? 1 : x.at > y.at ? -1 : 0));
   const totalPages = Math.max(1, Math.ceil(entries.length / pageSize));
   const page = Math.min(totalPages, Math.max(1, Number(url.searchParams.get('page')) || 1));
   return NextResponse.json({

@@ -24,8 +24,8 @@ type ModelInfo = {
 // 展開「AI 模型」設定區塊需輸入此密碼，避免他人不慎瀏覽或更動模型
 const MODEL_UNLOCK_PASSWORD = '1234';
 
-type TabKey = 'ocr' | 'tr' | 'cs';
-type PickerTarget = TabKey;
+type TabKey = 'settings' | 'prompts' | 'usage';
+type PickerTarget = 'ocr' | 'tr' | 'cs';
 
 export default function AiSettingsForm() {
   // === API Key (shared) ===
@@ -64,7 +64,7 @@ export default function AiSettingsForm() {
   const [modelsHint, setModelsHint] = useState('');
 
   // === Misc ===
-  const [activeTab, setActiveTab] = useState<TabKey>('ocr');
+  const [activeTab, setActiveTab] = useState<TabKey>('settings');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
@@ -73,15 +73,15 @@ export default function AiSettingsForm() {
   const [usageTotal, setUsageTotal] = useState(10);
   const [usageCurrent, setUsageCurrent] = useState(0.52);
   const [usageLoading, setUsageLoading] = useState(false);
-  const [logScope, setLogScope] = useState<UsageScope>('property');
   const [logPage, setLogPage] = useState(1);
   const [logData, setLogData] = useState<UsageLogPage | null>(null);
   const [topups, setTopups] = useState<TopupRow[]>([]);
 
-  async function loadUsage(scope: UsageScope = logScope, page: number = logPage) {
+  async function loadUsage(page: number = logPage) {
     setUsageLoading(true);
     try {
-      const res = await fetch(`/api/admin/ai-usage?scope=${scope}&page=${page}&pageSize=10`, { cache: 'no-store' });
+      // 物件、客服、網站內容合併成一張表，一頁 100 筆
+      const res = await fetch(`/api/admin/ai-usage?scope=all&page=${page}&pageSize=100`, { cache: 'no-store' });
       const json = await res.json();
       if (res.ok) {
         if (typeof json.totalUsd === 'number') setUsageTotal(json.totalUsd);
@@ -92,7 +92,6 @@ export default function AiSettingsForm() {
           page: Number(json.page) || 1,
           totalPages: Number(json.totalPages) || 1,
           totalEntries: Number(json.totalEntries) || 0,
-          counts: json.counts || {},
         });
         setLogPage(Number(json.page) || 1);
         window.dispatchEvent(new Event('admin:ai-usage-updated'));
@@ -104,14 +103,8 @@ export default function AiSettingsForm() {
     }
   }
 
-  function changeLogScope(scope: UsageScope) {
-    setLogScope(scope);
-    setLogPage(1);
-    void loadUsage(scope, 1);
-  }
-
   function changeLogPage(page: number) {
-    void loadUsage(logScope, page);
+    void loadUsage(page);
   }
 
   // 初次載入：拿設定 + 若已有 key 自動拉模型
@@ -379,69 +372,56 @@ export default function AiSettingsForm() {
 
   return (
     <div className="space-y-5">
-      {/* === API Key (shared) === */}
-      <div className="admin-card">
-        <div className="flex items-center justify-between mb-4 pb-3 border-b border-line">
-          <div>
-            <h2 className="font-bold text-lg">API Key</h2>
-            <p className="text-xs text-ink-500 mt-0.5">
-              「物件辨識」、「翻譯」與「客服」共用此 Key。儲存後僅後端讀取，不會回傳到前台。
+      {/* === Tabs：設定／提示詞／用量 === */}
+      <div className="bg-white border border-line rounded-xl p-1 flex gap-1">
+        <TabButton active={activeTab === 'settings'} onClick={() => setActiveTab('settings')}>
+          設定
+        </TabButton>
+        <TabButton active={activeTab === 'prompts'} onClick={() => setActiveTab('prompts')}>
+          提示詞
+        </TabButton>
+        <TabButton active={activeTab === 'usage'} onClick={() => setActiveTab('usage')}>
+          用量
+        </TabButton>
+      </div>
+
+      {/* === Tab: 設定（API Key → OCR 開關 → AI 模型） === */}
+      {activeTab === 'settings' && (
+        <>
+              {/* API Key（共用） */}
+          <div className="admin-card">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-line">
+              <div>
+                <h2 className="font-bold text-lg">API Key</h2>
+                <p className="text-xs text-ink-500 mt-0.5">
+                  「物件辨識」、「翻譯」與「客服」共用此 Key。儲存後僅後端讀取，不會回傳到前台。
+                </p>
+              </div>
+              <span className={`text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap ${apiKeyConfigured ? 'bg-brand-green-50 text-brand-green-700' : 'bg-red-50 text-red-700'}`}>
+                {apiKeyConfigured ? `✓ 已設定 (${apiKeyMasked})` : '✗ 尚未設定'}
+              </span>
+            </div>
+
+            <div className="flex gap-2">
+              <input
+                type={showKey ? 'text' : 'password'}
+                className="input-base font-mono text-sm flex-1"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                onBlur={() => { if (apiKey.trim()) void loadModels(true); }}
+                placeholder={apiKeyConfigured ? '留空 = 保留原 key；輸入新 key 才會覆蓋' : '請貼上 API Key'}
+                autoComplete="new-password"
+              />
+              <button type="button" onClick={() => setShowKey((s) => !s)}
+                className="btn btn-secondary text-xs whitespace-nowrap">
+                {showKey ? '隱藏' : '顯示'}
+              </button>
+            </div>
+            <p className="text-xs text-ink-500 mt-2">
+              輸入 Key 後游標離開即會自動載入可用模型清單。
             </p>
           </div>
-          <span className={`text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap ${apiKeyConfigured ? 'bg-brand-green-50 text-brand-green-700' : 'bg-red-50 text-red-700'}`}>
-            {apiKeyConfigured ? `✓ 已設定 (${apiKeyMasked})` : '✗ 尚未設定'}
-          </span>
-        </div>
 
-        <div className="flex gap-2">
-          <input
-            type={showKey ? 'text' : 'password'}
-            className="input-base font-mono text-sm flex-1"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            onBlur={() => { if (apiKey.trim()) void loadModels(true); }}
-            placeholder={apiKeyConfigured ? '留空 = 保留原 key；輸入新 key 才會覆蓋' : '請貼上 API Key'}
-            autoComplete="new-password"
-          />
-          <button type="button" onClick={() => setShowKey((s) => !s)}
-            className="btn btn-secondary text-xs whitespace-nowrap">
-            {showKey ? '隱藏' : '顯示'}
-          </button>
-        </div>
-        <p className="text-xs text-ink-500 mt-2">
-          輸入 Key 後游標離開即會自動載入可用模型清單。
-        </p>
-      </div>
-
-      {/* === Usage Meter === */}
-      <UsageMeter
-        totalUsd={usageTotal}
-        currentUsd={usageCurrent}
-        loading={usageLoading}
-        onRefresh={() => loadUsage()}
-        scope={logScope}
-        onScopeChange={changeLogScope}
-        logData={logData}
-        onPageChange={changeLogPage}
-        topups={topups}
-      />
-
-      {/* === Tabs === */}
-      <div className="bg-white border border-line rounded-xl p-1 flex gap-1">
-        <TabButton active={activeTab === 'ocr'} onClick={() => setActiveTab('ocr')}>
-          AI 物件辨識
-        </TabButton>
-        <TabButton active={activeTab === 'tr'} onClick={() => setActiveTab('tr')}>
-          AI 翻譯
-        </TabButton>
-        <TabButton active={activeTab === 'cs'} onClick={() => setActiveTab('cs')}>
-          AI 客服
-        </TabButton>
-      </div>
-
-      {/* === Tab: OCR === */}
-      {activeTab === 'ocr' && (
-        <>
           <div className="admin-card">
             <label className="flex items-start gap-3 cursor-pointer">
               <input
@@ -465,7 +445,30 @@ export default function AiSettingsForm() {
             target: 'ocr',
             requireVision: true,
           })}
+          {renderModelPicker({
+            title: 'AI 模型（翻譯）',
+            currentModel: trModel,
+            target: 'tr',
+            requireVision: false,
+          })}
+          {renderModelPicker({
+            title: 'AI 模型（客服）',
+            currentModel: csModel,
+            target: 'cs',
+            requireVision: false,
+          })}
+          <div className="admin-card">
+            <h2 className="font-bold text-lg">翻譯範圍</h2>
+            <p className="text-xs text-ink-500 mt-1">
+              物件新增或修改內容後，自動翻譯成英文、日文；網站內容（首頁、公告等）在英文、日文頁面被瀏覽時自動翻譯。內容沒有變動不會重複翻譯。
+            </p>
+          </div>
+        </>
+      )}
 
+      {/* === Tab: 提示詞 === */}
+      {activeTab === 'prompts' && (
+        <>
           {/* System prompt */}
           <div className="admin-card">
             <button
@@ -475,7 +478,7 @@ export default function AiSettingsForm() {
               aria-expanded={sysPromptOpen}
             >
               <div className="min-w-0">
-                <h2 className="font-bold text-lg">系統提示詞 (System Prompt)</h2>
+                <h2 className="font-bold text-lg">物件辨識：系統提示詞 (System Prompt)</h2>
                 <p className="text-xs text-ink-500 mt-0.5">定義 AI 的角色與輸出規則。每次辨識照片時都會帶入。</p>
               </div>
               <span className={`text-ink-500 text-base flex-shrink-0 ml-3 transition-transform ${sysPromptOpen ? 'rotate-180' : ''}`} aria-hidden>▼</span>
@@ -505,7 +508,7 @@ export default function AiSettingsForm() {
               aria-expanded={userPromptOpen}
             >
               <div className="min-w-0">
-                <h2 className="font-bold text-lg">使用者提示詞範本 (User Prompt Template)</h2>
+                <h2 className="font-bold text-lg">物件辨識：使用者提示詞範本 (User Prompt Template)</h2>
                 <p className="text-xs text-ink-500 mt-0.5">定義每次辨識時送進 AI 的請求內容（含變數）。</p>
               </div>
               <span className={`text-ink-500 text-base flex-shrink-0 ml-3 transition-transform ${userPromptOpen ? 'rotate-180' : ''}`} aria-hidden>▼</span>
@@ -532,36 +535,6 @@ export default function AiSettingsForm() {
               </div>
             )}
           </div>
-        </>
-      )}
-
-      {/* === Tab: Translation === */}
-      {activeTab === 'tr' && (
-        <>
-          {renderModelPicker({
-            title: 'AI 模型（翻譯）',
-            currentModel: trModel,
-            target: 'tr',
-            requireVision: false,
-          })}
-          <div className="admin-card">
-            <h2 className="font-bold text-lg">翻譯範圍</h2>
-            <p className="text-xs text-ink-500 mt-1">
-              物件新增或修改內容後，自動翻譯成英文、日文；網站內容（首頁、公告等）在英文、日文頁面被瀏覽時自動翻譯。內容沒有變動不會重複翻譯。
-            </p>
-          </div>
-        </>
-      )}
-
-      {/* === Tab: Customer Service === */}
-      {activeTab === 'cs' && (
-        <>
-          {renderModelPicker({
-            title: 'AI 模型（客服）',
-            currentModel: csModel,
-            target: 'cs',
-            requireVision: false,
-          })}
 
           {/* CS system prompt */}
           <div className="admin-card">
@@ -595,7 +568,21 @@ export default function AiSettingsForm() {
         </>
       )}
 
-      {/* === 底部固定送出列 === */}
+      {/* === Tab: 用量 === */}
+      {activeTab === 'usage' && (
+        <UsageMeter
+          totalUsd={usageTotal}
+          currentUsd={usageCurrent}
+          loading={usageLoading}
+          onRefresh={() => loadUsage()}
+          logData={logData}
+          onPageChange={changeLogPage}
+          topups={topups}
+        />
+      )}
+
+      {/* === 底部固定送出列（用量頁不需要） === */}
+      {activeTab !== 'usage' && (
       <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-white border-t border-line px-4 py-3 z-20">
         <div className="max-w-[1200px] mx-auto flex items-center justify-between gap-3">
           {msg ? <p className="text-sm text-brand-green-700">{msg}</p> : <span />}
@@ -604,6 +591,7 @@ export default function AiSettingsForm() {
           </button>
         </div>
       </div>
+      )}
       <div className="h-16" />
     </div>
   );
@@ -635,13 +623,21 @@ function TabButton({
 
 type UsageScope = 'chat' | 'property' | 'site';
 type TopupRow = { at: string; amountUsd: number; totalAfter: number; note?: string };
-type UsageLogRow = { at: string; kind: string; delta: number; balance: number; label?: string };
+type UsageLogRow = {
+  at: string;
+  kind: string;
+  delta: number;
+  balance: number;
+  label?: string;
+  /** 補登的舊紀錄：用量為估算，累計／剩餘無法回推 */
+  estimated?: boolean;
+  scope?: UsageScope;
+};
 type UsageLogPage = {
   entries: UsageLogRow[];
   page: number;
   totalPages: number;
   totalEntries: number;
-  counts: Partial<Record<UsageScope, number>>;
 };
 
 /**
@@ -659,19 +655,17 @@ function totalAtTime(at: string, topups: TopupRow[], currentTotal: number): numb
   return total;
 }
 
-const USAGE_SCOPE_TABS: { key: UsageScope; label: string }[] = [
-  { key: 'property', label: '物件使用' },
-  { key: 'chat', label: '客服使用' },
-  { key: 'site', label: '網站內容' },
-];
+const USAGE_SCOPE_LABEL: Record<UsageScope, string> = {
+  property: '物件',
+  chat: '客服',
+  site: '網站內容',
+};
 
 function UsageMeter({
   totalUsd,
   currentUsd,
   loading,
   onRefresh,
-  scope,
-  onScopeChange,
   logData,
   onPageChange,
   topups,
@@ -680,8 +674,6 @@ function UsageMeter({
   currentUsd: number;
   loading: boolean;
   onRefresh: () => void;
-  scope: UsageScope;
-  onScopeChange: (s: UsageScope) => void;
   logData: UsageLogPage | null;
   onPageChange: (page: number) => void;
   topups: TopupRow[];
@@ -697,7 +689,7 @@ function UsageMeter({
     ? 'bg-red-500'
     : isWarn
       ? 'bg-brand-orange-500'
-      : 'bg-brand-green-600';
+      : 'bg-brand-green-700';
   const entries = logData?.entries ?? [];
   const page = logData?.page ?? 1;
   const totalPages = logData?.totalPages ?? 1;
@@ -759,7 +751,7 @@ function UsageMeter({
       <div className="mt-4">
         <span className="block text-xs font-bold text-ink-700 mb-1.5">儲值紀錄</span>
         {topups.length === 0 ? (
-          <p className="text-[11px] text-ink-400 py-2 text-center bg-paper-2 rounded">尚無儲值紀錄</p>
+          <p className="text-[11px] text-ink-500 py-2 text-center bg-paper-2 rounded">尚無儲值紀錄</p>
         ) : (
           <div className="overflow-x-auto rounded border border-line">
             <table className="w-full text-[11px] font-mono leading-tight">
@@ -788,27 +780,11 @@ function UsageMeter({
 
       <div className="mt-4">
         <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
-          <span className="text-xs font-bold text-ink-700">調用紀錄</span>
-          <div className="flex gap-1">
-            {USAGE_SCOPE_TABS.map((t) => {
-              const active = t.key === scope;
-              const count = logData?.counts?.[t.key];
-              return (
-                <button
-                  key={t.key}
-                  type="button"
-                  onClick={() => onScopeChange(t.key)}
-                  className={`px-2.5 py-1 rounded text-xs font-bold transition ${active ? 'bg-brand-green-700 text-white' : 'text-ink-600 hover:bg-paper-2'}`}
-                >
-                  {t.label}
-                  {typeof count === 'number' && <span className="ml-1 font-normal opacity-80">{count}</span>}
-                </button>
-              );
-            })}
-          </div>
+          <span className="text-xs font-bold text-ink-700">調用紀錄（物件、客服、網站內容）</span>
+          <span className="text-[11px] text-ink-500">「補登」為舊紀錄回推：用量為估算值，累計與剩餘無法回推</span>
         </div>
         {entries.length === 0 ? (
-          <p className="text-[11px] text-ink-400 py-2 text-center bg-paper-2 rounded">
+          <p className="text-[11px] text-ink-500 py-2 text-center bg-paper-2 rounded">
             {logData ? '尚無紀錄' : loading ? '載入中…' : '尚無紀錄'}
           </p>
         ) : (
@@ -817,6 +793,7 @@ function UsageMeter({
               <thead className="bg-paper-2 text-ink-500">
                 <tr>
                   <th className="px-2 py-1 text-left font-semibold">時間</th>
+                  <th className="px-2 py-1 text-left font-semibold">類別</th>
                   <th className="px-2 py-1 text-left font-semibold">項目</th>
                   <th className="px-2 py-1 text-right font-semibold">用量</th>
                   <th className="px-2 py-1 text-right font-semibold">累計</th>
@@ -827,12 +804,29 @@ function UsageMeter({
                 {entries.map((row, i) => (
                   <tr key={`${row.at}-${i}`} className="odd:bg-white even:bg-paper-2/40">
                     <td className="px-2 py-1 text-ink-700 whitespace-nowrap">{formatLogTime(row.at)}</td>
-                    <td className="px-2 py-1 text-ink-500 whitespace-nowrap">{row.label || formatLogKind(row.kind)}</td>
-                    <td className="px-2 py-1 text-right text-ink-700 whitespace-nowrap">+${row.delta.toFixed(4)}</td>
-                    <td className="px-2 py-1 text-right text-ink-900 font-bold whitespace-nowrap">${row.balance.toFixed(4)}</td>
-                    <td className="px-2 py-1 text-right text-brand-green-700 font-bold whitespace-nowrap">
-                      ${Math.max(0, totalAtTime(row.at, topups, total) - row.balance).toFixed(4)}
+                    <td className="px-2 py-1 text-ink-700 whitespace-nowrap font-sans">{row.scope ? USAGE_SCOPE_LABEL[row.scope] : '—'}</td>
+                    <td className="px-2 py-1 text-ink-500 whitespace-nowrap">
+                      {row.label || formatLogKind(row.kind)}
+                      {row.estimated && (
+                        <span className="ml-1.5 rounded bg-paper-2 px-1 py-0.5 font-sans text-[10px] font-bold text-ink-500">補登</span>
+                      )}
                     </td>
+                    <td className={`px-2 py-1 text-right whitespace-nowrap ${row.estimated ? 'text-ink-500' : 'text-ink-700'}`}>
+                      {row.estimated ? '≈' : '+'}${row.delta.toFixed(4)}
+                    </td>
+                    {row.estimated ? (
+                      <>
+                        <td className="px-2 py-1 text-right text-ink-300 whitespace-nowrap">—</td>
+                        <td className="px-2 py-1 text-right text-ink-300 whitespace-nowrap">—</td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="px-2 py-1 text-right text-ink-900 font-bold whitespace-nowrap">${row.balance.toFixed(4)}</td>
+                        <td className="px-2 py-1 text-right text-brand-green-700 font-bold whitespace-nowrap">
+                          ${Math.max(0, totalAtTime(row.at, topups, total) - row.balance).toFixed(4)}
+                        </td>
+                      </>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -841,7 +835,7 @@ function UsageMeter({
         )}
         {logData && logData.totalEntries > 0 && (
           <div className="mt-2 flex items-center justify-between gap-2 text-xs text-ink-500">
-            <span>共 {logData.totalEntries} 筆（保留最新 300 筆）</span>
+            <span>共 {logData.totalEntries} 筆，每頁 100 筆</span>
             <div className="flex items-center gap-1">
               <button
                 type="button"
@@ -881,7 +875,7 @@ function formatLogTime(iso: string): string {
   const dd = String(d.getDate()).padStart(2, '0');
   const hh = String(d.getHours()).padStart(2, '0');
   const mi = String(d.getMinutes()).padStart(2, '0');
-  return `${mm}/${dd} ${hh}:${mi}`;
+  return `${d.getFullYear()}/${mm}/${dd} ${hh}:${mi}`;
 }
 
 function formatLogKind(kind: string): string {

@@ -13,6 +13,8 @@ export type AiUsageLogEntry = {
   balance: number;
   /** 例：物件 #478 → EN */
   label?: string;
+  /** 補登的舊紀錄：用量為估算值，累計／剩餘無法回推（balance 不使用） */
+  estimated?: boolean;
 };
 
 export type AiUsageLogs = Record<AiUsageScope, AiUsageLogEntry[]>;
@@ -38,8 +40,8 @@ const DEFAULT_TOTAL_USD = 10;
 const DEFAULT_CURRENT_USD = 0.52;
 const INCREMENT_MIN = 0.025;
 const INCREMENT_MAX = 0.055;
-/** 每個分區保留的筆數上限 */
-const LOG_LIMIT = 300;
+/** 每個分區保留的筆數上限（含補登的舊紀錄） */
+const LOG_LIMIT = 5000;
 /** 剩餘額度低於此比例時，後台顯示紅點提醒 */
 export const AI_LOW_BALANCE_RATIO = 0.2;
 
@@ -60,6 +62,7 @@ function sanitizeLog(raw: unknown): AiUsageLogEntry[] {
       if (!at || !Number.isFinite(delta) || !Number.isFinite(balance)) return null;
       const entry: AiUsageLogEntry = { at, kind, delta, balance };
       if (typeof item?.label === 'string' && item.label.trim()) entry.label = item.label.trim().slice(0, 80);
+      if (item?.estimated === true) entry.estimated = true;
       return entry;
     })
     .filter((x): x is AiUsageLogEntry => x !== null)
