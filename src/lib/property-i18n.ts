@@ -206,6 +206,25 @@ export function lookupFixed(field: FixedField, value: string | null | undefined,
   return FIELD_DICT[field][v]?.[loc] ?? null;
 }
 
+/**
+ * 固定選項是否在對照表內（英、日文都查得到）。
+ * 查得到的值前台直接查表顯示，不需要 AI 翻譯，也不列入「需重新翻譯」的比對。
+ */
+export function isKnownFixed(field: FixedField, value: string | null | undefined): boolean {
+  if (!value || !value.trim()) return true; // 空值不需要翻譯
+  return lookupFixed(field, value, 'en') !== null && lookupFixed(field, value, 'ja') !== null;
+}
+
+export function isKnownDistrict(value: string | null | undefined): boolean {
+  if (!value || !value.trim()) return true;
+  return lookupDistrict(value, 'en') !== null;
+}
+
+/** 陣列（設備、家具、標籤…）是否每一項都在對照表內 */
+export function isAllKnownListItems(items: readonly string[]): boolean {
+  return items.every((item) => Boolean(LIST_ITEMS[item.trim()]));
+}
+
 /** 行政區：en 用拼音 + District；ja 保留漢字（日文讀者看得懂）。 */
 export function lookupDistrict(value: string | null | undefined, locale: string): string | null {
   const loc = normalizeLocale(locale);

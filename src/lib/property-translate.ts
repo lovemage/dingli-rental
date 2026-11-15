@@ -3,7 +3,14 @@ import { prisma } from '@/lib/prisma';
 import { translateJsonObject } from '@/lib/openrouter-translate';
 import type { PropertyCardData } from '@/components/frontend/PropertyCard';
 import type { Prisma } from '@/generated/prisma/client';
-import { localizeList, lookupDistrict, lookupFixed } from '@/lib/property-i18n';
+import {
+  isAllKnownListItems,
+  isKnownDistrict,
+  isKnownFixed,
+  localizeList,
+  lookupDistrict,
+  lookupFixed,
+} from '@/lib/property-i18n';
 import { cleanPropertyDescription } from '@/lib/property-description-clean';
 
 const TRANSLATION_LOCALES = ['en', 'ja'] as const;
@@ -55,7 +62,53 @@ function arr(v: unknown): string[] {
   return Array.isArray(v) ? (v as unknown[]).filter((x): x is string => typeof x === 'string') : [];
 }
 
+/**
+ * 「是否需要重新翻譯」的比對值：只納入真的要靠 AI 翻譯的內容。
+ *   - 標題、描述、街道、社區、公設「其他」：一律納入（自由輸入）。
+ *   - 固定選項（縣市、行政區、類型、建物、押金、租期、朝向、車位）：
+ *     對照表查得到就不納入（前台查表顯示），只有自訂值才納入。
+ *   - 勾選陣列（設備、家具、租金包含、身份、特色標籤）：
+ *     全部都是對照表裡的選項就不納入；含自訂項目才整組納入（前台靠同位置對應譯文）。
+ * 照片、租金、坪數、上下架等本來就不在比對內。
+ * 改勾選或固定選項因此不會再觸發翻譯、不耗 AI 額度。
+ */
 export function computePropertySourceHash(p: PropertySourceFields): string {
+  const payload: Record<string, unknown> = {
+    title: p.title,
+    description: p.description ?? '',
+    street: p.street ?? '',
+    community: p.community ?? '',
+  };
+  if (p.facilitiesOther?.trim()) payload.facilitiesOther = p.facilitiesOther.trim();
+  const fixed = [
+    ['region', p.region],
+    ['typeMid', p.typeMid],
+    ['buildingType', p.buildingType],
+    ['deposit', p.deposit],
+    ['minLease', p.minLease],
+    ['direction', p.direction],
+    ['parkingType', p.parkingType],
+  ] as const;
+  for (const [field, value] of fixed) {
+    if (!isKnownFixed(field, value)) payload[field] = value;
+  }
+  if (!isKnownDistrict(p.district)) payload.district = p.district;
+  const lists = [
+    ['featureTags', p.featureTags],
+    ['equipment', p.equipment],
+    ['furniture', p.furniture],
+    ['rentIncludes', p.rentIncludes],
+    ['tenantTypes', p.tenantTypes],
+  ] as const;
+  for (const [field, value] of lists) {
+    const items = arr(value);
+    if (!isAllKnownListItems(items)) payload[field] = items;
+  }
+  return crypto.createHash('sha256').update(JSON.stringify(payload)).digest('hex');
+}
+
+/** 舊版比對值（所有欄位都納入）；只給 scripts/migrate-translation-hash.ts 換算既有資料用 */
+export function computeLegacyPropertySourceHash(p: PropertySourceFields): string {
   const payload = JSON.stringify({
     title: p.title,
     description: p.description ?? '',
