@@ -140,6 +140,10 @@ model Property {
   ownerPhone2     String?
   ownerName3      String? // 第 3 組屋主／聯絡人
   ownerPhone3     String?
+  ownerName4      String? // 第 4 組屋主／聯絡人
+  ownerPhone4     String?
+  ownerName5      String? // 第 5 組屋主／聯絡人
+  ownerPhone5     String?
 
   // 特色描述
   title           String   // 廣告標題 6-30 字

@@ -101,6 +101,8 @@ export default async function AdminPropertiesList({
       { name: p.ownerName, phone: p.ownerPhone },
       { name: p.ownerName2, phone: p.ownerPhone2 },
       { name: p.ownerName3, phone: p.ownerPhone3 },
+      { name: p.ownerName4, phone: p.ownerPhone4 },
+      { name: p.ownerName5, phone: p.ownerPhone5 },
     ]
       .map((o) => ({ name: (o.name || '').trim(), phone: (o.phone || '').trim() }))
       .filter((o) => o.name || o.phone),

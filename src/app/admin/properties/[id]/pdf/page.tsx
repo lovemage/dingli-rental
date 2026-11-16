@@ -31,6 +31,8 @@ const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://dingli-rental.com
 
 /** PDF 最多放幾張照片（主圖 1 張＋縮圖） */
 const MAX_PDF_PHOTOS = 15;
+const MAX_PDF_COLS = 7;
+const DEFAULT_PDF_COLS = 3;
 
 /**
  * Cloudinary 圖片改抓縮小、壓縮過的 JPG，PDF 檔案才不會太大
@@ -81,7 +83,7 @@ export default async function PropertyPdfPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ lang?: string; full?: string; photos?: string }>;
+  searchParams: Promise<{ lang?: string; full?: string; photos?: string; cols?: string; cover?: string }>;
 }) {
   const me = await getCurrentAdmin();
   if (!me) redirect('/admin/login');
@@ -92,6 +94,11 @@ export default async function PropertyPdfPage({
   const sp = await searchParams;
   const lang: Lang = sp.lang === 'en' || sp.lang === 'ja' ? sp.lang : 'zh';
   const full = sp.full !== '0';
+  // 縮圖每列張數（1～7），由工具列切換；預設 3
+  const colsNum = Number(sp.cols);
+  const cols = Number.isInteger(colsNum) && colsNum >= 1 && colsNum <= MAX_PDF_COLS ? colsNum : DEFAULT_PDF_COLS;
+  // 主圖單獨一列（預設）；?cover=0 時主圖併入縮圖格，和其他照片一起排
+  const coverSolo = sp.cover !== '0';
 
   const raw = await prisma.property
     .findUnique({
@@ -118,8 +125,10 @@ export default async function PropertyPdfPage({
     ? allPhotos.filter((ph) => pickedIds.includes(ph.id))
     : allPhotos;
   const photos = picked.slice(0, MAX_PDF_PHOTOS);
-  const cover = photos[0] ? pdfImageUrl(photos[0].url, 1200) : undefined;
-  const thumbs = photos.slice(1).map((ph) => pdfImageUrl(ph.url, 480));
+  const cover = coverSolo && photos[0] ? pdfImageUrl(photos[0].url, 1200) : undefined;
+  // 縮圖寬度依每列張數決定，張數越少解析度越高
+  const thumbWidth = Math.min(1200, Math.ceil(1600 / cols / 80) * 80);
+  const thumbs = photos.slice(coverSolo ? 1 : 0).map((ph) => pdfImageUrl(ph.url, thumbWidth));
 
   const dash = t('dash');
   const layoutStr = raw.openLayout
@@ -211,6 +220,9 @@ export default async function PropertyPdfPage({
         selectedIds={photos.map((ph) => ph.id)}
         customSelection={pickedIds.length > 0}
         maxPhotos={MAX_PDF_PHOTOS}
+        cols={cols}
+        coverSolo={coverSolo}
+        maxCols={MAX_PDF_COLS}
       />
 
       <article className="pdf-sheet mx-auto max-w-[820px] bg-white p-4 text-ink-900 shadow-sm sm:my-6 sm:p-8" lang={mapLang}>
@@ -234,13 +246,15 @@ export default async function PropertyPdfPage({
           )}
         </div>
 
-        {cover && (
+        {(cover || thumbs.length > 0) && (
           <div className="mt-4">
-            {/* 主圖縮成 2:1（列印 5:2），縮圖一排 5 張（列印 7 張，14 張剛好 2 列），讓整份 PDF 控制在 2 頁 */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={cover} alt={p.title} className="pdf-avoid aspect-[2/1] w-full object-cover print:aspect-[5/2]" />
+            {/* 主圖可單獨一列（2:1，列印 5:2）或併入縮圖格；縮圖每列張數由工具列調整（1～7 張） */}
+            {cover && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={cover} alt={p.title} className="pdf-avoid aspect-[2/1] w-full object-cover print:aspect-[5/2]" />
+            )}
             {thumbs.length > 0 && (
-              <div className="mt-1.5 grid grid-cols-3 gap-1.5 sm:grid-cols-5 print:grid-cols-7">
+              <div className={`${cover ? 'mt-1.5 ' : ''}grid gap-1.5`} style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
                 {thumbs.map((u) => (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img key={u} src={u} alt="" className="pdf-thumb aspect-[4/3] w-full object-cover" />

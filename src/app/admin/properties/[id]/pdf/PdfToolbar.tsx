@@ -20,6 +20,9 @@ export default function PdfToolbar({
   selectedIds,
   customSelection,
   maxPhotos,
+  cols,
+  maxCols,
+  coverSolo,
 }: {
   id: number;
   lang: string;
@@ -28,18 +31,23 @@ export default function PdfToolbar({
   selectedIds: number[];
   customSelection: boolean;
   maxPhotos: number;
+  cols: number;
+  maxCols: number;
+  coverSolo: boolean;
 }) {
   const router = useRouter();
   const [picking, setPicking] = useState(false);
   const [draft, setDraft] = useState<number[]>(selectedIds);
 
-  const go = (next: { lang?: string; full?: boolean; photos?: number[] | null }) => {
+  const go = (next: { lang?: string; full?: boolean; photos?: number[] | null; cols?: number; coverSolo?: boolean }) => {
     const photos = next.photos === undefined ? (customSelection ? selectedIds : null) : next.photos;
     const qs = new URLSearchParams({
       lang: next.lang ?? lang,
       full: (next.full ?? full) ? '1' : '0',
     });
     if (photos && photos.length) qs.set('photos', photos.join(','));
+    qs.set('cols', String(next.cols ?? cols));
+    if (!(next.coverSolo ?? coverSolo)) qs.set('cover', '0');
     router.replace(`/admin/properties/${id}/pdf?${qs.toString()}`);
   };
 
@@ -96,6 +104,42 @@ export default function PdfToolbar({
           />
           顯示完整門牌
         </label>
+        {allPhotos.length > 1 && (
+          <div className="inline-flex items-center gap-2 text-ink-700">
+            <span>每列</span>
+            <div className="flex overflow-hidden rounded-lg border border-line" role="group" aria-label="縮圖每列張數">
+              {Array.from({ length: maxCols }, (_, i) => i + 1).map((n) => {
+                const active = n === cols;
+                return (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => go({ cols: n })}
+                    aria-pressed={active}
+                    aria-label={`每列 ${n} 張`}
+                    className={`min-w-8 px-2 py-1.5 font-bold tabular-nums transition ${
+                      active ? 'bg-brand-green-700 text-white' : 'bg-white text-ink-700 hover:bg-paper-2'
+                    }`}
+                  >
+                    {n}
+                  </button>
+                );
+              })}
+            </div>
+            <span>張</span>
+          </div>
+        )}
+        {allPhotos.length > 1 && (
+          <label className="inline-flex items-center gap-2 text-ink-700">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-brand-green-700"
+              checked={coverSolo}
+              onChange={(e) => go({ coverSolo: e.target.checked })}
+            />
+            主圖單獨一列
+          </label>
+        )}
         {allPhotos.length > 0 && (
           <button
             type="button"
@@ -121,7 +165,7 @@ export default function PdfToolbar({
         <div className="mx-auto max-w-[820px] border-t border-line px-4 py-3">
           <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-600">
             <span>
-              已選 <strong className="text-ink-900">{draft.length}</strong> / {maxPhotos} 張，依物件照片順序排列，第一張為主圖。
+              已選 <strong className="text-ink-900">{draft.length}</strong> / {maxPhotos} 張，依物件照片順序排列{coverSolo ? '，第一張為主圖' : ''}。
             </span>
             <button type="button" onClick={() => setDraft(allPhotos.slice(0, maxPhotos).map((p) => p.id))} className="font-bold text-brand-green-700 hover:underline">
               選前 {Math.min(maxPhotos, allPhotos.length)} 張
@@ -152,7 +196,7 @@ export default function PdfToolbar({
                       ✓
                     </span>
                   )}
-                  {p.id === draftCoverId && (
+                  {coverSolo && p.id === draftCoverId && (
                     <span className="absolute bottom-0 left-0 bg-brand-green-700 px-1.5 py-0.5 text-[10px] font-bold text-white">主圖</span>
                   )}
                 </button>

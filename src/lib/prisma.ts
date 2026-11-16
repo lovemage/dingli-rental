@@ -35,6 +35,8 @@ function createClient() {
         ownerName: true, ownerPhone: true,
         ownerName2: true, ownerPhone2: true,
         ownerName3: true, ownerPhone3: true,
+        ownerName4: true, ownerPhone4: true,
+        ownerName5: true, ownerPhone5: true,
       },
     },
   });
@@ -51,6 +53,8 @@ export const OWNER_FIELDS_INCLUDE = {
   ownerName: false, ownerPhone: false,
   ownerName2: false, ownerPhone2: false,
   ownerName3: false, ownerPhone3: false,
+  ownerName4: false, ownerPhone4: false,
+  ownerName5: false, ownerPhone5: false,
 } as const;
 
 globalForPrisma.prisma = prisma;

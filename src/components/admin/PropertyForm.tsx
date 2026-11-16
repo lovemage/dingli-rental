@@ -103,6 +103,10 @@ export type PropertyFormValue = {
   ownerPhone2?: string;
   ownerName3?: string;
   ownerPhone3?: string;
+  ownerName4?: string;
+  ownerPhone4?: string;
+  ownerName5?: string;
+  ownerPhone5?: string;
   title: string;
   featureTags: string[];
   description: string;
@@ -111,6 +115,15 @@ export type PropertyFormValue = {
   featured: boolean;
   images: string[];
 };
+
+/** 屋主／聯絡人欄位（最多 5 組） */
+const OWNER_KEYS = [
+  ['ownerName', 'ownerPhone'],
+  ['ownerName2', 'ownerPhone2'],
+  ['ownerName3', 'ownerPhone3'],
+  ['ownerName4', 'ownerPhone4'],
+  ['ownerName5', 'ownerPhone5'],
+] as const;
 
 const DEFAULTS: PropertyFormValue = {
   region: '台北市', typeMid: '整層住家', buildingType: '電梯大樓',
@@ -126,7 +139,7 @@ const DEFAULTS: PropertyFormValue = {
   rent: '', deposit: '兩個月', rentIncludes: [], managementFee: '', noManagementFee: false, rentTax: '',
   minLease: '一年', moveInDate: '', anytimeMoveIn: false,
   hasParking: false, parkingType: '', parkingFee: '',
-  ownerName: '', ownerPhone: '', ownerName2: '', ownerPhone2: '', ownerName3: '', ownerPhone3: '',
+  ownerName: '', ownerPhone: '', ownerName2: '', ownerPhone2: '', ownerName3: '', ownerPhone3: '', ownerName4: '', ownerPhone4: '', ownerName5: '', ownerPhone5: '',
   title: '', featureTags: [], description: '',
   status: 'active', listingStatus: 'active', featured: false,
   images: [],
@@ -194,10 +207,11 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from, oc
   const [aiMsg, setAiMsg] = useState('');
   const [aiAppliedKeys, setAiAppliedKeys] = useState<string[]>([]);
   const [fieldErrorId, setFieldErrorId] = useState<string>('');
-  // 屋主預設只顯示 1 組，按「新增」再展開（最多 3 組）；編輯時依已填資料決定顯示幾組
-  const [ownerRows, setOwnerRows] = useState<number>(() =>
-    v.ownerName3 || v.ownerPhone3 ? 3 : v.ownerName2 || v.ownerPhone2 ? 2 : 1,
-  );
+  // 屋主預設只顯示 1 組，按「新增」再展開（最多 5 組）；編輯時依已填資料決定顯示幾組
+  const [ownerRows, setOwnerRows] = useState<number>(() => {
+    const filled = OWNER_KEYS.map(([n, p]) => !!(v[n] || v[p]));
+    return Math.max(1, filled.lastIndexOf(true) + 1);
+  });
   const districts = CITY_DISTRICTS[v.city] || [];
 
   function update<K extends keyof PropertyFormValue>(k: K, val: PropertyFormValue[K]) {
@@ -456,6 +470,10 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from, oc
       ownerPhone2: (v.ownerPhone2 || '').trim() || null,
       ownerName3: (v.ownerName3 || '').trim() || null,
       ownerPhone3: (v.ownerPhone3 || '').trim() || null,
+      ownerName4: (v.ownerName4 || '').trim() || null,
+      ownerPhone4: (v.ownerPhone4 || '').trim() || null,
+      ownerName5: (v.ownerName5 || '').trim() || null,
+      ownerPhone5: (v.ownerPhone5 || '').trim() || null,
       region: v.city, // 大分類 = 縣市
       hideAddress: true,
       floor: v.floorType === '多層出租'
@@ -1196,12 +1214,10 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from, oc
           <input type="checkbox" checked={v.featured} onChange={(e) => update('featured', e.target.checked)} />
           設為精選物件（在首頁與列表優先顯示）
         </label>
-        {/* 屋主／聯絡人：預設 1 組，可自行新增，最多 3 組 */}
-        {([
-          ['ownerName', 'ownerPhone', '屋主'],
-          ['ownerName2', 'ownerPhone2', '屋主 2'],
-          ['ownerName3', 'ownerPhone3', '屋主 3'],
-        ] as const).slice(0, ownerRows).map(([nameKey, phoneKey, label], i) => (
+        {/* 屋主／聯絡人：預設 1 組，可自行新增，最多 5 組 */}
+        {OWNER_KEYS.slice(0, ownerRows).map(([nameKey, phoneKey], i) => {
+          const label = i === 0 ? '屋主' : `屋主 ${i + 1}`;
+          return (
           <div key={nameKey} className={`grid sm:grid-cols-[1fr_1fr_auto] gap-4 items-end ${i === 0 ? 'pt-2' : ''}`}>
             <Field label={label}>
               <input className="input-base" placeholder="姓名" maxLength={50} value={v[nameKey] || ''} onChange={(e) => update(nameKey, e.target.value)} />
@@ -1215,19 +1231,12 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from, oc
                 onClick={() => {
                   // 移除這一組，後面的往前遞補
                   setV((s) => {
-                    const rows = [
-                      [s.ownerName, s.ownerPhone],
-                      [s.ownerName2, s.ownerPhone2],
-                      [s.ownerName3, s.ownerPhone3],
-                    ];
+                    const rows = OWNER_KEYS.map(([n, p]) => [s[n] || '', s[p] || ''] as const);
                     rows.splice(i, 1);
                     rows.push(['', '']);
-                    return {
-                      ...s,
-                      ownerName: rows[0][0], ownerPhone: rows[0][1],
-                      ownerName2: rows[1][0], ownerPhone2: rows[1][1],
-                      ownerName3: rows[2][0], ownerPhone3: rows[2][1],
-                    };
+                    const next = { ...s };
+                    OWNER_KEYS.forEach(([n, p], j) => { next[n] = rows[j][0]; next[p] = rows[j][1]; });
+                    return next;
                   });
                   setOwnerRows((n) => Math.max(1, n - 1));
                 }}
@@ -1240,11 +1249,12 @@ export default function PropertyForm({ initial, propertyId, taxonomies, from, oc
               <span className="hidden sm:block w-[64px]" aria-hidden="true" />
             )}
           </div>
-        ))}
-        {ownerRows < 3 && (
+          );
+        })}
+        {ownerRows < OWNER_KEYS.length && (
           <button
             type="button"
-            onClick={() => setOwnerRows((n) => Math.min(3, n + 1))}
+            onClick={() => setOwnerRows((n) => Math.min(OWNER_KEYS.length, n + 1))}
             className="inline-flex items-center gap-1 text-sm font-medium text-brand-green-700 hover:text-brand-green-900"
           >
             <MaterialIcon name="add" className="!text-lg" />
