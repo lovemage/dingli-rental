@@ -43,3 +43,6 @@ next-env.d.ts
 # uploads (runtime, persistent in Railway volume)
 /public/uploads/*
 !/public/uploads/.gitkeep
+
+# 文件／草稿／截圖（不納入版控）
+/docs/superpowers/specs/螢幕擷取畫面 2026-11-15 091938.png
